@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-
+	"kapsflow/internal/identity"
 	"kapsflow/internal/api"
 	"kapsflow/internal/config"
 )
@@ -42,9 +42,12 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
+	mailer := identity.NewMailer(cfg.ResendAPIKey, cfg.EmailFrom, log)
+	identitySvc := identity.NewService(pool, mailer, log, cfg.PublicBaseURL)
+
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           api.New(log, pool),
+		Handler:           api.New(log, pool, identitySvc),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

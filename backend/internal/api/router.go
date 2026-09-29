@@ -11,12 +11,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"kapsflow/internal/httpx"
+	"kapsflow/internal/identity"
 )
 
-// New merakit seluruh router HTTP. Modul baru (identitas, tenant, antrian,
-// dst) di fase berikutnya cukup ditambahkan lewat r.Mount di sini, tanpa
-// menyentuh cmd/api/main.go.
-func New(log *slog.Logger, pool *pgxpool.Pool) http.Handler {
+func New(log *slog.Logger, pool *pgxpool.Pool, identitySvc *identity.Service) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -32,9 +30,7 @@ func New(log *slog.Logger, pool *pgxpool.Pool) http.Handler {
 	})
 
 	r.Get("/healthz", healthHandler(log, pool))
-
-	// Rute modul ditambahkan di sini pada fase-fase berikutnya, contoh:
-	// r.Mount("/v1/auth", identity.Routes(log, pool))
+	r.Mount("/v1/auth", identity.Routes(identitySvc, log))
 
 	return r
 }
@@ -43,7 +39,6 @@ func healthHandler(log *slog.Logger, pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
-
 		if err := pool.Ping(ctx); err != nil {
 			httpx.Error(w, r, log, httpx.ServiceUnavailable("db_unavailable", "Database tidak terhubung", err))
 			return

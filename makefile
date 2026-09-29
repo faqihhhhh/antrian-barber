@@ -25,3 +25,6 @@ migrate-status:
 # pemakaian: make migrate-new name=buat_tabel_users
 migrate-new:
 > cd backend && goose -dir db/migrations create $(name) sql
+
+sqlc-generate:
+> cd backend && sqlc generate
