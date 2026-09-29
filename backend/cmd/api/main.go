@@ -10,10 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"kapsflow/internal/api"
 	"kapsflow/internal/config"
 )
 
@@ -31,11 +30,9 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
-	// ctx dibatalkan saat Anda menekan Ctrl+C atau server diminta berhenti.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// Pool koneksi: banyak request berbagi sejumlah koneksi database.
 	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
 	if err != nil {
 		return err
@@ -45,23 +42,9 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
-	r := chi.NewRouter()
-	r.Use(middleware.RequestID, middleware.RealIP, middleware.Recoverer)
-
-	r.Get("/healthz", func(w http.ResponseWriter, req *http.Request) {
-		c, cancel := context.WithTimeout(req.Context(), 2*time.Second)
-		defer cancel()
-		if err := pool.Ping(c); err != nil {
-			http.Error(w, `{"status":"db tidak terhubung"}`, http.StatusServiceUnavailable)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
-	})
-
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           r,
+		Handler:           api.New(log, pool),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
