@@ -12,15 +12,22 @@ import (
 
 type Querier interface {
 	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) (EmailVerificationToken, error)
+	CreateMembership(ctx context.Context, arg CreateMembershipParams) (Membership, error)
+	CreateOutlet(ctx context.Context, arg CreateOutletParams) (Outlet, error)
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (PasswordResetToken, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateTenant(ctx context.Context, arg CreateTenantParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteSession(ctx context.Context, tokenHash string) error
+	GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetValidEmailVerificationToken(ctx context.Context, tokenHash string) (EmailVerificationToken, error)
 	GetValidPasswordResetToken(ctx context.Context, tokenHash string) (PasswordResetToken, error)
 	GetValidSession(ctx context.Context, tokenHash string) (Session, error)
+	ListMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]Membership, error)
+	ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Outlet, error)
+	ListTenants(ctx context.Context) ([]Tenant, error)
 	MarkEmailVerificationTokenUsed(ctx context.Context, id uuid.UUID) error
 	MarkPasswordResetTokenUsed(ctx context.Context, id uuid.UUID) error
 	MarkUserEmailVerified(ctx context.Context, id uuid.UUID) error

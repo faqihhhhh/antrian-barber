@@ -12,9 +12,11 @@ import (
 
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/identity"
+	"kapsflow/internal/rls"
+	"kapsflow/internal/tenant"
 )
 
-func New(log *slog.Logger, pool *pgxpool.Pool, identitySvc *identity.Service) http.Handler {
+func New(log *slog.Logger, pool *pgxpool.Pool, identitySvc *identity.Service, tenantSvc *tenant.Service) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -31,6 +33,12 @@ func New(log *slog.Logger, pool *pgxpool.Pool, identitySvc *identity.Service) ht
 
 	r.Get("/healthz", healthHandler(log, pool))
 	r.Mount("/v1/auth", identity.Routes(identitySvc, log))
+
+	r.Route("/v1/tenants", func(tr chi.Router) {
+		tr.Use(identity.RequireAuth(identitySvc, log))
+		tr.Use(rls.Middleware(pool, log))
+		tr.Mount("/", tenant.Routes(tenantSvc, log))
+	})
 
 	return r
 }

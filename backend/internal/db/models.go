@@ -18,12 +18,41 @@ type EmailVerificationToken struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+type Membership struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	UserID    uuid.UUID          `json:"user_id"`
+	Roles     []string           `json:"roles"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MembershipOutlet struct {
+	MembershipID uuid.UUID `json:"membership_id"`
+	OutletID     uuid.UUID `json:"outlet_id"`
+}
+
+type Outlet struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	Name      string             `json:"name"`
+	Timezone  string             `json:"timezone"`
+	Address   pgtype.Text        `json:"address"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type PasswordResetToken struct {
 	ID        uuid.UUID          `json:"id"`
 	UserID    uuid.UUID          `json:"user_id"`
 	TokenHash string             `json:"token_hash"`
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 	UsedAt    pgtype.Timestamptz `json:"used_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type PlatformAdmin struct {
+	UserID    uuid.UUID          `json:"user_id"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
@@ -34,6 +63,13 @@ type Session struct {
 	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 	LastUsedAt pgtype.Timestamptz `json:"last_used_at"`
+}
+
+type Tenant struct {
+	ID        uuid.UUID          `json:"id"`
+	Name      string             `json:"name"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {

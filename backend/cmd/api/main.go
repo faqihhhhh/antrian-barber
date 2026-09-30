@@ -11,9 +11,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"kapsflow/internal/identity"
+
 	"kapsflow/internal/api"
 	"kapsflow/internal/config"
+	"kapsflow/internal/identity"
+	"kapsflow/internal/tenant"
 )
 
 func main() {
@@ -33,7 +35,7 @@ func run(log *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	pool, err := pgxpool.New(ctx, cfg.AppDatabaseURL)
 	if err != nil {
 		return err
 	}
@@ -44,10 +46,11 @@ func run(log *slog.Logger) error {
 
 	mailer := identity.NewMailer(cfg.ResendAPIKey, cfg.EmailFrom, log)
 	identitySvc := identity.NewService(pool, mailer, log, cfg.PublicBaseURL)
+	tenantSvc := tenant.NewService(pool)
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           api.New(log, pool, identitySvc),
+		Handler:           api.New(log, pool, identitySvc, tenantSvc),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
