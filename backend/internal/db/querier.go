@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	ActivateSubscriptionPeriod(ctx context.Context, arg ActivateSubscriptionPeriodParams) error
+	AddMembershipOutlet(ctx context.Context, arg AddMembershipOutletParams) error
 	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) (EmailVerificationToken, error)
 	CreateInvoice(ctx context.Context, arg CreateInvoiceParams) (Invoice, error)
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (Membership, error)
@@ -26,6 +27,7 @@ type Querier interface {
 	GetPlanByID(ctx context.Context, id uuid.UUID) (Plan, error)
 	GetSubscriptionByTenant(ctx context.Context, tenantID uuid.UUID) (Subscription, error)
 	GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error)
+	GetTenantProfile(ctx context.Context, tenantID uuid.UUID) (TenantProfile, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetValidEmailVerificationToken(ctx context.Context, tokenHash string) (EmailVerificationToken, error)
@@ -37,14 +39,17 @@ type Querier interface {
 	ListMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]Membership, error)
 	ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Outlet, error)
 	ListPendingInvoices(ctx context.Context) ([]Invoice, error)
+	ListStaffByTenant(ctx context.Context, tenantID uuid.UUID) ([]ListStaffByTenantRow, error)
 	ListTenants(ctx context.Context) ([]Tenant, error)
 	MarkEmailVerificationTokenUsed(ctx context.Context, id uuid.UUID) error
 	MarkInvoicePaid(ctx context.Context, arg MarkInvoicePaidParams) error
+	MarkOnboardingSkippedMidtrans(ctx context.Context, tenantID uuid.UUID) error
 	MarkPasswordResetTokenUsed(ctx context.Context, id uuid.UUID) error
 	MarkUserEmailVerified(ctx context.Context, id uuid.UUID) error
 	TouchSession(ctx context.Context, id uuid.UUID) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) (Subscription, error)
+	UpsertTenantProfileMidtrans(ctx context.Context, arg UpsertTenantProfileMidtransParams) error
 }
 
 var _ Querier = (*Queries)(nil)

@@ -13,10 +13,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"kapsflow/internal/api"
-	"kapsflow/internal/config"
-	"kapsflow/internal/identity"
-	"kapsflow/internal/tenant"
 	"kapsflow/internal/billing"
+	"kapsflow/internal/config"
+	"kapsflow/internal/cryptox"
+	"kapsflow/internal/identity"
+	"kapsflow/internal/profile"
+	"kapsflow/internal/staff"
+	"kapsflow/internal/tenant"
 )
 
 func main() {
@@ -45,14 +48,21 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
+	box, err := cryptox.NewBox(cfg.EncryptionKey)
+	if err != nil {
+		return err
+	}
+
 	mailer := identity.NewMailer(cfg.ResendAPIKey, cfg.EmailFrom, log)
 	identitySvc := identity.NewService(pool, mailer, log, cfg.PublicBaseURL)
 	tenantSvc := tenant.NewService(pool)
 	billingSvc := billing.NewService(pool)
+	profileSvc := profile.NewService(pool, box)
+	staffSvc := staff.NewService(pool, identitySvc)
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc),
+		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

@@ -9,7 +9,22 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const addMembershipOutlet = `-- name: AddMembershipOutlet :exec
+INSERT INTO membership_outlets (membership_id, outlet_id) VALUES ($1, $2)
+`
+
+type AddMembershipOutletParams struct {
+	MembershipID uuid.UUID `json:"membership_id"`
+	OutletID     uuid.UUID `json:"outlet_id"`
+}
+
+func (q *Queries) AddMembershipOutlet(ctx context.Context, arg AddMembershipOutletParams) error {
+	_, err := q.db.Exec(ctx, addMembershipOutlet, arg.MembershipID, arg.OutletID)
+	return err
+}
 
 const createMembership = `-- name: CreateMembership :one
 INSERT INTO memberships (tenant_id, user_id, roles)
@@ -57,6 +72,56 @@ func (q *Queries) ListMembershipsForUser(ctx context.Context, userID uuid.UUID) 
 			&i.Roles,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStaffByTenant = `-- name: ListStaffByTenant :many
+SELECT
+    m.id AS membership_id,
+    m.roles,
+    m.created_at,
+    u.id AS user_id,
+    u.email,
+    u.email_verified_at
+FROM memberships m
+JOIN users u ON u.id = m.user_id
+WHERE m.tenant_id = $1 AND m.roles && ARRAY['admin','kapster']::text[]
+ORDER BY m.created_at
+`
+
+type ListStaffByTenantRow struct {
+	MembershipID    uuid.UUID          `json:"membership_id"`
+	Roles           []string           `json:"roles"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UserID          uuid.UUID          `json:"user_id"`
+	Email           string             `json:"email"`
+	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
+}
+
+func (q *Queries) ListStaffByTenant(ctx context.Context, tenantID uuid.UUID) ([]ListStaffByTenantRow, error) {
+	rows, err := q.db.Query(ctx, listStaffByTenant, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListStaffByTenantRow
+	for rows.Next() {
+		var i ListStaffByTenantRow
+		if err := rows.Scan(
+			&i.MembershipID,
+			&i.Roles,
+			&i.CreatedAt,
+			&i.UserID,
+			&i.Email,
+			&i.EmailVerifiedAt,
 		); err != nil {
 			return nil, err
 		}

@@ -13,11 +13,21 @@ import (
 	"kapsflow/internal/billing"
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/identity"
+	"kapsflow/internal/profile"
 	"kapsflow/internal/rls"
+	"kapsflow/internal/staff"
 	"kapsflow/internal/tenant"
 )
 
-func New(log *slog.Logger, pool *pgxpool.Pool, identitySvc *identity.Service, tenantSvc *tenant.Service, billingSvc *billing.Service) http.Handler {
+func New(
+	log *slog.Logger,
+	pool *pgxpool.Pool,
+	identitySvc *identity.Service,
+	tenantSvc *tenant.Service,
+	billingSvc *billing.Service,
+	profileSvc *profile.Service,
+	staffSvc *staff.Service,
+) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -42,8 +52,11 @@ func New(log *slog.Logger, pool *pgxpool.Pool, identitySvc *identity.Service, te
 	r.Route("/v1/tenants", func(tr chi.Router) {
 		tr.Use(identity.RequireAuth(identitySvc, log))
 		tr.Use(rls.Middleware(pool, log))
-		tenant.RegisterRoutes(tr, tenantSvc, log, billing.RequireActiveSubscription(billingSvc, log))
+		requireActive := billing.RequireActiveSubscription(billingSvc, log)
+		tenant.RegisterRoutes(tr, tenantSvc, log, requireActive)
 		billing.RegisterTenantRoutes(tr, billingSvc, log)
+		profile.RegisterRoutes(tr, profileSvc, log, requireActive)
+		staff.RegisterRoutes(tr, staffSvc, log, requireActive)
 	})
 
 	r.Route("/v1/admin", func(ar chi.Router) {
@@ -67,3 +80,4 @@ func healthHandler(log *slog.Logger, pool *pgxpool.Pool) http.HandlerFunc {
 		httpx.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}
 }
+

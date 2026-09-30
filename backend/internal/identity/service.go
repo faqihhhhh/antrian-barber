@@ -218,3 +218,35 @@ func (s *Service) ResetPassword(ctx context.Context, rawToken, newPassword strin
 	}
 	return nil
 }
+
+// Querier adalah subset kecil db.Queries yang cukup untuk membuat token
+// verifikasi. Modul lain (misalnya staff saat owner mengundang karyawan)
+// bisa memberikan queries dari transaksi RLS mereka sendiri lewat interface
+// ini, supaya pembuatan user + token verifikasi tetap satu transaksi atomik
+// dengan langkah-langkah lain — tanpa identity perlu tahu apa pun soal RLS.
+type Querier interface {
+	CreateEmailVerificationToken(ctx context.Context, arg db.CreateEmailVerificationTokenParams) (db.EmailVerificationToken, error)
+}
+
+// SendVerificationEmailUsing sama seperti alur verifikasi self-registration,
+// tapi memakai Querier dan TTL yang diberikan pemanggil, dan tidak membuat
+// transaksinya sendiri — pemanggil yang bertanggung jawab atas transaksinya.
+func (s *Service) SendVerificationEmailUsing(ctx context.Context, q Querier, userID uuid.UUID, email string, ttl time.Duration) error {
+	rawToken, err := generateToken()
+	if err != nil {
+		return httpx.Internal(err)
+	}
+	_, err = q.CreateEmailVerificationToken(ctx, db.CreateEmailVerificationTokenParams{
+		UserID:    userID,
+		TokenHash: hashToken(rawToken),
+		ExpiresAt: dbx.TS(time.Now().Add(ttl)),
+	})
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("menyimpan token verifikasi: %w", err))
+	}
+	verifyURL := fmt.Sprintf("%s/v1/auth/verify-email?token=%s", s.baseURL, rawToken)
+	if err := s.mailer.Send(ctx, email, "Verifikasi email Kapsflow Anda", verificationEmailHTML(verifyURL)); err != nil {
+		return httpx.Internal(fmt.Errorf("mengirim email verifikasi: %w", err))
+	}
+	return nil
+}

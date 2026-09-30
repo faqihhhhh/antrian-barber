@@ -106,6 +106,16 @@ type Tenant struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type TenantProfile struct {
+	TenantID                   uuid.UUID          `json:"tenant_id"`
+	MidtransServerKeyEncrypted pgtype.Text        `json:"midtrans_server_key_encrypted"`
+	MidtransClientKeyEncrypted pgtype.Text        `json:"midtrans_client_key_encrypted"`
+	MidtransConfiguredAt       pgtype.Timestamptz `json:"midtrans_configured_at"`
+	OnboardingCompletedAt      pgtype.Timestamptz `json:"onboarding_completed_at"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+}
+
 type User struct {
 	ID              uuid.UUID          `json:"id"`
 	Email           string             `json:"email"`
