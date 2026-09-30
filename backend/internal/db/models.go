@@ -18,6 +18,20 @@ type EmailVerificationToken struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+type Invoice struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	PlanID       uuid.UUID          `json:"plan_id"`
+	AmountRupiah int64              `json:"amount_rupiah"`
+	UniqueCode   int16              `json:"unique_code"`
+	Status       string             `json:"status"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+	PaidAt       pgtype.Timestamptz `json:"paid_at"`
+	ConfirmedBy  pgtype.UUID        `json:"confirmed_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Membership struct {
 	ID        uuid.UUID          `json:"id"`
 	TenantID  uuid.UUID          `json:"tenant_id"`
@@ -51,6 +65,17 @@ type PasswordResetToken struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+type Plan struct {
+	ID              uuid.UUID          `json:"id"`
+	Code            string             `json:"code"`
+	Name            string             `json:"name"`
+	PriceRupiah     int64              `json:"price_rupiah"`
+	BillingInterval string             `json:"billing_interval"`
+	IsActive        bool               `json:"is_active"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
 type PlatformAdmin struct {
 	UserID    uuid.UUID          `json:"user_id"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
@@ -63,6 +88,15 @@ type Session struct {
 	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 	LastUsedAt pgtype.Timestamptz `json:"last_used_at"`
+}
+
+type Subscription struct {
+	ID               uuid.UUID          `json:"id"`
+	TenantID         uuid.UUID          `json:"tenant_id"`
+	PlanID           uuid.UUID          `json:"plan_id"`
+	CurrentPeriodEnd pgtype.Timestamptz `json:"current_period_end"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Tenant struct {

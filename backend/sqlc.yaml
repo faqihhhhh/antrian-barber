@@ -13,5 +13,7 @@ sql:
         overrides:
           - db_type: "uuid"
             go_type: "github.com/google/uuid.UUID"
+          - column: "invoices.confirmed_by"
+            go_type: "github.com/jackc/pgx/v5/pgtype.UUID"
           - db_type: "citext"
             go_type: "string"

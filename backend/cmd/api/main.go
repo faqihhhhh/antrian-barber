@@ -16,6 +16,7 @@ import (
 	"kapsflow/internal/config"
 	"kapsflow/internal/identity"
 	"kapsflow/internal/tenant"
+	"kapsflow/internal/billing"
 )
 
 func main() {
@@ -47,10 +48,11 @@ func run(log *slog.Logger) error {
 	mailer := identity.NewMailer(cfg.ResendAPIKey, cfg.EmailFrom, log)
 	identitySvc := identity.NewService(pool, mailer, log, cfg.PublicBaseURL)
 	tenantSvc := tenant.NewService(pool)
+	billingSvc := billing.NewService(pool)
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           api.New(log, pool, identitySvc, tenantSvc),
+		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

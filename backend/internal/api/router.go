@@ -10,13 +10,14 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"kapsflow/internal/billing"
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/identity"
 	"kapsflow/internal/rls"
 	"kapsflow/internal/tenant"
 )
 
-func New(log *slog.Logger, pool *pgxpool.Pool, identitySvc *identity.Service, tenantSvc *tenant.Service) http.Handler {
+func New(log *slog.Logger, pool *pgxpool.Pool, identitySvc *identity.Service, tenantSvc *tenant.Service, billingSvc *billing.Service) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -34,10 +35,22 @@ func New(log *slog.Logger, pool *pgxpool.Pool, identitySvc *identity.Service, te
 	r.Get("/healthz", healthHandler(log, pool))
 	r.Mount("/v1/auth", identity.Routes(identitySvc, log))
 
+	r.Route("/v1/plans", func(pr chi.Router) {
+		billing.RegisterPublicRoutes(pr, billingSvc, log)
+	})
+
 	r.Route("/v1/tenants", func(tr chi.Router) {
 		tr.Use(identity.RequireAuth(identitySvc, log))
 		tr.Use(rls.Middleware(pool, log))
-		tr.Mount("/", tenant.Routes(tenantSvc, log))
+		tenant.RegisterRoutes(tr, tenantSvc, log, billing.RequireActiveSubscription(billingSvc, log))
+		billing.RegisterTenantRoutes(tr, billingSvc, log)
+	})
+
+	r.Route("/v1/admin", func(ar chi.Router) {
+		ar.Use(identity.RequireAuth(identitySvc, log))
+		ar.Use(rls.Middleware(pool, log))
+		ar.Use(billing.RequirePlatformAdmin(billingSvc, log))
+		billing.RegisterAdminRoutes(ar, billingSvc, log)
 	})
 
 	return r

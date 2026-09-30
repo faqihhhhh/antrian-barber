@@ -19,6 +19,10 @@ func (e *AppError) Error() string {
 	return e.Message
 }
 
+func PaymentRequired(code, message string, err error) *AppError {
+	return &AppError{Status: http.StatusPaymentRequired, Code: code, Message: message, Err: err}
+}
+
 func (e *AppError) Unwrap() error { return e.Err }
 
 func BadRequest(code, message string, err error) *AppError {
