@@ -15,7 +15,7 @@ import (
 const createOutlet = `-- name: CreateOutlet :one
 INSERT INTO outlets (tenant_id, name, timezone, address)
 VALUES ($1, $2, $3, $4)
-RETURNING id, tenant_id, name, timezone, address, created_at, updated_at
+RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes
 `
 
 type CreateOutletParams struct {
@@ -41,12 +41,14 @@ func (q *Queries) CreateOutlet(ctx context.Context, arg CreateOutletParams) (Out
 		&i.Address,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DpPriceRupiah,
+		&i.DefaultDurationMinutes,
 	)
 	return i, err
 }
 
 const listOutletsByTenant = `-- name: ListOutletsByTenant :many
-SELECT id, tenant_id, name, timezone, address, created_at, updated_at FROM outlets WHERE tenant_id = $1 ORDER BY created_at
+SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes FROM outlets WHERE tenant_id = $1 ORDER BY created_at
 `
 
 func (q *Queries) ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Outlet, error) {
@@ -66,6 +68,8 @@ func (q *Queries) ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) (
 			&i.Address,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DpPriceRupiah,
+			&i.DefaultDurationMinutes,
 		); err != nil {
 			return nil, err
 		}
@@ -75,4 +79,31 @@ func (q *Queries) ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateOutletSettings = `-- name: UpdateOutletSettings :one
+UPDATE outlets SET dp_price_rupiah = $2, default_duration_minutes = $3, updated_at = now() WHERE id = $1 RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes
+`
+
+type UpdateOutletSettingsParams struct {
+	ID                     uuid.UUID `json:"id"`
+	DpPriceRupiah          int64     `json:"dp_price_rupiah"`
+	DefaultDurationMinutes int32     `json:"default_duration_minutes"`
+}
+
+func (q *Queries) UpdateOutletSettings(ctx context.Context, arg UpdateOutletSettingsParams) (Outlet, error) {
+	row := q.db.QueryRow(ctx, updateOutletSettings, arg.ID, arg.DpPriceRupiah, arg.DefaultDurationMinutes)
+	var i Outlet
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Name,
+		&i.Timezone,
+		&i.Address,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DpPriceRupiah,
+		&i.DefaultDurationMinutes,
+	)
+	return i, err
 }

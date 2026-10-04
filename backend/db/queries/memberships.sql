@@ -22,3 +22,6 @@ JOIN users u ON u.id = m.user_id
 WHERE m.tenant_id = $1 AND m.roles && ARRAY['admin','kapster']::text[]
 ORDER BY m.created_at;
 
+-- name: GetMembershipForUserAndTenant :one
+SELECT * FROM memberships WHERE tenant_id = $1 AND user_id = $2;
+

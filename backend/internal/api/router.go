@@ -17,6 +17,7 @@ import (
 	"kapsflow/internal/rls"
 	"kapsflow/internal/staff"
 	"kapsflow/internal/tenant"
+	"kapsflow/internal/queue"
 )
 
 func New(
@@ -27,6 +28,7 @@ func New(
 	billingSvc *billing.Service,
 	profileSvc *profile.Service,
 	staffSvc *staff.Service,
+	queueSvc *queue.Service,
 ) http.Handler {
 	r := chi.NewRouter()
 
@@ -57,6 +59,7 @@ func New(
 		billing.RegisterTenantRoutes(tr, billingSvc, log)
 		profile.RegisterRoutes(tr, profileSvc, log, requireActive)
 		staff.RegisterRoutes(tr, staffSvc, log, requireActive)
+		queue.RegisterRoutes(tr, queueSvc, log, requireActive)
 	})
 
 	r.Route("/v1/admin", func(ar chi.Router) {

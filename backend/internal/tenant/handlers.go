@@ -99,3 +99,27 @@ func (h *Handlers) ListOutlets(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.JSON(w, http.StatusOK, outlets)
 }
+
+type updateOutletSettingsRequest struct {
+	DPPriceRupiah          int64 `json:"dp_price_rupiah"`
+	DefaultDurationMinutes int32 `json:"default_duration_minutes"`
+}
+
+func (h *Handlers) UpdateOutletSettings(w http.ResponseWriter, r *http.Request) {
+	outletID, err := uuid.Parse(chi.URLParam(r, "outletID"))
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("outlet_id_tidak_valid", "ID outlet tidak valid", err))
+		return
+	}
+	var req updateOutletSettingsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
+		return
+	}
+	outlet, err := h.svc.UpdateOutletSettings(r.Context(), outletID, req.DPPriceRupiah, req.DefaultDurationMinutes)
+	if err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, outlet)
+}

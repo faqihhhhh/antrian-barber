@@ -32,6 +32,17 @@ type Invoice struct {
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }
 
+type KapsterSessionState struct {
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	QueueSessionID  uuid.UUID          `json:"queue_session_id"`
+	MembershipID    uuid.UUID          `json:"membership_id"`
+	Status          string             `json:"status"`
+	CurrentTicketID pgtype.UUID        `json:"current_ticket_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Membership struct {
 	ID        uuid.UUID          `json:"id"`
 	TenantID  uuid.UUID          `json:"tenant_id"`
@@ -47,13 +58,15 @@ type MembershipOutlet struct {
 }
 
 type Outlet struct {
-	ID        uuid.UUID          `json:"id"`
-	TenantID  uuid.UUID          `json:"tenant_id"`
-	Name      string             `json:"name"`
-	Timezone  string             `json:"timezone"`
-	Address   pgtype.Text        `json:"address"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ID                     uuid.UUID          `json:"id"`
+	TenantID               uuid.UUID          `json:"tenant_id"`
+	Name                   string             `json:"name"`
+	Timezone               string             `json:"timezone"`
+	Address                pgtype.Text        `json:"address"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	DpPriceRupiah          int64              `json:"dp_price_rupiah"`
+	DefaultDurationMinutes int32              `json:"default_duration_minutes"`
 }
 
 type PasswordResetToken struct {
@@ -79,6 +92,19 @@ type Plan struct {
 type PlatformAdmin struct {
 	UserID    uuid.UUID          `json:"user_id"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type QueueSession struct {
+	ID               uuid.UUID          `json:"id"`
+	TenantID         uuid.UUID          `json:"tenant_id"`
+	OutletID         uuid.UUID          `json:"outlet_id"`
+	SessionDate      pgtype.Date        `json:"session_date"`
+	MaxQuota         int32              `json:"max_quota"`
+	NextTicketNumber int32              `json:"next_ticket_number"`
+	Status           string             `json:"status"`
+	CreatedBy        uuid.UUID          `json:"created_by"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Session struct {
@@ -114,6 +140,30 @@ type TenantProfile struct {
 	OnboardingCompletedAt      pgtype.Timestamptz `json:"onboarding_completed_at"`
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+}
+
+type Ticket struct {
+	ID                   uuid.UUID          `json:"id"`
+	TenantID             uuid.UUID          `json:"tenant_id"`
+	QueueSessionID       uuid.UUID          `json:"queue_session_id"`
+	TicketNumber         int32              `json:"ticket_number"`
+	QueuePosition        int32              `json:"queue_position"`
+	Channel              string             `json:"channel"`
+	CustomerName         pgtype.Text        `json:"customer_name"`
+	MatchCode            pgtype.Text        `json:"match_code"`
+	Status               string             `json:"status"`
+	AssignedMembershipID pgtype.UUID        `json:"assigned_membership_id"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
+type TicketEvent struct {
+	ID                uuid.UUID          `json:"id"`
+	TenantID          uuid.UUID          `json:"tenant_id"`
+	TicketID          uuid.UUID          `json:"ticket_id"`
+	EventType         string             `json:"event_type"`
+	ActorMembershipID pgtype.UUID        `json:"actor_membership_id"`
+	OccurredAt        pgtype.Timestamptz `json:"occurred_at"`
 }
 
 type User struct {

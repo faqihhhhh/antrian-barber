@@ -82,3 +82,13 @@ func (s *Service) ListOutlets(ctx context.Context, tenantID uuid.UUID) ([]db.Out
 	}
 	return httpx.NonNil(outlets), nil
 }
+
+func (s *Service) UpdateOutletSettings(ctx context.Context, outletID uuid.UUID, dpPriceRupiah int64, defaultDurationMinutes int32) (db.Outlet, error) {
+	outlet, err := s.queries(ctx).UpdateOutletSettings(ctx, db.UpdateOutletSettingsParams{
+		ID: outletID, DpPriceRupiah: dpPriceRupiah, DefaultDurationMinutes: defaultDurationMinutes,
+	})
+	if err != nil {
+		return db.Outlet{}, httpx.Internal(fmt.Errorf("memperbarui pengaturan outlet: %w", err))
+	}
+	return outlet, nil
+}

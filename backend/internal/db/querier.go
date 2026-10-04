@@ -13,41 +13,61 @@ import (
 type Querier interface {
 	ActivateSubscriptionPeriod(ctx context.Context, arg ActivateSubscriptionPeriodParams) error
 	AddMembershipOutlet(ctx context.Context, arg AddMembershipOutletParams) error
+	ClaimNextTicketNumber(ctx context.Context, id uuid.UUID) (int32, error)
+	ClaimNextWaitingTicket(ctx context.Context, queueSessionID uuid.UUID) (Ticket, error)
 	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) (EmailVerificationToken, error)
 	CreateInvoice(ctx context.Context, arg CreateInvoiceParams) (Invoice, error)
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (Membership, error)
 	CreateOutlet(ctx context.Context, arg CreateOutletParams) (Outlet, error)
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (PasswordResetToken, error)
+	CreateQueueSession(ctx context.Context, arg CreateQueueSessionParams) (QueueSession, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateTenant(ctx context.Context, arg CreateTenantParams) error
+	CreateTicket(ctx context.Context, arg CreateTicketParams) (Ticket, error)
+	CreateTicketEvent(ctx context.Context, arg CreateTicketEventParams) error
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteSession(ctx context.Context, tokenHash string) error
 	GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, error)
+	GetKapsterSessionState(ctx context.Context, arg GetKapsterSessionStateParams) (KapsterSessionState, error)
+	GetMembershipForUserAndTenant(ctx context.Context, arg GetMembershipForUserAndTenantParams) (Membership, error)
 	GetPlanByCode(ctx context.Context, code string) (Plan, error)
 	GetPlanByID(ctx context.Context, id uuid.UUID) (Plan, error)
 	GetSubscriptionByTenant(ctx context.Context, tenantID uuid.UUID) (Subscription, error)
 	GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error)
 	GetTenantProfile(ctx context.Context, tenantID uuid.UUID) (TenantProfile, error)
+	GetTicketForUpdate(ctx context.Context, id uuid.UUID) (Ticket, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetValidEmailVerificationToken(ctx context.Context, tokenHash string) (EmailVerificationToken, error)
 	GetValidPasswordResetToken(ctx context.Context, tokenHash string) (PasswordResetToken, error)
 	GetValidSession(ctx context.Context, tokenHash string) (Session, error)
+	IncreaseQueueQuota(ctx context.Context, arg IncreaseQueueQuotaParams) (QueueSession, error)
 	IsPlatformAdmin(ctx context.Context, userID uuid.UUID) (bool, error)
 	ListActivePlans(ctx context.Context) ([]Plan, error)
 	ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) ([]Invoice, error)
+	ListKapsterStatesBySession(ctx context.Context, queueSessionID uuid.UUID) ([]KapsterSessionState, error)
 	ListMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]Membership, error)
 	ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Outlet, error)
 	ListPendingInvoices(ctx context.Context) ([]Invoice, error)
+	ListQueueSessionsByOutlet(ctx context.Context, outletID uuid.UUID) ([]QueueSession, error)
 	ListStaffByTenant(ctx context.Context, tenantID uuid.UUID) ([]ListStaffByTenantRow, error)
 	ListTenants(ctx context.Context) ([]Tenant, error)
+	ListTicketsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	MarkEmailVerificationTokenUsed(ctx context.Context, id uuid.UUID) error
 	MarkInvoicePaid(ctx context.Context, arg MarkInvoicePaidParams) error
 	MarkOnboardingSkippedMidtrans(ctx context.Context, tenantID uuid.UUID) error
 	MarkPasswordResetTokenUsed(ctx context.Context, id uuid.UUID) error
+	MarkTicketCalled(ctx context.Context, arg MarkTicketCalledParams) error
+	MarkTicketCompleted(ctx context.Context, id uuid.UUID) error
+	MarkTicketInProgress(ctx context.Context, id uuid.UUID) error
 	MarkUserEmailVerified(ctx context.Context, id uuid.UUID) error
+	NextWaitingTicketExcluding(ctx context.Context, arg NextWaitingTicketExcludingParams) (Ticket, error)
+	RequeueTicket(ctx context.Context, id uuid.UUID) error
+	SetTicketQueuePosition(ctx context.Context, arg SetTicketQueuePositionParams) error
 	TouchSession(ctx context.Context, id uuid.UUID) error
+	UpdateOutletSettings(ctx context.Context, arg UpdateOutletSettingsParams) (Outlet, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
+	UpsertKapsterSessionState(ctx context.Context, arg UpsertKapsterSessionStateParams) (KapsterSessionState, error)
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) (Subscription, error)
 	UpsertTenantProfileMidtrans(ctx context.Context, arg UpsertTenantProfileMidtransParams) error
 }

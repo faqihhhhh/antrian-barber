@@ -20,6 +20,7 @@ import (
 	"kapsflow/internal/profile"
 	"kapsflow/internal/staff"
 	"kapsflow/internal/tenant"
+	"kapsflow/internal/queue"
 )
 
 func main() {
@@ -53,16 +54,20 @@ func run(log *slog.Logger) error {
 		return err
 	}
 
+	if cfg.DevAutoVerifyEmail {
+		log.Warn("DEV_AUTO_VERIFY aktif — semua akun baru langsung terverifikasi tanpa email. JANGAN aktifkan ini di produksi.")
+	}
 	mailer := identity.NewMailer(cfg.ResendAPIKey, cfg.EmailFrom, log)
-	identitySvc := identity.NewService(pool, mailer, log, cfg.PublicBaseURL)
+	identitySvc := identity.NewService(pool, mailer, log, cfg.PublicBaseURL, cfg.DevAutoVerifyEmail)
 	tenantSvc := tenant.NewService(pool)
 	billingSvc := billing.NewService(pool)
 	profileSvc := profile.NewService(pool, box)
 	staffSvc := staff.NewService(pool, identitySvc)
+	queueSvc := queue.NewService(pool)
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc),
+		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc, queueSvc),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

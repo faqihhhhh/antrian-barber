@@ -24,16 +24,16 @@ const (
 )
 
 type Service struct {
-	q       *db.Queries
-	mailer  Mailer
-	log     *slog.Logger
-	baseURL string // alamat publik backend, dipakai membangun tautan di email
+	q             *db.Queries
+	mailer        Mailer
+	log           *slog.Logger
+	baseURL       string // alamat publik backend, dipakai membangun tautan di email
+	devAutoVerify bool   // true hanya saat DEV_AUTO_VERIFY=true di .env lokal
 }
 
-func NewService(pool *pgxpool.Pool, mailer Mailer, log *slog.Logger, baseURL string) *Service {
-	return &Service{q: db.New(pool), mailer: mailer, log: log, baseURL: baseURL}
+func NewService(pool *pgxpool.Pool, mailer Mailer, log *slog.Logger, baseURL string, devAutoVerify bool) *Service {
+	return &Service{q: db.New(pool), mailer: mailer, log: log, baseURL: baseURL, devAutoVerify: devAutoVerify}
 }
-
 // Register mendaftarkan akun baru dan mengirim email verifikasi. Kalau
 // email sudah ada tapi belum terverifikasi, dianggap percobaan ulang dan
 // email verifikasi dikirim lagi. Kalau sudah terverifikasi, balasannya
@@ -69,6 +69,15 @@ func (s *Service) Register(ctx context.Context, email, password string) error {
 }
 
 func (s *Service) sendVerificationEmail(ctx context.Context, userID uuid.UUID, email string) error {
+	if s.devAutoVerify {
+		// HANYA untuk pengembangan lokal — langsung menandai akun terverifikasi
+		// tanpa membuat token maupun mengirim email sama sekali.
+		if err := s.q.MarkUserEmailVerified(ctx, userID); err != nil {
+			return httpx.Internal(fmt.Errorf("auto-verify (dev): %w", err))
+		}
+		return nil
+	}
+
 	rawToken, err := generateToken()
 	if err != nil {
 		return httpx.Internal(err)
@@ -89,6 +98,7 @@ func (s *Service) sendVerificationEmail(ctx context.Context, userID uuid.UUID, e
 	}
 	return nil
 }
+
 
 func (s *Service) VerifyEmail(ctx context.Context, rawToken string) error {
 	row, err := s.q.GetValidEmailVerificationToken(ctx, hashToken(rawToken))
@@ -226,12 +236,20 @@ func (s *Service) ResetPassword(ctx context.Context, rawToken, newPassword strin
 // dengan langkah-langkah lain — tanpa identity perlu tahu apa pun soal RLS.
 type Querier interface {
 	CreateEmailVerificationToken(ctx context.Context, arg db.CreateEmailVerificationTokenParams) (db.EmailVerificationToken, error)
+	MarkUserEmailVerified(ctx context.Context, userID uuid.UUID) error
 }
 
 // SendVerificationEmailUsing sama seperti alur verifikasi self-registration,
 // tapi memakai Querier dan TTL yang diberikan pemanggil, dan tidak membuat
 // transaksinya sendiri — pemanggil yang bertanggung jawab atas transaksinya.
 func (s *Service) SendVerificationEmailUsing(ctx context.Context, q Querier, userID uuid.UUID, email string, ttl time.Duration) error {
+	if s.devAutoVerify {
+		if err := q.MarkUserEmailVerified(ctx, userID); err != nil {
+			return httpx.Internal(fmt.Errorf("auto-verify (dev): %w", err))
+		}
+		return nil
+	}
+	
 	rawToken, err := generateToken()
 	if err != nil {
 		return httpx.Internal(err)

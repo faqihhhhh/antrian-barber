@@ -16,4 +16,5 @@ func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger, requireActive 
 	r.Get("/", h.ListTenants)
 	r.With(requireActive).Post("/{tenantID}/outlets", h.CreateOutlet)
 	r.Get("/{tenantID}/outlets", h.ListOutlets)
+	r.With(requireActive).Patch("/{tenantID}/outlets/{outletID}/settings", h.UpdateOutletSettings)
 }

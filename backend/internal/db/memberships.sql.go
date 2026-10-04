@@ -52,6 +52,29 @@ func (q *Queries) CreateMembership(ctx context.Context, arg CreateMembershipPara
 	return i, err
 }
 
+const getMembershipForUserAndTenant = `-- name: GetMembershipForUserAndTenant :one
+SELECT id, tenant_id, user_id, roles, created_at, updated_at FROM memberships WHERE tenant_id = $1 AND user_id = $2
+`
+
+type GetMembershipForUserAndTenantParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	UserID   uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) GetMembershipForUserAndTenant(ctx context.Context, arg GetMembershipForUserAndTenantParams) (Membership, error) {
+	row := q.db.QueryRow(ctx, getMembershipForUserAndTenant, arg.TenantID, arg.UserID)
+	var i Membership
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.UserID,
+		&i.Roles,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listMembershipsForUser = `-- name: ListMembershipsForUser :many
 SELECT id, tenant_id, user_id, roles, created_at, updated_at FROM memberships WHERE user_id = $1
 `
