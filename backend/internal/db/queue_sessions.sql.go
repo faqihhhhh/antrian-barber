@@ -64,6 +64,33 @@ func (q *Queries) CreateQueueSession(ctx context.Context, arg CreateQueueSession
 	return i, err
 }
 
+const getQueueSessionByOutletAndDate = `-- name: GetQueueSessionByOutletAndDate :one
+SELECT id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at FROM queue_sessions WHERE outlet_id = $1 AND session_date = $2
+`
+
+type GetQueueSessionByOutletAndDateParams struct {
+	OutletID    uuid.UUID   `json:"outlet_id"`
+	SessionDate pgtype.Date `json:"session_date"`
+}
+
+func (q *Queries) GetQueueSessionByOutletAndDate(ctx context.Context, arg GetQueueSessionByOutletAndDateParams) (QueueSession, error) {
+	row := q.db.QueryRow(ctx, getQueueSessionByOutletAndDate, arg.OutletID, arg.SessionDate)
+	var i QueueSession
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.OutletID,
+		&i.SessionDate,
+		&i.MaxQuota,
+		&i.NextTicketNumber,
+		&i.Status,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const increaseQueueQuota = `-- name: IncreaseQueueQuota :one
 UPDATE queue_sessions SET max_quota = max_quota + $2, updated_at = now() WHERE id = $1 RETURNING id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at
 `

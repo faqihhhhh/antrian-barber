@@ -17,14 +17,24 @@ import (
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/pgerr"
 	"kapsflow/internal/rls"
+
+	crand "crypto/rand"
+	mrand "math/rand/v2"
+
+	"kapsflow/internal/midtrans"
+	"kapsflow/internal/profile"
 )
 
+
 type Service struct {
-	fallback *db.Queries
+	fallback       *db.Queries
+	pool           *pgxpool.Pool
+	profileSvc     *profile.Service
+	midtransClient *midtrans.Client
 }
 
-func NewService(pool *pgxpool.Pool) *Service {
-	return &Service{fallback: db.New(pool)}
+func NewService(pool *pgxpool.Pool, profileSvc *profile.Service, midtransClient *midtrans.Client) *Service {
+	return &Service{fallback: db.New(pool), pool: pool, profileSvc: profileSvc, midtransClient: midtransClient}
 }
 
 func (s *Service) queries(ctx context.Context) *db.Queries {
@@ -343,6 +353,264 @@ func (s *Service) KapsterComplete(ctx context.Context, tenantID, sessionID, user
 	})
 	if err != nil {
 		return httpx.Internal(fmt.Errorf("memperbarui status kapster: %w", err))
+	}
+	return nil
+}
+
+const paymentWindow = 30 * time.Minute
+
+const matchCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // tanpa 0/O, 1/I/L yang mirip
+
+func generateMatchCode() (string, error) {
+	raw := make([]byte, 6)
+	if _, err := crand.Read(raw); err != nil {
+		return "", err
+	}
+	code := make([]byte, 6)
+	for i, v := range raw {
+		code[i] = matchCodeAlphabet[int(v)%len(matchCodeAlphabet)]
+	}
+	return string(code), nil
+}
+
+type BookingResult struct {
+	Ticket        db.Ticket `json:"ticket"`
+	PaymentMethod string    `json:"payment_method"`
+	AmountRupiah  int64     `json:"amount_rupiah"`
+	UniqueCode    int16     `json:"unique_code,omitempty"`
+	QRCodeURL     string    `json:"qr_code_url,omitempty"`
+}
+
+// BookOnline adalah titik masuk pelanggan memesan tiket. Nomor tiket
+// direbut lewat fungsi SECURITY DEFINER (claim_ticket_number_for_booking),
+// bukan lewat UPDATE biasa — lihat catatan di chat soal kenapa.
+func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUserID uuid.UUID, sessionDate time.Time) (*BookingResult, error) {
+	q := s.queries(ctx)
+
+	session, err := q.GetQueueSessionByOutletAndDate(ctx, db.GetQueueSessionByOutletAndDateParams{
+		OutletID: outletID, SessionDate: pgtype.Date{Time: sessionDate, Valid: true},
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, httpx.NotFound("sesi_tidak_ditemukan", "Antrian untuk outlet dan tanggal ini belum dibuka", nil)
+		}
+		return nil, httpx.Internal(fmt.Errorf("ambil sesi antrian: %w", err))
+	}
+
+	num, err := q.ClaimTicketNumberForBooking(ctx, session.ID)
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("klaim nomor tiket: %w", err))
+	}
+	if num == -1 {
+		return nil, httpx.Conflict("tidak_bisa_memesan", "Antrian sudah ditutup atau kuota sudah penuh", nil)
+	}
+
+	matchCode, err := generateMatchCode()
+	if err != nil {
+		return nil, httpx.Internal(err)
+	}
+
+	ticket, err := q.CreateOnlineTicket(ctx, db.CreateOnlineTicketParams{
+		TenantID: tenantID, QueueSessionID: session.ID,
+		TicketNumber: num, QueuePosition: num,
+		MatchCode: pgtype.Text{String: matchCode, Valid: true},
+		CustomerUserID: dbx.UUID(customerUserID),
+	})
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("membuat tiket online: %w", err))
+	}
+
+	outlet, err := q.GetOutletByID(ctx, outletID)
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("ambil data outlet: %w", err))
+	}
+	serverKey, _, isProduction, configured, err := s.profileSvc.GetDecryptedMidtransKeys(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	if configured {
+		paymentID := uuid.New()
+		charge, err := s.midtransClient.ChargeQRIS(ctx, serverKey, isProduction, paymentID.String(), outlet.DpPriceRupiah)
+		if err != nil {
+			return nil, httpx.Internal(fmt.Errorf("midtrans charge gagal: %w", err))
+		}
+		_, err = q.CreateTicketPayment(ctx, db.CreateTicketPaymentParams{
+			ID: paymentID, TenantID: tenantID, TicketID: ticket.ID, CustomerUserID: dbx.UUID(customerUserID),
+			Method: "midtrans", AmountRupiah: outlet.DpPriceRupiah,
+			UniqueCode: pgtype.Int2{}, MidtransOrderID: pgtype.Text{String: charge.OrderID, Valid: true},
+			ExpiresAt: dbx.TS(time.Now().Add(paymentWindow)),
+		})
+		if err != nil {
+			return nil, httpx.Internal(fmt.Errorf("menyimpan pembayaran: %w", err))
+		}
+		return &BookingResult{Ticket: ticket, PaymentMethod: "midtrans", AmountRupiah: outlet.DpPriceRupiah, QRCodeURL: charge.QRCodeURL}, nil
+	}
+
+	// Mode manual: nominal unik per tenant, dikonfirmasi admin.
+	for attempt := 0; attempt < 10; attempt++ {
+		code := int16(1 + mrand.IntN(998))
+		amount := outlet.DpPriceRupiah + int64(code)
+		payment, err := q.CreateTicketPayment(ctx, db.CreateTicketPaymentParams{
+			ID: uuid.New(), TenantID: tenantID, TicketID: ticket.ID, CustomerUserID: dbx.UUID(customerUserID),
+			Method: "manual", AmountRupiah: amount,
+			UniqueCode: pgtype.Int2{Int16: code, Valid: true}, MidtransOrderID: pgtype.Text{},
+			ExpiresAt: dbx.TS(time.Now().Add(paymentWindow)),
+		})
+		if err == nil {
+			_ = payment
+			return &BookingResult{Ticket: ticket, PaymentMethod: "manual", AmountRupiah: amount, UniqueCode: code}, nil
+		}
+		if pgerr.IsUniqueViolation(err) {
+			continue
+		}
+		return nil, httpx.Internal(fmt.Errorf("membuat pembayaran manual: %w", err))
+	}
+	return nil, httpx.Internal(fmt.Errorf("gagal menemukan nominal unik"))
+}
+
+// RecheckPayment dipanggil pelanggan (atau admin) untuk menanyakan ulang
+// status ke Midtrans secara langsung — berguna untuk pengembangan lokal
+// yang tidak punya URL publik untuk menerima webhook, dan juga jaring
+// pengaman kalau webhook produksi suatu saat terlambat/hilang.
+func (s *Service) RecheckPayment(ctx context.Context, tenantID, ticketID uuid.UUID) (db.TicketPayment, error) {
+	q := s.queries(ctx)
+
+	payment, err := q.GetTicketPaymentByTicketID(ctx, ticketID)
+	if err != nil {
+		return db.TicketPayment{}, httpx.NotFound("pembayaran_tidak_ditemukan", "Pembayaran tidak ditemukan", nil)
+	}
+	if payment.Method != "midtrans" || payment.Status != "pending" {
+		return payment, nil
+	}
+	serverKey, _, isProduction, configured, err := s.profileSvc.GetDecryptedMidtransKeys(ctx, tenantID)
+	if err != nil || !configured {
+		return db.TicketPayment{}, httpx.Internal(fmt.Errorf("midtrans tidak terkonfigurasi untuk tenant ini"))
+	}
+
+	status, err := s.midtransClient.CheckStatus(ctx, serverKey, isProduction, payment.MidtransOrderID.String)
+	if err != nil {
+		return db.TicketPayment{}, httpx.Internal(fmt.Errorf("mengecek status midtrans: %w", err))
+	}
+
+	switch {
+	case midtrans.IsPaid(status.TransactionStatus, status.FraudStatus):
+		if err := s.settlePaymentPaid(ctx, q, payment); err != nil {
+			return db.TicketPayment{}, err
+		}
+	case midtrans.IsFailed(status.TransactionStatus):
+		if err := s.settlePaymentFailed(ctx, q, payment); err != nil {
+			return db.TicketPayment{}, err
+		}
+	}
+	return q.GetTicketPaymentByTicketID(ctx, ticketID)
+}
+
+func (s *Service) settlePaymentPaid(ctx context.Context, q *db.Queries, payment db.TicketPayment) error {
+	if err := q.MarkTicketPaymentPaid(ctx, db.MarkTicketPaymentPaidParams{ID: payment.ID, ConfirmedBy: pgtype.UUID{}}); err != nil {
+		return httpx.Internal(fmt.Errorf("menandai pembayaran lunas: %w", err))
+	}
+	if err := q.MarkTicketWaiting(ctx, payment.TicketID); err != nil {
+		return httpx.Internal(fmt.Errorf("memasukkan tiket ke antrian: %w", err))
+	}
+	return nil
+}
+
+func (s *Service) settlePaymentFailed(ctx context.Context, q *db.Queries, payment db.TicketPayment) error {
+	if err := q.MarkTicketPaymentFailed(ctx, payment.ID); err != nil {
+		return httpx.Internal(fmt.Errorf("menandai pembayaran gagal: %w", err))
+	}
+	if err := q.CancelTicket(ctx, payment.TicketID); err != nil {
+		return httpx.Internal(fmt.Errorf("membatalkan tiket: %w", err))
+	}
+	return nil
+}
+
+// ProcessMidtransWebhook dipanggil dari handler yang sudah dibungkus
+// rls.RunAsSystem — TIDAK ada pengguna login di baliknya, jadi fungsi ini
+// sendiri yang memvalidasi tanda tangan sebelum mempercayai apa pun di body.
+func (s *Service) ProcessMidtransWebhook(ctx context.Context, orderID, statusCode, grossAmount, signature, txStatus, fraudStatus string) error {
+	q := s.queries(ctx)
+
+	paymentID, err := uuid.Parse(orderID)
+	if err != nil {
+		return httpx.BadRequest("order_id_tidak_valid", "order_id tidak valid", err)
+	}
+	payment, err := q.GetTicketPaymentByID(ctx, paymentID)
+	if err != nil {
+		return httpx.NotFound("pembayaran_tidak_ditemukan", "Pembayaran tidak ditemukan", nil)
+	}
+	
+	serverKey, _, _, configured, err := s.profileSvc.GetDecryptedMidtransKeys(ctx, payment.TenantID)
+	if err != nil || !configured {
+		return httpx.Internal(fmt.Errorf("midtrans tidak terkonfigurasi untuk tenant %s", payment.TenantID))
+	}
+	if !midtrans.VerifySignature(orderID, statusCode, grossAmount, serverKey, signature) {
+		return httpx.Unauthorized("tanda_tangan_tidak_valid", "Tanda tangan notifikasi tidak valid", nil)
+	}
+
+	if payment.Status != "pending" {
+		return nil // notifikasi duplikat, sudah diproses — abaikan dengan tenang
+	}
+
+	switch {
+	case midtrans.IsPaid(txStatus, fraudStatus):
+		return s.settlePaymentPaid(ctx, q, payment)
+	case midtrans.IsFailed(txStatus):
+		return s.settlePaymentFailed(ctx, q, payment)
+	}
+	return nil
+}
+
+// --- Admin: konfirmasi DP manual & pelunasan akhir ---
+
+func (s *Service) ConfirmManualPayment(ctx context.Context, tenantID, ticketID, adminUserID uuid.UUID) error {
+	q := s.queries(ctx)
+	_, err := s.requireAdmin(ctx, q, tenantID, adminUserID)
+	if err != nil {
+		return err
+	}
+	payment, err := q.GetTicketPaymentByTicketID(ctx, ticketID)
+	if err != nil {
+		return httpx.NotFound("pembayaran_tidak_ditemukan", "Pembayaran tidak ditemukan", nil)
+	}
+	if payment.Method != "manual" {
+		return httpx.BadRequest("bukan_pembayaran_manual", "Pembayaran ini bukan mode manual", nil)
+	}
+	if payment.Status != "pending" {
+		return httpx.Conflict("sudah_diproses", "Pembayaran ini sudah diproses sebelumnya", nil)
+	}
+	if err := q.MarkTicketPaymentPaid(ctx, db.MarkTicketPaymentPaidParams{ID: payment.ID, ConfirmedBy: dbx.UUID(adminUserID)}); err != nil {
+		return httpx.Internal(fmt.Errorf("menandai pembayaran lunas: %w", err))
+	}
+	if err := q.MarkTicketWaiting(ctx, ticketID); err != nil {
+		return httpx.Internal(fmt.Errorf("memasukkan tiket ke antrian: %w", err))
+	}
+	return nil
+}
+
+func (s *Service) ListAwaitingSettlement(ctx context.Context, sessionID uuid.UUID) ([]db.Ticket, error) {
+	tickets, err := s.queries(ctx).ListTicketsAwaitingSettlement(ctx, sessionID)
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("ambil daftar penyelesaian pembayaran: %w", err))
+	}
+	return httpx.NonNil(tickets), nil
+}
+
+func (s *Service) ConfirmFinalPayment(ctx context.Context, tenantID, ticketID, adminUserID uuid.UUID, totalAmount int64) error {
+	q := s.queries(ctx)
+	if totalAmount <= 0 {
+		return httpx.BadRequest("jumlah_tidak_valid", "Jumlah total pembayaran harus lebih dari 0", nil)
+	}
+	_, err := s.requireAdmin(ctx, q, tenantID, adminUserID)
+	if err != nil {
+		return err
+	}
+	if err := q.ConfirmTicketFinalPayment(ctx, db.ConfirmTicketFinalPaymentParams{
+		ID: ticketID, FinalAmountRupiah: pgtype.Int8{Int64: totalAmount, Valid: true},
+		FinalPaymentConfirmedBy: dbx.UUID(adminUserID),
+	}); err != nil {
+		return httpx.Internal(fmt.Errorf("mengonfirmasi pelunasan: %w", err))
 	}
 	return nil
 }

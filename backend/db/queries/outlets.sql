@@ -8,3 +8,6 @@ SELECT * FROM outlets WHERE tenant_id = $1 ORDER BY created_at;
 
 -- name: UpdateOutletSettings :one
 UPDATE outlets SET dp_price_rupiah = $2, default_duration_minutes = $3, updated_at = now() WHERE id = $1 RETURNING *;
+
+-- name: GetOutletByID :one
+SELECT * FROM outlets WHERE id = $1;

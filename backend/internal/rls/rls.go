@@ -11,6 +11,7 @@ import (
 
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/identity"
+	"github.com/google/uuid"
 )
 
 type ctxKey string
@@ -60,4 +61,32 @@ func Middleware(pool *pgxpool.Pool, log *slog.Logger) func(http.Handler) http.Ha
 			}
 		})
 	}
+}
+
+// SystemUserID adalah akun sintetis (dibuat lewat migrasi) untuk transaksi
+// yang tidak dipicu pengguna login — webhook Midtrans, nanti job terjadwal
+// di Fase 8.
+var SystemUserID = uuid.MustParse("00000000-0000-0000-0000-000000000001")
+
+// RunAsSystem sama seperti Middleware, tapi untuk kode yang dijalankan di
+// luar siklus request HTTP biasa. Karena pengguna sistem ditandai platform
+// admin di database, app_has_tenant_access selalu true untuknya — artinya
+// fn di dalam SEPENUHNYA bertanggung jawab melakukan validasinya sendiri
+// sebelum mengubah data, persis seperti SECURITY DEFINER.
+func RunAsSystem(ctx context.Context, pool *pgxpool.Pool, fn func(ctx context.Context) error) error {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `SELECT set_config('app.user_id', $1, true)`, SystemUserID.String()); err != nil {
+		return err
+	}
+
+	fnCtx := context.WithValue(ctx, txContextKey, tx)
+	if err := fn(fnCtx); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }

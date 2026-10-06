@@ -18,11 +18,12 @@ import (
 
 type Service struct {
 	fallback *db.Queries
+	pool     *pgxpool.Pool
 	box      *cryptox.Box
 }
 
 func NewService(pool *pgxpool.Pool, box *cryptox.Box) *Service {
-	return &Service{fallback: db.New(pool), box: box}
+	return &Service{fallback: db.New(pool), pool: pool, box: box}
 }
 
 func (s *Service) queries(ctx context.Context) *db.Queries {
@@ -53,7 +54,7 @@ func (s *Service) GetProfile(ctx context.Context, tenantID uuid.UUID) (Info, err
 
 // SetMidtransKeys mengenkripsi lalu menyimpan kunci Midtrans milik owner.
 // Kunci mentahnya tidak pernah disimpan di log maupun dikembalikan lewat API.
-func (s *Service) SetMidtransKeys(ctx context.Context, tenantID uuid.UUID, serverKey, clientKey string) error {
+func (s *Service) SetMidtransKeys(ctx context.Context, tenantID uuid.UUID, serverKey, clientKey string, isProduction bool) error {
 	if serverKey == "" || clientKey == "" {
 		return httpx.BadRequest("kunci_midtrans_wajib_diisi", "Server key dan client key Midtrans wajib diisi", nil)
 	}
@@ -70,6 +71,7 @@ func (s *Service) SetMidtransKeys(ctx context.Context, tenantID uuid.UUID, serve
 		TenantID:                   tenantID,
 		MidtransServerKeyEncrypted: pgtype.Text{String: encServer, Valid: true},
 		MidtransClientKeyEncrypted: pgtype.Text{String: encClient, Valid: true},
+		MidtransIsProduction:       isProduction,
 	})
 	if err != nil {
 		return httpx.Internal(fmt.Errorf("menyimpan kunci midtrans: %w", err))
@@ -82,4 +84,36 @@ func (s *Service) SkipMidtransForNow(ctx context.Context, tenantID uuid.UUID) er
 		return httpx.Internal(fmt.Errorf("menandai onboarding: %w", err))
 	}
 	return nil
+}
+
+// GetDecryptedMidtransKeys mendekripsi kunci Midtrans tenant untuk dipakai
+// internal (memanggil API Midtrans) — TIDAK PERNAH diekspos lewat handler HTTP.
+
+func (s *Service) GetDecryptedMidtransKeys(ctx context.Context, tenantID uuid.UUID) (serverKey, clientKey string, isProduction, configured bool, err error) {
+	runErr := rls.RunAsSystem(ctx, s.pool, func(sysCtx context.Context) error {
+		p, qErr := s.queries(sysCtx).GetTenantProfile(sysCtx, tenantID)
+		if qErr != nil {
+			if errors.Is(qErr, pgx.ErrNoRows) {
+				return nil
+			}
+			return httpx.Internal(fmt.Errorf("ambil profil tenant: %w", qErr))
+		}
+		if !p.MidtransServerKeyEncrypted.Valid || !p.MidtransClientKeyEncrypted.Valid {
+			return nil
+		}
+		sk, dErr := s.box.Decrypt(p.MidtransServerKeyEncrypted.String)
+		if dErr != nil {
+			return httpx.Internal(fmt.Errorf("dekripsi server key: %w", dErr))
+		}
+		ck, dErr := s.box.Decrypt(p.MidtransClientKeyEncrypted.String)
+		if dErr != nil {
+			return httpx.Internal(fmt.Errorf("dekripsi client key: %w", dErr))
+		}
+		serverKey, clientKey, isProduction, configured = sk, ck, p.MidtransIsProduction, true
+		return nil
+	})
+	if runErr != nil {
+		return "", "", false, false, runErr
+	}
+	return serverKey, clientKey, isProduction, configured, nil
 }

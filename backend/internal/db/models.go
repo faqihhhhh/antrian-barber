@@ -140,21 +140,26 @@ type TenantProfile struct {
 	OnboardingCompletedAt      pgtype.Timestamptz `json:"onboarding_completed_at"`
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	MidtransIsProduction       bool               `json:"midtrans_is_production"`
 }
 
 type Ticket struct {
-	ID                   uuid.UUID          `json:"id"`
-	TenantID             uuid.UUID          `json:"tenant_id"`
-	QueueSessionID       uuid.UUID          `json:"queue_session_id"`
-	TicketNumber         int32              `json:"ticket_number"`
-	QueuePosition        int32              `json:"queue_position"`
-	Channel              string             `json:"channel"`
-	CustomerName         pgtype.Text        `json:"customer_name"`
-	MatchCode            pgtype.Text        `json:"match_code"`
-	Status               string             `json:"status"`
-	AssignedMembershipID pgtype.UUID        `json:"assigned_membership_id"`
-	CreatedAt            pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	ID                      uuid.UUID          `json:"id"`
+	TenantID                uuid.UUID          `json:"tenant_id"`
+	QueueSessionID          uuid.UUID          `json:"queue_session_id"`
+	TicketNumber            int32              `json:"ticket_number"`
+	QueuePosition           int32              `json:"queue_position"`
+	Channel                 string             `json:"channel"`
+	CustomerName            pgtype.Text        `json:"customer_name"`
+	MatchCode               pgtype.Text        `json:"match_code"`
+	Status                  string             `json:"status"`
+	AssignedMembershipID    pgtype.UUID        `json:"assigned_membership_id"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+	CustomerUserID          pgtype.UUID        `json:"customer_user_id"`
+	FinalAmountRupiah       pgtype.Int8        `json:"final_amount_rupiah"`
+	FinalPaymentConfirmedBy pgtype.UUID        `json:"final_payment_confirmed_by"`
+	FinalPaymentConfirmedAt pgtype.Timestamptz `json:"final_payment_confirmed_at"`
 }
 
 type TicketEvent struct {
@@ -164,6 +169,23 @@ type TicketEvent struct {
 	EventType         string             `json:"event_type"`
 	ActorMembershipID pgtype.UUID        `json:"actor_membership_id"`
 	OccurredAt        pgtype.Timestamptz `json:"occurred_at"`
+}
+
+type TicketPayment struct {
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	TicketID        uuid.UUID          `json:"ticket_id"`
+	CustomerUserID  pgtype.UUID        `json:"customer_user_id"`
+	Method          string             `json:"method"`
+	AmountRupiah    int64              `json:"amount_rupiah"`
+	UniqueCode      pgtype.Int2        `json:"unique_code"`
+	MidtransOrderID pgtype.Text        `json:"midtrans_order_id"`
+	Status          string             `json:"status"`
+	ConfirmedBy     pgtype.UUID        `json:"confirmed_by"`
+	PaidAt          pgtype.Timestamptz `json:"paid_at"`
+	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 }
 
 type User struct {

@@ -47,6 +47,27 @@ func (q *Queries) CreateOutlet(ctx context.Context, arg CreateOutletParams) (Out
 	return i, err
 }
 
+const getOutletByID = `-- name: GetOutletByID :one
+SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes FROM outlets WHERE id = $1
+`
+
+func (q *Queries) GetOutletByID(ctx context.Context, id uuid.UUID) (Outlet, error) {
+	row := q.db.QueryRow(ctx, getOutletByID, id)
+	var i Outlet
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Name,
+		&i.Timezone,
+		&i.Address,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DpPriceRupiah,
+		&i.DefaultDurationMinutes,
+	)
+	return i, err
+}
+
 const listOutletsByTenant = `-- name: ListOutletsByTenant :many
 SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes FROM outlets WHERE tenant_id = $1 ORDER BY created_at
 `

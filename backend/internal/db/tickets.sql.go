@@ -12,8 +12,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const cancelTicket = `-- name: CancelTicket :exec
+UPDATE tickets SET status = 'canceled', updated_at = now() WHERE id = $1
+`
+
+func (q *Queries) CancelTicket(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, cancelTicket, id)
+	return err
+}
+
 const claimNextWaitingTicket = `-- name: ClaimNextWaitingTicket :one
-SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at FROM tickets
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at FROM tickets
 WHERE queue_session_id = $1 AND status = 'waiting'
 ORDER BY queue_position
 LIMIT 1
@@ -36,6 +45,72 @@ func (q *Queries) ClaimNextWaitingTicket(ctx context.Context, queueSessionID uui
 		&i.AssignedMembershipID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CustomerUserID,
+		&i.FinalAmountRupiah,
+		&i.FinalPaymentConfirmedBy,
+		&i.FinalPaymentConfirmedAt,
+	)
+	return i, err
+}
+
+const confirmTicketFinalPayment = `-- name: ConfirmTicketFinalPayment :exec
+UPDATE tickets SET final_amount_rupiah = $2, final_payment_confirmed_by = $3, final_payment_confirmed_at = now(), updated_at = now()
+WHERE id = $1 AND status = 'completed'
+`
+
+type ConfirmTicketFinalPaymentParams struct {
+	ID                      uuid.UUID   `json:"id"`
+	FinalAmountRupiah       pgtype.Int8 `json:"final_amount_rupiah"`
+	FinalPaymentConfirmedBy pgtype.UUID `json:"final_payment_confirmed_by"`
+}
+
+func (q *Queries) ConfirmTicketFinalPayment(ctx context.Context, arg ConfirmTicketFinalPaymentParams) error {
+	_, err := q.db.Exec(ctx, confirmTicketFinalPayment, arg.ID, arg.FinalAmountRupiah, arg.FinalPaymentConfirmedBy)
+	return err
+}
+
+const createOnlineTicket = `-- name: CreateOnlineTicket :one
+INSERT INTO tickets (tenant_id, queue_session_id, ticket_number, queue_position, channel, match_code, customer_user_id, status)
+VALUES ($1, $2, $3, $4, 'online', $5, $6, 'pending_payment')
+RETURNING id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at
+`
+
+type CreateOnlineTicketParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	QueueSessionID uuid.UUID   `json:"queue_session_id"`
+	TicketNumber   int32       `json:"ticket_number"`
+	QueuePosition  int32       `json:"queue_position"`
+	MatchCode      pgtype.Text `json:"match_code"`
+	CustomerUserID pgtype.UUID `json:"customer_user_id"`
+}
+
+func (q *Queries) CreateOnlineTicket(ctx context.Context, arg CreateOnlineTicketParams) (Ticket, error) {
+	row := q.db.QueryRow(ctx, createOnlineTicket,
+		arg.TenantID,
+		arg.QueueSessionID,
+		arg.TicketNumber,
+		arg.QueuePosition,
+		arg.MatchCode,
+		arg.CustomerUserID,
+	)
+	var i Ticket
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.QueueSessionID,
+		&i.TicketNumber,
+		&i.QueuePosition,
+		&i.Channel,
+		&i.CustomerName,
+		&i.MatchCode,
+		&i.Status,
+		&i.AssignedMembershipID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.CustomerUserID,
+		&i.FinalAmountRupiah,
+		&i.FinalPaymentConfirmedBy,
+		&i.FinalPaymentConfirmedAt,
 	)
 	return i, err
 }
@@ -43,7 +118,7 @@ func (q *Queries) ClaimNextWaitingTicket(ctx context.Context, queueSessionID uui
 const createTicket = `-- name: CreateTicket :one
 INSERT INTO tickets (tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at
+RETURNING id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at
 `
 
 type CreateTicketParams struct {
@@ -80,12 +155,44 @@ func (q *Queries) CreateTicket(ctx context.Context, arg CreateTicketParams) (Tic
 		&i.AssignedMembershipID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CustomerUserID,
+		&i.FinalAmountRupiah,
+		&i.FinalPaymentConfirmedBy,
+		&i.FinalPaymentConfirmedAt,
+	)
+	return i, err
+}
+
+const getTicketByID = `-- name: GetTicketByID :one
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at FROM tickets WHERE id = $1
+`
+
+func (q *Queries) GetTicketByID(ctx context.Context, id uuid.UUID) (Ticket, error) {
+	row := q.db.QueryRow(ctx, getTicketByID, id)
+	var i Ticket
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.QueueSessionID,
+		&i.TicketNumber,
+		&i.QueuePosition,
+		&i.Channel,
+		&i.CustomerName,
+		&i.MatchCode,
+		&i.Status,
+		&i.AssignedMembershipID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.CustomerUserID,
+		&i.FinalAmountRupiah,
+		&i.FinalPaymentConfirmedBy,
+		&i.FinalPaymentConfirmedAt,
 	)
 	return i, err
 }
 
 const getTicketForUpdate = `-- name: GetTicketForUpdate :one
-SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at FROM tickets WHERE id = $1 FOR UPDATE
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at FROM tickets WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) GetTicketForUpdate(ctx context.Context, id uuid.UUID) (Ticket, error) {
@@ -104,12 +211,57 @@ func (q *Queries) GetTicketForUpdate(ctx context.Context, id uuid.UUID) (Ticket,
 		&i.AssignedMembershipID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CustomerUserID,
+		&i.FinalAmountRupiah,
+		&i.FinalPaymentConfirmedBy,
+		&i.FinalPaymentConfirmedAt,
 	)
 	return i, err
 }
 
+const listTicketsAwaitingSettlement = `-- name: ListTicketsAwaitingSettlement :many
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at FROM tickets WHERE queue_session_id = $1 AND status = 'completed' AND final_payment_confirmed_at IS NULL ORDER BY updated_at
+`
+
+func (q *Queries) ListTicketsAwaitingSettlement(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error) {
+	rows, err := q.db.Query(ctx, listTicketsAwaitingSettlement, queueSessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Ticket
+	for rows.Next() {
+		var i Ticket
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.QueueSessionID,
+			&i.TicketNumber,
+			&i.QueuePosition,
+			&i.Channel,
+			&i.CustomerName,
+			&i.MatchCode,
+			&i.Status,
+			&i.AssignedMembershipID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.CustomerUserID,
+			&i.FinalAmountRupiah,
+			&i.FinalPaymentConfirmedBy,
+			&i.FinalPaymentConfirmedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTicketsBySession = `-- name: ListTicketsBySession :many
-SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at FROM tickets WHERE queue_session_id = $1 ORDER BY queue_position
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at FROM tickets WHERE queue_session_id = $1 ORDER BY queue_position
 `
 
 func (q *Queries) ListTicketsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error) {
@@ -134,6 +286,10 @@ func (q *Queries) ListTicketsBySession(ctx context.Context, queueSessionID uuid.
 			&i.AssignedMembershipID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.CustomerUserID,
+			&i.FinalAmountRupiah,
+			&i.FinalPaymentConfirmedBy,
+			&i.FinalPaymentConfirmedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -177,8 +333,17 @@ func (q *Queries) MarkTicketInProgress(ctx context.Context, id uuid.UUID) error 
 	return err
 }
 
+const markTicketWaiting = `-- name: MarkTicketWaiting :exec
+UPDATE tickets SET status = 'waiting', updated_at = now() WHERE id = $1 AND status = 'pending_payment'
+`
+
+func (q *Queries) MarkTicketWaiting(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, markTicketWaiting, id)
+	return err
+}
+
 const nextWaitingTicketExcluding = `-- name: NextWaitingTicketExcluding :one
-SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at FROM tickets
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at FROM tickets
 WHERE queue_session_id = $1 AND status = 'waiting' AND id != $2
 ORDER BY queue_position
 LIMIT 1
@@ -206,6 +371,10 @@ func (q *Queries) NextWaitingTicketExcluding(ctx context.Context, arg NextWaitin
 		&i.AssignedMembershipID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CustomerUserID,
+		&i.FinalAmountRupiah,
+		&i.FinalPaymentConfirmedBy,
+		&i.FinalPaymentConfirmedAt,
 	)
 	return i, err
 }

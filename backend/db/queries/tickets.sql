@@ -37,3 +37,25 @@ UPDATE tickets SET queue_position = $2, updated_at = now() WHERE id = $1;
 
 -- name: ListTicketsBySession :many
 SELECT * FROM tickets WHERE queue_session_id = $1 ORDER BY queue_position;
+
+-- name: GetTicketByID :one
+SELECT * FROM tickets WHERE id = $1;
+
+-- name: CreateOnlineTicket :one
+INSERT INTO tickets (tenant_id, queue_session_id, ticket_number, queue_position, channel, match_code, customer_user_id, status)
+VALUES ($1, $2, $3, $4, 'online', $5, $6, 'pending_payment')
+RETURNING *;
+
+-- name: MarkTicketWaiting :exec
+UPDATE tickets SET status = 'waiting', updated_at = now() WHERE id = $1 AND status = 'pending_payment';
+
+-- name: CancelTicket :exec
+UPDATE tickets SET status = 'canceled', updated_at = now() WHERE id = $1;
+
+-- name: ListTicketsAwaitingSettlement :many
+SELECT * FROM tickets WHERE queue_session_id = $1 AND status = 'completed' AND final_payment_confirmed_at IS NULL ORDER BY updated_at;
+
+-- name: ConfirmTicketFinalPayment :exec
+UPDATE tickets SET final_amount_rupiah = $2, final_payment_confirmed_by = $3, final_payment_confirmed_at = now(), updated_at = now()
+WHERE id = $1 AND status = 'completed';
+

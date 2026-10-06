@@ -46,6 +46,9 @@ func New(
 
 	r.Get("/healthz", healthHandler(log, pool))
 	r.Mount("/v1/auth", identity.Routes(identitySvc, log))
+	r.Route("/v1/webhooks", func(wr chi.Router) {
+		queue.RegisterWebhookRoutes(wr, queueSvc, log, pool)
+	})
 
 	r.Route("/v1/plans", func(pr chi.Router) {
 		billing.RegisterPublicRoutes(pr, billingSvc, log)
@@ -59,7 +62,7 @@ func New(
 		billing.RegisterTenantRoutes(tr, billingSvc, log)
 		profile.RegisterRoutes(tr, profileSvc, log, requireActive)
 		staff.RegisterRoutes(tr, staffSvc, log, requireActive)
-		queue.RegisterRoutes(tr, queueSvc, log, requireActive)
+		queue.RegisterRoutes(tr, queueSvc, log, pool, requireActive)
 	})
 
 	r.Route("/v1/admin", func(ar chi.Router) {

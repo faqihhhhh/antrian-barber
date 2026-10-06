@@ -14,3 +14,6 @@ UPDATE queue_sessions
 SET next_ticket_number = next_ticket_number + 1, updated_at = now()
 WHERE id = $1 AND next_ticket_number <= max_quota
 RETURNING (next_ticket_number - 1)::int AS ticket_number;
+
+-- name: GetQueueSessionByOutletAndDate :one
+SELECT * FROM queue_sessions WHERE outlet_id = $1 AND session_date = $2;

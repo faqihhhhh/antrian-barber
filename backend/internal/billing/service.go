@@ -40,12 +40,12 @@ type SubscriptionInfo struct {
 
 type Service struct {
 	fallback *db.Queries
+	pool     *pgxpool.Pool
 }
 
 func NewService(pool *pgxpool.Pool) *Service {
-	return &Service{fallback: db.New(pool)}
+	return &Service{fallback: db.New(pool), pool: pool}
 }
-
 func (s *Service) queries(ctx context.Context) *db.Queries {
 	if tx, ok := rls.TxFromContext(ctx); ok {
 		return db.New(tx)
@@ -224,4 +224,19 @@ func (s *Service) ConfirmInvoicePayment(ctx context.Context, invoiceID, adminUse
 		return httpx.Internal(fmt.Errorf("memperbarui periode langganan: %w", err))
 	}
 	return nil
+}
+
+// GetStatusAsSystem sama seperti GetStatus, tapi lewat rls.RunAsSystem —
+// dipakai RequireActiveSubscription karena pemanggilnya bisa jadi BUKAN
+// anggota tenant sama sekali (pelanggan yang memesan tiket online), yang
+// berarti baris subscriptions akan disembunyikan RLS kalau dicek lewat
+// GetStatus biasa.
+func (s *Service) GetStatusAsSystem(ctx context.Context, tenantID uuid.UUID) (SubscriptionInfo, error) {
+	var info SubscriptionInfo
+	err := rls.RunAsSystem(ctx, s.pool, func(sysCtx context.Context) error {
+		result, err := s.GetStatus(sysCtx, tenantID)
+		info = result
+		return err
+	})
+	return info, err
 }

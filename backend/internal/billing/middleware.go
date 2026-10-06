@@ -25,7 +25,7 @@ func RequireActiveSubscription(svc *Service, log *slog.Logger) func(http.Handler
 				httpx.Error(w, r, log, httpx.BadRequest("tenant_id_tidak_valid", "ID tenant tidak valid", err))
 				return
 			}
-			info, err := svc.GetStatus(r.Context(), tenantID)
+			info, err := svc.GetStatusAsSystem(r.Context(), tenantID)
 			if err != nil {
 				httpx.Error(w, r, log, err)
 				return

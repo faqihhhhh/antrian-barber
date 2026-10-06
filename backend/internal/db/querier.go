@@ -13,11 +13,15 @@ import (
 type Querier interface {
 	ActivateSubscriptionPeriod(ctx context.Context, arg ActivateSubscriptionPeriodParams) error
 	AddMembershipOutlet(ctx context.Context, arg AddMembershipOutletParams) error
+	CancelTicket(ctx context.Context, id uuid.UUID) error
 	ClaimNextTicketNumber(ctx context.Context, id uuid.UUID) (int32, error)
 	ClaimNextWaitingTicket(ctx context.Context, queueSessionID uuid.UUID) (Ticket, error)
+	ClaimTicketNumberForBooking(ctx context.Context, pSessionID uuid.UUID) (int32, error)
+	ConfirmTicketFinalPayment(ctx context.Context, arg ConfirmTicketFinalPaymentParams) error
 	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) (EmailVerificationToken, error)
 	CreateInvoice(ctx context.Context, arg CreateInvoiceParams) (Invoice, error)
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (Membership, error)
+	CreateOnlineTicket(ctx context.Context, arg CreateOnlineTicketParams) (Ticket, error)
 	CreateOutlet(ctx context.Context, arg CreateOutletParams) (Outlet, error)
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (PasswordResetToken, error)
 	CreateQueueSession(ctx context.Context, arg CreateQueueSessionParams) (QueueSession, error)
@@ -25,17 +29,23 @@ type Querier interface {
 	CreateTenant(ctx context.Context, arg CreateTenantParams) error
 	CreateTicket(ctx context.Context, arg CreateTicketParams) (Ticket, error)
 	CreateTicketEvent(ctx context.Context, arg CreateTicketEventParams) error
+	CreateTicketPayment(ctx context.Context, arg CreateTicketPaymentParams) (TicketPayment, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteSession(ctx context.Context, tokenHash string) error
 	GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, error)
 	GetKapsterSessionState(ctx context.Context, arg GetKapsterSessionStateParams) (KapsterSessionState, error)
 	GetMembershipForUserAndTenant(ctx context.Context, arg GetMembershipForUserAndTenantParams) (Membership, error)
+	GetOutletByID(ctx context.Context, id uuid.UUID) (Outlet, error)
 	GetPlanByCode(ctx context.Context, code string) (Plan, error)
 	GetPlanByID(ctx context.Context, id uuid.UUID) (Plan, error)
+	GetQueueSessionByOutletAndDate(ctx context.Context, arg GetQueueSessionByOutletAndDateParams) (QueueSession, error)
 	GetSubscriptionByTenant(ctx context.Context, tenantID uuid.UUID) (Subscription, error)
 	GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error)
 	GetTenantProfile(ctx context.Context, tenantID uuid.UUID) (TenantProfile, error)
+	GetTicketByID(ctx context.Context, id uuid.UUID) (Ticket, error)
 	GetTicketForUpdate(ctx context.Context, id uuid.UUID) (Ticket, error)
+	GetTicketPaymentByID(ctx context.Context, id uuid.UUID) (TicketPayment, error)
+	GetTicketPaymentByTicketID(ctx context.Context, ticketID uuid.UUID) (TicketPayment, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
 	GetValidEmailVerificationToken(ctx context.Context, tokenHash string) (EmailVerificationToken, error)
@@ -52,6 +62,7 @@ type Querier interface {
 	ListQueueSessionsByOutlet(ctx context.Context, outletID uuid.UUID) ([]QueueSession, error)
 	ListStaffByTenant(ctx context.Context, tenantID uuid.UUID) ([]ListStaffByTenantRow, error)
 	ListTenants(ctx context.Context) ([]Tenant, error)
+	ListTicketsAwaitingSettlement(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	ListTicketsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	MarkEmailVerificationTokenUsed(ctx context.Context, id uuid.UUID) error
 	MarkInvoicePaid(ctx context.Context, arg MarkInvoicePaidParams) error
@@ -60,6 +71,9 @@ type Querier interface {
 	MarkTicketCalled(ctx context.Context, arg MarkTicketCalledParams) error
 	MarkTicketCompleted(ctx context.Context, id uuid.UUID) error
 	MarkTicketInProgress(ctx context.Context, id uuid.UUID) error
+	MarkTicketPaymentFailed(ctx context.Context, id uuid.UUID) error
+	MarkTicketPaymentPaid(ctx context.Context, arg MarkTicketPaymentPaidParams) error
+	MarkTicketWaiting(ctx context.Context, id uuid.UUID) error
 	MarkUserEmailVerified(ctx context.Context, id uuid.UUID) error
 	NextWaitingTicketExcluding(ctx context.Context, arg NextWaitingTicketExcludingParams) (Ticket, error)
 	RequeueTicket(ctx context.Context, id uuid.UUID) error

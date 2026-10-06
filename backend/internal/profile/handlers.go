@@ -16,6 +16,7 @@ type Handlers struct {
 	log *slog.Logger
 }
 
+
 func NewHandlers(svc *Service, log *slog.Logger) *Handlers {
 	return &Handlers{svc: svc, log: log}
 }
@@ -35,8 +36,9 @@ func (h *Handlers) GetProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 type setMidtransRequest struct {
-	ServerKey string `json:"server_key"`
-	ClientKey string `json:"client_key"`
+	ServerKey    string `json:"server_key"`
+	ClientKey    string `json:"client_key"`
+	IsProduction bool   `json:"is_production"`
 }
 
 func (h *Handlers) SetMidtrans(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +52,7 @@ func (h *Handlers) SetMidtrans(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
 		return
 	}
-	if err := h.svc.SetMidtransKeys(r.Context(), tenantID, req.ServerKey, req.ClientKey); err != nil {
+		if err := h.svc.SetMidtransKeys(r.Context(), tenantID, req.ServerKey, req.ClientKey, req.IsProduction); err != nil {
 		httpx.Error(w, r, h.log, err)
 		return
 	}
