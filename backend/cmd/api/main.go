@@ -22,6 +22,7 @@ import (
 	"kapsflow/internal/tenant"
 	"kapsflow/internal/queue"
 	"kapsflow/internal/midtrans"
+	"kapsflow/internal/realtime"
 )
 
 func main() {
@@ -65,7 +66,8 @@ func run(log *slog.Logger) error {
 	profileSvc := profile.NewService(pool, box)
 	staffSvc := staff.NewService(pool, identitySvc)
 	midtransClient := midtrans.NewClient()
-	queueSvc := queue.NewService(pool, profileSvc, midtransClient)
+	hub := realtime.NewHub()
+	queueSvc := queue.NewService(pool, profileSvc, midtransClient, hub, log)
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,

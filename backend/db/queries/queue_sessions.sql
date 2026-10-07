@@ -17,3 +17,6 @@ RETURNING (next_ticket_number - 1)::int AS ticket_number;
 
 -- name: GetQueueSessionByOutletAndDate :one
 SELECT * FROM queue_sessions WHERE outlet_id = $1 AND session_date = $2;
+
+-- name: GetQueueSessionByID :one
+SELECT * FROM queue_sessions WHERE id = $1;

@@ -26,6 +26,7 @@ func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger, pool *pgxpool.
 	r.With(requireActive).Post("/{tenantID}/queue-sessions/{sessionID}/skip", h.Skip)
 	r.With(requireActive).Post("/{tenantID}/queue-sessions/{sessionID}/complete", h.Complete)
 
+	r.Get("/{tenantID}/tickets/{ticketID}/estimate", h.EstimateTicketWait)
 	r.Post("/{tenantID}/tickets/{ticketID}/recheck-payment", h.RecheckPayment)
 	r.With(requireActive).Post("/{tenantID}/tickets/{ticketID}/confirm-manual-payment", h.ConfirmManualPayment)
 	r.With(requireActive).Post("/{tenantID}/tickets/{ticketID}/confirm-final-payment", h.ConfirmFinalPayment)
@@ -37,4 +38,11 @@ func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger, pool *pgxpool.
 func RegisterWebhookRoutes(r chi.Router, svc *Service, log *slog.Logger, pool *pgxpool.Pool) {
 	h := NewWebhookHandlers(svc, log, pool)
 	r.Post("/midtrans", h.Midtrans)
+}
+
+// RegisterPublicRoutes TIDAK lewat identity.RequireAuth atau rls.Middleware
+// — info agregat ini memang untuk siapa saja, bahkan yang belum punya akun.
+func RegisterPublicRoutes(r chi.Router, svc *Service, log *slog.Logger) {
+	h := NewHandlers(svc, log)
+	r.Get("/queue-sessions/{sessionID}/stream", h.Stream)
 }

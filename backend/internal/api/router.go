@@ -50,6 +50,10 @@ func New(
 		queue.RegisterWebhookRoutes(wr, queueSvc, log, pool)
 	})
 
+	r.Route("/v1/public", func(pr chi.Router) {
+		queue.RegisterPublicRoutes(pr, queueSvc, log)
+	})
+
 	r.Route("/v1/plans", func(pr chi.Router) {
 		billing.RegisterPublicRoutes(pr, billingSvc, log)
 	})

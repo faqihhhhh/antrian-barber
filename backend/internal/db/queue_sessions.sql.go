@@ -64,6 +64,28 @@ func (q *Queries) CreateQueueSession(ctx context.Context, arg CreateQueueSession
 	return i, err
 }
 
+const getQueueSessionByID = `-- name: GetQueueSessionByID :one
+SELECT id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at FROM queue_sessions WHERE id = $1
+`
+
+func (q *Queries) GetQueueSessionByID(ctx context.Context, id uuid.UUID) (QueueSession, error) {
+	row := q.db.QueryRow(ctx, getQueueSessionByID, id)
+	var i QueueSession
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.OutletID,
+		&i.SessionDate,
+		&i.MaxQuota,
+		&i.NextTicketNumber,
+		&i.Status,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getQueueSessionByOutletAndDate = `-- name: GetQueueSessionByOutletAndDate :one
 SELECT id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at FROM queue_sessions WHERE outlet_id = $1 AND session_date = $2
 `

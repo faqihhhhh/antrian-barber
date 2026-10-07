@@ -2,10 +2,15 @@ package queue
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"slices"
 	"time"
+
+	crand "crypto/rand"
+	mrand "math/rand/v2"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -15,26 +20,24 @@ import (
 	db "kapsflow/internal/db"
 	"kapsflow/internal/dbx"
 	"kapsflow/internal/httpx"
-	"kapsflow/internal/pgerr"
-	"kapsflow/internal/rls"
-
-	crand "crypto/rand"
-	mrand "math/rand/v2"
-
 	"kapsflow/internal/midtrans"
+	"kapsflow/internal/pgerr"
 	"kapsflow/internal/profile"
+	"kapsflow/internal/realtime"
+	"kapsflow/internal/rls"
 )
-
 
 type Service struct {
 	fallback       *db.Queries
 	pool           *pgxpool.Pool
 	profileSvc     *profile.Service
 	midtransClient *midtrans.Client
+	hub            *realtime.Hub
+	log            *slog.Logger
 }
 
-func NewService(pool *pgxpool.Pool, profileSvc *profile.Service, midtransClient *midtrans.Client) *Service {
-	return &Service{fallback: db.New(pool), pool: pool, profileSvc: profileSvc, midtransClient: midtransClient}
+func NewService(pool *pgxpool.Pool, profileSvc *profile.Service, midtransClient *midtrans.Client, hub *realtime.Hub, log *slog.Logger) *Service {
+	return &Service{fallback: db.New(pool), pool: pool, profileSvc: profileSvc, midtransClient: midtransClient, hub: hub, log: log}
 }
 
 func (s *Service) queries(ctx context.Context) *db.Queries {
@@ -145,6 +148,7 @@ func (s *Service) AddOfflineTicket(ctx context.Context, tenantID, sessionID, use
 	}); err != nil {
 		return db.Ticket{}, httpx.Internal(fmt.Errorf("mencatat event dibuat: %w", err))
 	}
+	s.broadcastSnapshot(ctx, q, sessionID)
 	return ticket, nil
 }
 
@@ -213,6 +217,7 @@ func (s *Service) KapsterReady(ctx context.Context, tenantID, sessionID, userID 
 			}); upErr != nil {
 				return nil, httpx.Internal(fmt.Errorf("memperbarui status kapster: %w", upErr))
 			}
+			s.broadcastSnapshot(ctx, q, sessionID)
 			return nil, nil
 		}
 		return nil, httpx.Internal(fmt.Errorf("mengambil tiket berikutnya: %w", err))
@@ -221,6 +226,7 @@ func (s *Service) KapsterReady(ctx context.Context, tenantID, sessionID, userID 
 	if err := s.claimTicket(ctx, q, tenantID, sessionID, membership.ID, ticket); err != nil {
 		return nil, err
 	}
+	s.broadcastSnapshot(ctx, q, sessionID)
 	return &ticket, nil
 }
 
@@ -298,6 +304,7 @@ func (s *Service) KapsterSkip(ctx context.Context, tenantID, sessionID, userID u
 			}); upErr != nil {
 				return nil, httpx.Internal(fmt.Errorf("memperbarui status kapster: %w", upErr))
 			}
+			s.broadcastSnapshot(ctx, q, sessionID)
 			return nil, nil
 		}
 		return nil, httpx.Internal(fmt.Errorf("mencari tiket berikutnya: %w", err))
@@ -321,6 +328,7 @@ func (s *Service) KapsterSkip(ctx context.Context, tenantID, sessionID, userID u
 	if err := s.claimTicket(ctx, q, tenantID, sessionID, membership.ID, next); err != nil {
 		return nil, err
 	}
+	s.broadcastSnapshot(ctx, q, sessionID)
 	return &next, nil
 }
 
@@ -354,6 +362,7 @@ func (s *Service) KapsterComplete(ctx context.Context, tenantID, sessionID, user
 	if err != nil {
 		return httpx.Internal(fmt.Errorf("memperbarui status kapster: %w", err))
 	}
+	s.broadcastSnapshot(ctx, q, sessionID)
 	return nil
 }
 
@@ -513,6 +522,9 @@ func (s *Service) settlePaymentPaid(ctx context.Context, q *db.Queries, payment 
 	if err := q.MarkTicketWaiting(ctx, payment.TicketID); err != nil {
 		return httpx.Internal(fmt.Errorf("memasukkan tiket ke antrian: %w", err))
 	}
+	if ticket, tErr := q.GetTicketByID(ctx, payment.TicketID); tErr == nil {
+		s.broadcastSnapshot(ctx, q, ticket.QueueSessionID)
+	}
 	return nil
 }
 
@@ -586,6 +598,9 @@ func (s *Service) ConfirmManualPayment(ctx context.Context, tenantID, ticketID, 
 	if err := q.MarkTicketWaiting(ctx, ticketID); err != nil {
 		return httpx.Internal(fmt.Errorf("memasukkan tiket ke antrian: %w", err))
 	}
+	if ticket, tErr := q.GetTicketByID(ctx, ticketID); tErr == nil {
+		s.broadcastSnapshot(ctx, q, ticket.QueueSessionID)
+	}
 	return nil
 }
 
@@ -613,4 +628,144 @@ func (s *Service) ConfirmFinalPayment(ctx context.Context, tenantID, ticketID, a
 		return httpx.Internal(fmt.Errorf("mengonfirmasi pelunasan: %w", err))
 	}
 	return nil
+}
+
+
+// --- Realtime & estimasi waktu tunggu ---
+
+type SessionSnapshot struct {
+	SessionID            uuid.UUID `json:"session_id"`
+	Status               string    `json:"status"`
+	WaitingCount         int64     `json:"waiting_count"`
+	ActiveKapsters       int64     `json:"active_kapsters"`
+	EstimatedWaitMinutes float64   `json:"estimated_wait_minutes"`
+	UpdatedAt            time.Time `json:"updated_at"`
+}
+
+func (s *Service) buildSnapshot(ctx context.Context, q *db.Queries, sessionID uuid.UUID) (SessionSnapshot, error) {
+	session, err := q.GetQueueSessionByID(ctx, sessionID)
+	if err != nil {
+		return SessionSnapshot{}, err
+	}
+	waitingCount, err := q.CountWaitingInSession(ctx, sessionID)
+	if err != nil {
+		return SessionSnapshot{}, err
+	}
+	activeKapsters, err := q.CountActiveKapsters(ctx, sessionID)
+	if err != nil {
+		return SessionSnapshot{}, err
+	}
+	avgMinutes, err := q.GetAverageCallIntervalMinutes(ctx, session.OutletID)
+	if err != nil {
+		return SessionSnapshot{}, err
+	}
+	outlet, err := q.GetOutletByID(ctx, session.OutletID)
+	if err != nil {
+		return SessionSnapshot{}, err
+	}
+
+	perRound := float64(outlet.DefaultDurationMinutes)
+	if avgMinutes >= 0 {
+		perRound = avgMinutes
+	}
+	divisor := activeKapsters
+	if divisor == 0 {
+		divisor = 1
+	}
+
+	return SessionSnapshot{
+		SessionID:            sessionID,
+		Status:               session.Status,
+		WaitingCount:         waitingCount,
+		ActiveKapsters:       activeKapsters,
+		EstimatedWaitMinutes: (float64(waitingCount) / float64(divisor)) * perRound,
+		UpdatedAt:            time.Now(),
+	}, nil
+}
+
+// broadcastSnapshot dipanggil dengan q dari transaksi yang SAMA dengan aksi
+// yang baru saja selesai — murah, dan selalu konsisten dengan apa yang baru
+// di-commit.
+func (s *Service) broadcastSnapshot(ctx context.Context, q *db.Queries, sessionID uuid.UUID) {
+	snap, err := s.buildSnapshot(ctx, q, sessionID)
+	if err != nil {
+		s.log.Error("gagal membangun snapshot realtime", "err", err, "session_id", sessionID)
+		return
+	}
+	payload, _ := json.Marshal(snap)
+	s.hub.Publish(sessionID.String(), payload)
+}
+
+// GetPublicSnapshot dipakai endpoint SSE yang TIDAK terautentikasi. Lewat
+// rls.RunAsSystem, SINGKAT (satu kali ambil data), bukan dipegang selama
+// koneksi SSE-nya berlangsung.
+func (s *Service) GetPublicSnapshot(ctx context.Context, sessionID uuid.UUID) (SessionSnapshot, error) {
+	var snap SessionSnapshot
+	err := rls.RunAsSystem(ctx, s.pool, func(sysCtx context.Context) error {
+		result, bErr := s.buildSnapshot(sysCtx, s.queries(sysCtx), sessionID)
+		snap = result
+		return bErr
+	})
+	return snap, err
+}
+
+func (s *Service) SubscribeSnapshot(sessionID string) chan []byte {
+	return s.hub.Subscribe(sessionID)
+}
+
+func (s *Service) UnsubscribeSnapshot(sessionID string, ch chan []byte) {
+	s.hub.Unsubscribe(sessionID, ch)
+}
+
+type EstimateResult struct {
+	TicketsAhead         int64   `json:"tickets_ahead"`
+	ActiveKapsters       int64   `json:"active_kapsters"`
+	EstimatedWaitMinutes float64 `json:"estimated_wait_minutes"`
+}
+
+// EstimateTicketWait adalah estimasi PERSONAL berdasarkan posisi tiket
+// persis — beda dari GetPublicSnapshot yang agregat untuk siapa saja. Lewat
+// RLS biasa: pelanggan cuma bisa menanyakan tiket miliknya sendiri.
+func (s *Service) EstimateTicketWait(ctx context.Context, ticketID uuid.UUID) (EstimateResult, error) {
+	q := s.queries(ctx)
+
+	ticket, err := q.GetTicketByID(ctx, ticketID)
+	if err != nil {
+		return EstimateResult{}, httpx.NotFound("tiket_tidak_ditemukan", "Tiket tidak ditemukan", nil)
+	}
+	session, err := q.GetQueueSessionByID(ctx, ticket.QueueSessionID)
+	if err != nil {
+		return EstimateResult{}, httpx.Internal(fmt.Errorf("ambil sesi antrian: %w", err))
+	}
+	ahead, err := q.CountWaitingAheadOf(ctx, db.CountWaitingAheadOfParams{QueueSessionID: ticket.QueueSessionID, QueuePosition: ticket.QueuePosition})
+	if err != nil {
+		return EstimateResult{}, httpx.Internal(fmt.Errorf("menghitung antrean di depan: %w", err))
+	}
+	activeKapsters, err := q.CountActiveKapsters(ctx, ticket.QueueSessionID)
+	if err != nil {
+		return EstimateResult{}, httpx.Internal(fmt.Errorf("menghitung kapster aktif: %w", err))
+	}
+	avgMinutes, err := q.GetAverageCallIntervalMinutes(ctx, session.OutletID)
+	if err != nil {
+		return EstimateResult{}, httpx.Internal(fmt.Errorf("menghitung rata-rata waktu: %w", err))
+	}
+	outlet, err := q.GetOutletByID(ctx, session.OutletID)
+	if err != nil {
+		return EstimateResult{}, httpx.Internal(fmt.Errorf("ambil data outlet: %w", err))
+	}
+
+	perRound := float64(outlet.DefaultDurationMinutes)
+	if avgMinutes >= 0 {
+		perRound = avgMinutes
+	}
+	divisor := activeKapsters
+	if divisor == 0 {
+		divisor = 1
+	}
+
+	return EstimateResult{
+		TicketsAhead:         ahead,
+		ActiveKapsters:       activeKapsters,
+		EstimatedWaitMinutes: (float64(ahead) / float64(divisor)) * perRound,
+	}, nil
 }

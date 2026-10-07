@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+	"fmt"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -408,4 +409,69 @@ func (h *WebhookHandlers) Midtrans(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func writeSSEEvent(w http.ResponseWriter, v any) {
+	payload, _ := json.Marshal(v)
+	fmt.Fprintf(w, "data: %s\n\n", payload)
+}
+
+func (h *Handlers) Stream(w http.ResponseWriter, r *http.Request) {
+	sessionID, err := param(r, "sessionID")
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("session_id_tidak_valid", "ID sesi tidak valid", err))
+		return
+	}
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		httpx.Error(w, r, h.log, httpx.Internal(fmt.Errorf("streaming tidak didukung di lingkungan ini")))
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+
+	ch := h.svc.SubscribeSnapshot(sessionID.String())
+	defer h.svc.UnsubscribeSnapshot(sessionID.String(), ch)
+
+	if snap, err := h.svc.GetPublicSnapshot(r.Context(), sessionID); err == nil {
+		writeSSEEvent(w, snap)
+		flusher.Flush()
+	}
+
+	ticker := time.NewTicker(25 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case payload, ok := <-ch:
+			if !ok {
+				return
+			}
+			fmt.Fprintf(w, "data: %s\n\n", payload)
+			flusher.Flush()
+		case <-ticker.C:
+			fmt.Fprint(w, ": keep-alive\n\n")
+			flusher.Flush()
+		case <-r.Context().Done():
+			return
+		}
+	}
+}
+
+func (h *Handlers) EstimateTicketWait(w http.ResponseWriter, r *http.Request) {
+	ticketID, err := param(r, "ticketID")
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("ticket_id_tidak_valid", "ID tiket tidak valid", err))
+		return
+	}
+	result, err := h.svc.EstimateTicketWait(r.Context(), ticketID)
+	if err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, result)
 }
