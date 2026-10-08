@@ -22,7 +22,7 @@ func (q *Queries) CancelTicket(ctx context.Context, id uuid.UUID) error {
 }
 
 const claimNextWaitingTicket = `-- name: ClaimNextWaitingTicket :one
-SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at FROM tickets
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at, turn_notified_at FROM tickets
 WHERE queue_session_id = $1 AND status = 'waiting'
 ORDER BY queue_position
 LIMIT 1
@@ -49,8 +49,22 @@ func (q *Queries) ClaimNextWaitingTicket(ctx context.Context, queueSessionID uui
 		&i.FinalAmountRupiah,
 		&i.FinalPaymentConfirmedBy,
 		&i.FinalPaymentConfirmedAt,
+		&i.TurnNotifiedAt,
 	)
 	return i, err
+}
+
+const claimTurnNotification = `-- name: ClaimTurnNotification :one
+UPDATE tickets SET turn_notified_at = now()
+WHERE id = $1 AND turn_notified_at IS NULL
+RETURNING id
+`
+
+func (q *Queries) ClaimTurnNotification(ctx context.Context, id uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, claimTurnNotification, id)
+	var id_2 uuid.UUID
+	err := row.Scan(&id_2)
+	return id_2, err
 }
 
 const confirmTicketFinalPayment = `-- name: ConfirmTicketFinalPayment :exec
@@ -72,7 +86,7 @@ func (q *Queries) ConfirmTicketFinalPayment(ctx context.Context, arg ConfirmTick
 const createOnlineTicket = `-- name: CreateOnlineTicket :one
 INSERT INTO tickets (tenant_id, queue_session_id, ticket_number, queue_position, channel, match_code, customer_user_id, status)
 VALUES ($1, $2, $3, $4, 'online', $5, $6, 'pending_payment')
-RETURNING id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at
+RETURNING id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at, turn_notified_at
 `
 
 type CreateOnlineTicketParams struct {
@@ -111,6 +125,7 @@ func (q *Queries) CreateOnlineTicket(ctx context.Context, arg CreateOnlineTicket
 		&i.FinalAmountRupiah,
 		&i.FinalPaymentConfirmedBy,
 		&i.FinalPaymentConfirmedAt,
+		&i.TurnNotifiedAt,
 	)
 	return i, err
 }
@@ -118,7 +133,7 @@ func (q *Queries) CreateOnlineTicket(ctx context.Context, arg CreateOnlineTicket
 const createTicket = `-- name: CreateTicket :one
 INSERT INTO tickets (tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at
+RETURNING id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at, turn_notified_at
 `
 
 type CreateTicketParams struct {
@@ -159,12 +174,13 @@ func (q *Queries) CreateTicket(ctx context.Context, arg CreateTicketParams) (Tic
 		&i.FinalAmountRupiah,
 		&i.FinalPaymentConfirmedBy,
 		&i.FinalPaymentConfirmedAt,
+		&i.TurnNotifiedAt,
 	)
 	return i, err
 }
 
 const getTicketByID = `-- name: GetTicketByID :one
-SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at FROM tickets WHERE id = $1
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at, turn_notified_at FROM tickets WHERE id = $1
 `
 
 func (q *Queries) GetTicketByID(ctx context.Context, id uuid.UUID) (Ticket, error) {
@@ -187,12 +203,13 @@ func (q *Queries) GetTicketByID(ctx context.Context, id uuid.UUID) (Ticket, erro
 		&i.FinalAmountRupiah,
 		&i.FinalPaymentConfirmedBy,
 		&i.FinalPaymentConfirmedAt,
+		&i.TurnNotifiedAt,
 	)
 	return i, err
 }
 
 const getTicketForUpdate = `-- name: GetTicketForUpdate :one
-SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at FROM tickets WHERE id = $1 FOR UPDATE
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at, turn_notified_at FROM tickets WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) GetTicketForUpdate(ctx context.Context, id uuid.UUID) (Ticket, error) {
@@ -215,12 +232,13 @@ func (q *Queries) GetTicketForUpdate(ctx context.Context, id uuid.UUID) (Ticket,
 		&i.FinalAmountRupiah,
 		&i.FinalPaymentConfirmedBy,
 		&i.FinalPaymentConfirmedAt,
+		&i.TurnNotifiedAt,
 	)
 	return i, err
 }
 
 const listTicketsAwaitingSettlement = `-- name: ListTicketsAwaitingSettlement :many
-SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at FROM tickets WHERE queue_session_id = $1 AND status = 'completed' AND final_payment_confirmed_at IS NULL ORDER BY updated_at
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at, turn_notified_at FROM tickets WHERE queue_session_id = $1 AND status = 'completed' AND final_payment_confirmed_at IS NULL ORDER BY updated_at
 `
 
 func (q *Queries) ListTicketsAwaitingSettlement(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error) {
@@ -249,6 +267,7 @@ func (q *Queries) ListTicketsAwaitingSettlement(ctx context.Context, queueSessio
 			&i.FinalAmountRupiah,
 			&i.FinalPaymentConfirmedBy,
 			&i.FinalPaymentConfirmedAt,
+			&i.TurnNotifiedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -261,7 +280,7 @@ func (q *Queries) ListTicketsAwaitingSettlement(ctx context.Context, queueSessio
 }
 
 const listTicketsBySession = `-- name: ListTicketsBySession :many
-SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at FROM tickets WHERE queue_session_id = $1 ORDER BY queue_position
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at, turn_notified_at FROM tickets WHERE queue_session_id = $1 ORDER BY queue_position
 `
 
 func (q *Queries) ListTicketsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error) {
@@ -290,6 +309,52 @@ func (q *Queries) ListTicketsBySession(ctx context.Context, queueSessionID uuid.
 			&i.FinalAmountRupiah,
 			&i.FinalPaymentConfirmedBy,
 			&i.FinalPaymentConfirmedAt,
+			&i.TurnNotifiedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUpcomingWaitingTickets = `-- name: ListUpcomingWaitingTickets :many
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at, turn_notified_at FROM tickets
+WHERE queue_session_id = $1 AND status = 'waiting'
+ORDER BY queue_position
+LIMIT 2
+`
+
+func (q *Queries) ListUpcomingWaitingTickets(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error) {
+	rows, err := q.db.Query(ctx, listUpcomingWaitingTickets, queueSessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Ticket
+	for rows.Next() {
+		var i Ticket
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.QueueSessionID,
+			&i.TicketNumber,
+			&i.QueuePosition,
+			&i.Channel,
+			&i.CustomerName,
+			&i.MatchCode,
+			&i.Status,
+			&i.AssignedMembershipID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.CustomerUserID,
+			&i.FinalAmountRupiah,
+			&i.FinalPaymentConfirmedBy,
+			&i.FinalPaymentConfirmedAt,
+			&i.TurnNotifiedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -343,7 +408,7 @@ func (q *Queries) MarkTicketWaiting(ctx context.Context, id uuid.UUID) error {
 }
 
 const nextWaitingTicketExcluding = `-- name: NextWaitingTicketExcluding :one
-SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at FROM tickets
+SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at, turn_notified_at FROM tickets
 WHERE queue_session_id = $1 AND status = 'waiting' AND id != $2
 ORDER BY queue_position
 LIMIT 1
@@ -375,6 +440,7 @@ func (q *Queries) NextWaitingTicketExcluding(ctx context.Context, arg NextWaitin
 		&i.FinalAmountRupiah,
 		&i.FinalPaymentConfirmedBy,
 		&i.FinalPaymentConfirmedAt,
+		&i.TurnNotifiedAt,
 	)
 	return i, err
 }

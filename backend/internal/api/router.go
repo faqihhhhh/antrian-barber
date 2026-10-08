@@ -18,18 +18,21 @@ import (
 	"kapsflow/internal/staff"
 	"kapsflow/internal/tenant"
 	"kapsflow/internal/queue"
+	"kapsflow/internal/notification"
 )
 
+
 func New(
-	log *slog.Logger,
-	pool *pgxpool.Pool,
-	identitySvc *identity.Service,
-	tenantSvc *tenant.Service,
-	billingSvc *billing.Service,
-	profileSvc *profile.Service,
-	staffSvc *staff.Service,
-	queueSvc *queue.Service,
-) http.Handler {
+	log *slog.Logger, 
+	pool *pgxpool.Pool, 
+	identitySvc *identity.Service, 
+	tenantSvc *tenant.Service, 
+	billingSvc *billing.Service, 
+	profileSvc *profile.Service, 
+	staffSvc *staff.Service, 
+	queueSvc *queue.Service, 
+	notifySvc *notification.Service,
+	) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -67,6 +70,7 @@ func New(
 		profile.RegisterRoutes(tr, profileSvc, log, requireActive)
 		staff.RegisterRoutes(tr, staffSvc, log, requireActive)
 		queue.RegisterRoutes(tr, queueSvc, log, pool, requireActive)
+		notification.RegisterRoutes(tr, notifySvc, log)
 	})
 
 	r.Route("/v1/admin", func(ar chi.Router) {

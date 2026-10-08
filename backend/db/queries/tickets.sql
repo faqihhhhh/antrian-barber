@@ -59,3 +59,14 @@ SELECT * FROM tickets WHERE queue_session_id = $1 AND status = 'completed' AND f
 UPDATE tickets SET final_amount_rupiah = $2, final_payment_confirmed_by = $3, final_payment_confirmed_at = now(), updated_at = now()
 WHERE id = $1 AND status = 'completed';
 
+
+-- name: ListUpcomingWaitingTickets :many
+SELECT * FROM tickets
+WHERE queue_session_id = $1 AND status = 'waiting'
+ORDER BY queue_position
+LIMIT 2;
+
+-- name: ClaimTurnNotification :one
+UPDATE tickets SET turn_notified_at = now()
+WHERE id = $1 AND turn_notified_at IS NULL
+RETURNING id;

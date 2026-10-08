@@ -94,6 +94,15 @@ type PlatformAdmin struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+type PushSubscription struct {
+	ID        uuid.UUID          `json:"id"`
+	UserID    uuid.UUID          `json:"user_id"`
+	Endpoint  string             `json:"endpoint"`
+	P256dh    string             `json:"p256dh"`
+	Auth      string             `json:"auth"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type QueueSession struct {
 	ID               uuid.UUID          `json:"id"`
 	TenantID         uuid.UUID          `json:"tenant_id"`
@@ -160,6 +169,7 @@ type Ticket struct {
 	FinalAmountRupiah       pgtype.Int8        `json:"final_amount_rupiah"`
 	FinalPaymentConfirmedBy pgtype.UUID        `json:"final_payment_confirmed_by"`
 	FinalPaymentConfirmedAt pgtype.Timestamptz `json:"final_payment_confirmed_at"`
+	TurnNotifiedAt          pgtype.Timestamptz `json:"turn_notified_at"`
 }
 
 type TicketEvent struct {

@@ -25,6 +25,7 @@ import (
 	"kapsflow/internal/profile"
 	"kapsflow/internal/realtime"
 	"kapsflow/internal/rls"
+	"kapsflow/internal/notification"
 )
 
 type Service struct {
@@ -33,13 +34,13 @@ type Service struct {
 	profileSvc     *profile.Service
 	midtransClient *midtrans.Client
 	hub            *realtime.Hub
+	notifySvc      *notification.Service
 	log            *slog.Logger
 }
 
-func NewService(pool *pgxpool.Pool, profileSvc *profile.Service, midtransClient *midtrans.Client, hub *realtime.Hub, log *slog.Logger) *Service {
-	return &Service{fallback: db.New(pool), pool: pool, profileSvc: profileSvc, midtransClient: midtransClient, hub: hub, log: log}
+func NewService(pool *pgxpool.Pool, profileSvc *profile.Service, midtransClient *midtrans.Client, hub *realtime.Hub, notifySvc *notification.Service, log *slog.Logger) *Service {
+	return &Service{fallback: db.New(pool), pool: pool, profileSvc: profileSvc, midtransClient: midtransClient, hub: hub, notifySvc: notifySvc, log: log}
 }
-
 func (s *Service) queries(ctx context.Context) *db.Queries {
 	if tx, ok := rls.TxFromContext(ctx); ok {
 		return db.New(tx)
@@ -429,10 +430,15 @@ func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUs
 		return nil, httpx.Internal(fmt.Errorf("membuat tiket online: %w", err))
 	}
 
-	outlet, err := q.GetOutletByID(ctx, outletID)
+outlet, err := q.GetOutletByID(ctx, outletID)
 	if err != nil {
 		return nil, httpx.Internal(fmt.Errorf("ambil data outlet: %w", err))
 	}
+
+	if outlet.DpPriceRupiah <= 0 {
+		return nil, httpx.Conflict("harga_dp_belum_diatur", "Harga DP outlet ini belum diatur oleh admin", nil)
+	}
+
 	serverKey, _, isProduction, configured, err := s.profileSvc.GetDecryptedMidtransKeys(ctx, tenantID)
 	if err != nil {
 		return nil, err
@@ -684,8 +690,10 @@ func (s *Service) buildSnapshot(ctx context.Context, q *db.Queries, sessionID uu
 }
 
 // broadcastSnapshot dipanggil dengan q dari transaksi yang SAMA dengan aksi
-// yang baru saja selesai — murah, dan selalu konsisten dengan apa yang baru
-// di-commit.
+// yang baru saja selesai. Selain mendorong snapshot lewat SSE, ini juga
+// titik tunggal untuk memicu push ke pelanggan yang gilirannya mendekat —
+// dicek di sini supaya tidak perlu menduplikasi logika "siapa yang perlu
+// diberi tahu" di tiap pemanggil (ready/skip/complete/confirm-payment).
 func (s *Service) broadcastSnapshot(ctx context.Context, q *db.Queries, sessionID uuid.UUID) {
 	snap, err := s.buildSnapshot(ctx, q, sessionID)
 	if err != nil {
@@ -694,6 +702,41 @@ func (s *Service) broadcastSnapshot(ctx context.Context, q *db.Queries, sessionI
 	}
 	payload, _ := json.Marshal(snap)
 	s.hub.Publish(sessionID.String(), payload)
+
+	s.notifyUpcomingCustomers(ctx, q, sessionID)
+}
+
+// notifyUpcomingCustomers mengirim push ke pelanggan dengan tiket online di
+// posisi 1 atau 2 dari depan (dalam status waiting) — "giliran Anda
+// sebentar lagi" sesuai spesifikasi awal. Dipanggil tiap kali status
+// antrian berubah; mengirim push berulang untuk tiket yang sama tidak
+// berbahaya (cuma dapat notifikasi dua kali kalau kebetulan dua event
+// terjadi berdekatan), jadi tidak perlu tabel penanda "sudah diberi tahu".
+func (s *Service) notifyUpcomingCustomers(ctx context.Context, q *db.Queries, sessionID uuid.UUID) {
+	upcoming, err := q.ListUpcomingWaitingTickets(ctx, sessionID)
+	if err != nil {
+		s.log.Error("gagal ambil daftar tiket yang akan dipanggil", "err", err, "session_id", sessionID)
+		return
+	}
+	s.log.Info("cek notifikasi giliran", "session_id", sessionID, "kandidat", len(upcoming))
+	for _, t := range upcoming {
+		if !t.CustomerUserID.Valid {
+			continue // tiket offline, tidak punya akun untuk dikirimi push
+		}
+		// Klaim atomik: hanya satu pemanggil yang berhasil per tiket. Kalau
+		// tidak ada baris yang berubah, tiket ini sudah pernah diberi tahu.
+		if _, err := q.ClaimTurnNotification(ctx, t.ID); err != nil {
+			if !errors.Is(err, pgx.ErrNoRows) {
+				s.log.Error("gagal menandai notifikasi giliran", "err", err, "ticket_id", t.ID)
+			}
+			continue
+		}
+		customerID := uuid.UUID(t.CustomerUserID.Bytes)
+		s.log.Info("mencoba kirim notifikasi giliran", "ticket_number", t.TicketNumber, "user_id", customerID)
+		s.notifySvc.NotifyUser(ctx, customerID,
+			"Giliran Anda sebentar lagi",
+			fmt.Sprintf("Tiket nomor %d akan segera dipanggil, siap-siap ya!", t.TicketNumber))
+	}
 }
 
 // GetPublicSnapshot dipakai endpoint SSE yang TIDAK terautentikasi. Lewat

@@ -17,6 +17,7 @@ type Querier interface {
 	ClaimNextTicketNumber(ctx context.Context, id uuid.UUID) (int32, error)
 	ClaimNextWaitingTicket(ctx context.Context, queueSessionID uuid.UUID) (Ticket, error)
 	ClaimTicketNumberForBooking(ctx context.Context, pSessionID uuid.UUID) (int32, error)
+	ClaimTurnNotification(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
 	ConfirmTicketFinalPayment(ctx context.Context, arg ConfirmTicketFinalPaymentParams) error
 	CountActiveKapsters(ctx context.Context, queueSessionID uuid.UUID) (int64, error)
 	CountWaitingAheadOf(ctx context.Context, arg CountWaitingAheadOfParams) (int64, error)
@@ -27,6 +28,7 @@ type Querier interface {
 	CreateOnlineTicket(ctx context.Context, arg CreateOnlineTicketParams) (Ticket, error)
 	CreateOutlet(ctx context.Context, arg CreateOutletParams) (Outlet, error)
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (PasswordResetToken, error)
+	CreatePushSubscription(ctx context.Context, arg CreatePushSubscriptionParams) error
 	CreateQueueSession(ctx context.Context, arg CreateQueueSessionParams) (QueueSession, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateTenant(ctx context.Context, arg CreateTenantParams) error
@@ -34,6 +36,8 @@ type Querier interface {
 	CreateTicketEvent(ctx context.Context, arg CreateTicketEventParams) error
 	CreateTicketPayment(ctx context.Context, arg CreateTicketPaymentParams) (TicketPayment, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeletePushSubscription(ctx context.Context, arg DeletePushSubscriptionParams) error
+	DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error
 	DeleteSession(ctx context.Context, tokenHash string) error
 	GetAverageCallIntervalMinutes(ctx context.Context, outletID uuid.UUID) (float64, error)
 	GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, error)
@@ -64,11 +68,13 @@ type Querier interface {
 	ListMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]Membership, error)
 	ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Outlet, error)
 	ListPendingInvoices(ctx context.Context) ([]Invoice, error)
+	ListPushSubscriptionsForUser(ctx context.Context, userID uuid.UUID) ([]PushSubscription, error)
 	ListQueueSessionsByOutlet(ctx context.Context, outletID uuid.UUID) ([]QueueSession, error)
 	ListStaffByTenant(ctx context.Context, tenantID uuid.UUID) ([]ListStaffByTenantRow, error)
 	ListTenants(ctx context.Context) ([]Tenant, error)
 	ListTicketsAwaitingSettlement(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	ListTicketsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
+	ListUpcomingWaitingTickets(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	MarkEmailVerificationTokenUsed(ctx context.Context, id uuid.UUID) error
 	MarkInvoicePaid(ctx context.Context, arg MarkInvoicePaidParams) error
 	MarkOnboardingSkippedMidtrans(ctx context.Context, tenantID uuid.UUID) error
