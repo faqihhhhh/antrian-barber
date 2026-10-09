@@ -116,6 +116,17 @@ type QueueSession struct {
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Review struct {
+	ID                  uuid.UUID          `json:"id"`
+	TenantID            uuid.UUID          `json:"tenant_id"`
+	TicketID            uuid.UUID          `json:"ticket_id"`
+	KapsterMembershipID uuid.UUID          `json:"kapster_membership_id"`
+	CustomerUserID      uuid.UUID          `json:"customer_user_id"`
+	Rating              int16              `json:"rating"`
+	Comment             pgtype.Text        `json:"comment"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+}
+
 type Session struct {
 	ID         uuid.UUID          `json:"id"`
 	UserID     uuid.UUID          `json:"user_id"`

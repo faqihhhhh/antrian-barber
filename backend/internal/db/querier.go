@@ -30,6 +30,7 @@ type Querier interface {
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (PasswordResetToken, error)
 	CreatePushSubscription(ctx context.Context, arg CreatePushSubscriptionParams) error
 	CreateQueueSession(ctx context.Context, arg CreateQueueSessionParams) (QueueSession, error)
+	CreateReview(ctx context.Context, arg CreateReviewParams) (Review, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateTenant(ctx context.Context, arg CreateTenantParams) error
 	CreateTicket(ctx context.Context, arg CreateTicketParams) (Ticket, error)
@@ -48,6 +49,8 @@ type Querier interface {
 	GetPlanByID(ctx context.Context, id uuid.UUID) (Plan, error)
 	GetQueueSessionByID(ctx context.Context, id uuid.UUID) (QueueSession, error)
 	GetQueueSessionByOutletAndDate(ctx context.Context, arg GetQueueSessionByOutletAndDateParams) (QueueSession, error)
+	GetReviewByTicketID(ctx context.Context, ticketID uuid.UUID) (Review, error)
+	GetReviewSummaryByTenant(ctx context.Context, tenantID uuid.UUID) ([]GetReviewSummaryByTenantRow, error)
 	GetSubscriptionByTenant(ctx context.Context, tenantID uuid.UUID) (Subscription, error)
 	GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error)
 	GetTenantProfile(ctx context.Context, tenantID uuid.UUID) (TenantProfile, error)
@@ -70,6 +73,8 @@ type Querier interface {
 	ListPendingInvoices(ctx context.Context) ([]Invoice, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID uuid.UUID) ([]PushSubscription, error)
 	ListQueueSessionsByOutlet(ctx context.Context, outletID uuid.UUID) ([]QueueSession, error)
+	ListReviewsByKapster(ctx context.Context, arg ListReviewsByKapsterParams) ([]ListReviewsByKapsterRow, error)
+	ListReviewsByTenant(ctx context.Context, arg ListReviewsByTenantParams) ([]ListReviewsByTenantRow, error)
 	ListStaffByTenant(ctx context.Context, tenantID uuid.UUID) ([]ListStaffByTenantRow, error)
 	ListTenants(ctx context.Context) ([]Tenant, error)
 	ListTicketsAwaitingSettlement(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)

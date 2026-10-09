@@ -25,7 +25,7 @@ import (
 	"kapsflow/internal/realtime"
 	"kapsflow/internal/notification"
 	"kapsflow/internal/webpush"
-	
+	"kapsflow/internal/review"
 )
 
 func main() {
@@ -73,10 +73,11 @@ func run(log *slog.Logger) error {
 	webpushClient := webpush.NewClient(cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey, cfg.VAPIDSubject)
 	notifySvc := notification.NewService(pool, webpushClient, log)
 	queueSvc := queue.NewService(pool, profileSvc, midtransClient, hub, notifySvc, log)
+	reviewSvc := review.NewService(pool)
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc, queueSvc, notifySvc),
+		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc, queueSvc, notifySvc, reviewSvc),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

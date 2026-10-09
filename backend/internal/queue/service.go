@@ -439,11 +439,11 @@ func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUs
 		return nil, httpx.Internal(fmt.Errorf("membuat tiket online: %w", err))
 	}
 
-outlet, err := q.GetOutletByID(ctx, outletID)
+	outlet, err := q.GetOutletByID(ctx, outletID)
 	if err != nil {
 		return nil, httpx.Internal(fmt.Errorf("ambil data outlet: %w", err))
-	}
-
+	}		
+	
 	if outlet.DpPriceRupiah <= 0 {
 		return nil, httpx.Conflict("harga_dp_belum_diatur", "Harga DP outlet ini belum diatur oleh admin", nil)
 	}
