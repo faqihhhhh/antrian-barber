@@ -209,6 +209,15 @@ func (s *Service) KapsterReady(ctx context.Context, tenantID, sessionID, userID 
 		return nil, err
 	}
 
+	state, stErr := q.GetKapsterSessionState(ctx, db.GetKapsterSessionStateParams{QueueSessionID: sessionID, MembershipID: membership.ID})
+	if stErr == nil {
+		if state.Status == "busy" {
+			return nil, httpx.Conflict("masih_ada_pelanggan_aktif", "Selesaikan atau lewati pelanggan yang sedang ditangani sebelum menekan siap lagi", nil)
+		}
+	} else if !errors.Is(stErr, pgx.ErrNoRows) {
+		return nil, httpx.Internal(fmt.Errorf("cek status kapster: %w", stErr))
+	}
+	
 	ticket, err := q.ClaimNextWaitingTicket(ctx, sessionID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
