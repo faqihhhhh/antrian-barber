@@ -20,6 +20,7 @@ import (
 	"kapsflow/internal/queue"
 	"kapsflow/internal/notification"
 	"kapsflow/internal/review"
+	"kapsflow/internal/analytics"
 )
 
 
@@ -34,6 +35,7 @@ func New(
 	queueSvc *queue.Service, 
 	notifySvc *notification.Service,
 	reviewSvc *review.Service,
+	analyticsSvc *analytics.Service,
 	) http.Handler {
 	r := chi.NewRouter()
 
@@ -74,6 +76,7 @@ func New(
 		queue.RegisterRoutes(tr, queueSvc, log, pool, requireActive)
 		notification.RegisterRoutes(tr, notifySvc, log)
 		review.RegisterRoutes(tr, reviewSvc, log)
+		analytics.RegisterTenantRoutes(tr, analyticsSvc, log)
 	})
 
 	r.Route("/v1/admin", func(ar chi.Router) {
@@ -81,6 +84,7 @@ func New(
 		ar.Use(rls.Middleware(pool, log))
 		ar.Use(billing.RequirePlatformAdmin(billingSvc, log))
 		billing.RegisterAdminRoutes(ar, billingSvc, log)
+		analytics.RegisterAdminRoutes(ar, analyticsSvc, log)
 	})
 
 	return r

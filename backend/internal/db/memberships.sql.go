@@ -75,6 +75,30 @@ func (q *Queries) GetMembershipForUserAndTenant(ctx context.Context, arg GetMemb
 	return i, err
 }
 
+const listMembershipOutletIDs = `-- name: ListMembershipOutletIDs :many
+SELECT outlet_id FROM membership_outlets WHERE membership_id = $1
+`
+
+func (q *Queries) ListMembershipOutletIDs(ctx context.Context, membershipID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listMembershipOutletIDs, membershipID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var outlet_id uuid.UUID
+		if err := rows.Scan(&outlet_id); err != nil {
+			return nil, err
+		}
+		items = append(items, outlet_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMembershipsForUser = `-- name: ListMembershipsForUser :many
 SELECT id, tenant_id, user_id, roles, created_at, updated_at FROM memberships WHERE user_id = $1
 `

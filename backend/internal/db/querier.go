@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -70,6 +71,7 @@ type Querier interface {
 	ListExpiredPendingPayments(ctx context.Context) ([]TicketPayment, error)
 	ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) ([]Invoice, error)
 	ListKapsterStatesBySession(ctx context.Context, queueSessionID uuid.UUID) ([]KapsterSessionState, error)
+	ListMembershipOutletIDs(ctx context.Context, membershipID uuid.UUID) ([]uuid.UUID, error)
 	ListMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]Membership, error)
 	ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Outlet, error)
 	ListOwnerEmailsByTenant(ctx context.Context, tenantID uuid.UUID) ([]string, error)
@@ -96,9 +98,20 @@ type Querier interface {
 	MarkTicketWaiting(ctx context.Context, id uuid.UUID) error
 	MarkUserEmailVerified(ctx context.Context, id uuid.UUID) error
 	NextWaitingTicketExcluding(ctx context.Context, arg NextWaitingTicketExcludingParams) (Ticket, error)
+	PlatformActivity(ctx context.Context, arg PlatformActivityParams) (PlatformActivityRow, error)
+	PlatformBillingQueue(ctx context.Context) (PlatformBillingQueueRow, error)
+	PlatformMRR(ctx context.Context) (float64, error)
+	PlatformRevenueByMonth(ctx context.Context, since pgtype.Timestamptz) ([]PlatformRevenueByMonthRow, error)
+	PlatformSignupsByMonth(ctx context.Context, since pgtype.Timestamptz) ([]PlatformSignupsByMonthRow, error)
+	PlatformTenantStatusCounts(ctx context.Context) (PlatformTenantStatusCountsRow, error)
+	PlatformTotals(ctx context.Context) (PlatformTotalsRow, error)
 	RecordSubscriptionReminder(ctx context.Context, arg RecordSubscriptionReminderParams) error
 	RequeueTicket(ctx context.Context, id uuid.UUID) error
 	SetTicketQueuePosition(ctx context.Context, arg SetTicketQueuePositionParams) error
+	StatsDailyByOutlet(ctx context.Context, arg StatsDailyByOutletParams) ([]StatsDailyByOutletRow, error)
+	StatsKapsterPerformance(ctx context.Context, arg StatsKapsterPerformanceParams) ([]StatsKapsterPerformanceRow, error)
+	StatsPeakHours(ctx context.Context, arg StatsPeakHoursParams) ([]StatsPeakHoursRow, error)
+	StatsTimingByOutlet(ctx context.Context, arg StatsTimingByOutletParams) ([]StatsTimingByOutletRow, error)
 	TouchSession(ctx context.Context, id uuid.UUID) error
 	UpdateOutletSettings(ctx context.Context, arg UpdateOutletSettingsParams) (Outlet, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error

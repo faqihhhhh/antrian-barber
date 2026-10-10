@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -75,6 +76,11 @@ func (h *Handlers) CreateOutlet(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Name == "" || req.Timezone == "" {
 		httpx.Error(w, r, h.log, httpx.BadRequest("field_wajib_diisi", "Nama dan zona waktu wajib diisi", nil))
+		return
+	}
+
+	if _, tzErr := time.LoadLocation(req.Timezone); tzErr != nil || req.Timezone == "Local" {
+		httpx.Error(w, r, h.log, httpx.BadRequest("zona_waktu_tidak_valid", "Zona waktu harus berupa nama IANA, misalnya Asia/Jakarta, Asia/Makassar, atau Asia/Jayapura", tzErr))
 		return
 	}
 

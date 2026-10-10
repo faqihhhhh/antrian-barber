@@ -16,3 +16,13 @@ func IsUniqueViolation(err error) bool {
 	}
 	return false
 }
+
+// IsUniqueViolationOn true kalau pelanggaran unik berasal dari constraint atau
+// index dengan nama tertentu.
+func IsUniqueViolationOn(err error, constraint string) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23505" && pgErr.ConstraintName == constraint
+	}
+	return false
+}

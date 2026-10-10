@@ -436,6 +436,9 @@ func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUs
 		CustomerUserID: dbx.UUID(customerUserID),
 	})
 	if err != nil {
+		if pgerr.IsUniqueViolationOn(err, "idx_tickets_one_pending_per_customer") {
+			return nil, httpx.Conflict("masih_ada_pesanan_belum_dibayar", "Anda masih punya pesanan yang belum dibayar di antrian ini. Selesaikan pembayarannya, atau tunggu sampai pesanan itu hangus.", nil)
+		}
 		return nil, httpx.Internal(fmt.Errorf("membuat tiket online: %w", err))
 	}
 

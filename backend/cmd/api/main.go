@@ -27,6 +27,8 @@ import (
 	"kapsflow/internal/webpush"
 	"kapsflow/internal/review"
 	"kapsflow/internal/jobs"
+	"kapsflow/internal/analytics"
+	_ "time/tzdata"
 )
 
 func main() {
@@ -82,6 +84,7 @@ func run(log *slog.Logger) error {
 	notifySvc := notification.NewService(pool, webpushClient, log)
 	queueSvc := queue.NewService(pool, profileSvc, midtransClient, hub, notifySvc, log)
 	reviewSvc := review.NewService(pool)
+	analyticsSvc := analytics.NewService(pool)
 
 	jobClient, err := jobs.NewClient(pool, log, queueSvc, billingSvc)
 	if err != nil {
@@ -100,7 +103,7 @@ func run(log *slog.Logger) error {
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc, queueSvc, notifySvc, reviewSvc),
+		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc, queueSvc, notifySvc, reviewSvc, analyticsSvc),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

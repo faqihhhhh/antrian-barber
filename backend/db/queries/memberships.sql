@@ -25,3 +25,6 @@ ORDER BY m.created_at;
 -- name: GetMembershipForUserAndTenant :one
 SELECT * FROM memberships WHERE tenant_id = $1 AND user_id = $2;
 
+-- name: ListMembershipOutletIDs :many
+SELECT outlet_id FROM membership_outlets WHERE membership_id = $1;
+
