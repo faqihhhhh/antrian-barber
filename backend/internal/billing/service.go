@@ -16,11 +16,13 @@ import (
 	"kapsflow/internal/dbx"
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/rls"
+	"log/slog"
+	"kapsflow/internal/identity"
 )
 
 const (
 	GracePeriod   = 3 * 24 * time.Hour
-	invoiceWindow = 30 * time.Minute
+	invoiceWindow = 24 * time.Hour
 )
 
 type SubscriptionStatus string
@@ -41,11 +43,14 @@ type SubscriptionInfo struct {
 type Service struct {
 	fallback *db.Queries
 	pool     *pgxpool.Pool
+	mailer   identity.Mailer
+	log      *slog.Logger
 }
 
-func NewService(pool *pgxpool.Pool) *Service {
-	return &Service{fallback: db.New(pool), pool: pool}
+func NewService(pool *pgxpool.Pool, mailer identity.Mailer, log *slog.Logger) *Service {
+	return &Service{fallback: db.New(pool), pool: pool, mailer: mailer, log: log}
 }
+
 func (s *Service) queries(ctx context.Context) *db.Queries {
 	if tx, ok := rls.TxFromContext(ctx); ok {
 		return db.New(tx)
@@ -193,8 +198,9 @@ func (s *Service) ConfirmInvoicePayment(ctx context.Context, invoiceID, adminUse
 		}
 		return httpx.Internal(fmt.Errorf("ambil invoice: %w", err))
 	}
-	if inv.Status != "pending" {
-		return httpx.Conflict("invoice_bukan_pending", "Invoice ini sudah tidak berstatus pending", nil)
+
+	if inv.Status != "pending" && inv.Status != "expired" {
+		return httpx.Conflict("invoice_sudah_diproses", "Invoice ini sudah dibayar atau dibatalkan", nil)
 	}
 
 	plan, err := q.GetPlanByID(ctx, inv.PlanID)

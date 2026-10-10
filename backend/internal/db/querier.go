@@ -13,7 +13,7 @@ import (
 type Querier interface {
 	ActivateSubscriptionPeriod(ctx context.Context, arg ActivateSubscriptionPeriodParams) error
 	AddMembershipOutlet(ctx context.Context, arg AddMembershipOutletParams) error
-	CancelTicket(ctx context.Context, id uuid.UUID) error
+	CancelPendingTicket(ctx context.Context, pTicketID uuid.UUID) (bool, error)
 	ClaimNextTicketNumber(ctx context.Context, id uuid.UUID) (int32, error)
 	ClaimNextWaitingTicket(ctx context.Context, queueSessionID uuid.UUID) (Ticket, error)
 	ClaimTicketNumberForBooking(ctx context.Context, pSessionID uuid.UUID) (int32, error)
@@ -40,6 +40,7 @@ type Querier interface {
 	DeletePushSubscription(ctx context.Context, arg DeletePushSubscriptionParams) error
 	DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error
 	DeleteSession(ctx context.Context, tokenHash string) error
+	ExpireStaleInvoices(ctx context.Context) (int64, error)
 	GetAverageCallIntervalMinutes(ctx context.Context, outletID uuid.UUID) (float64, error)
 	GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, error)
 	GetKapsterSessionState(ctx context.Context, arg GetKapsterSessionStateParams) (KapsterSessionState, error)
@@ -66,16 +67,19 @@ type Querier interface {
 	IncreaseQueueQuota(ctx context.Context, arg IncreaseQueueQuotaParams) (QueueSession, error)
 	IsPlatformAdmin(ctx context.Context, userID uuid.UUID) (bool, error)
 	ListActivePlans(ctx context.Context) ([]Plan, error)
+	ListExpiredPendingPayments(ctx context.Context) ([]TicketPayment, error)
 	ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) ([]Invoice, error)
 	ListKapsterStatesBySession(ctx context.Context, queueSessionID uuid.UUID) ([]KapsterSessionState, error)
 	ListMembershipsForUser(ctx context.Context, userID uuid.UUID) ([]Membership, error)
 	ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Outlet, error)
+	ListOwnerEmailsByTenant(ctx context.Context, tenantID uuid.UUID) ([]string, error)
 	ListPendingInvoices(ctx context.Context) ([]Invoice, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID uuid.UUID) ([]PushSubscription, error)
 	ListQueueSessionsByOutlet(ctx context.Context, outletID uuid.UUID) ([]QueueSession, error)
 	ListReviewsByKapster(ctx context.Context, arg ListReviewsByKapsterParams) ([]ListReviewsByKapsterRow, error)
 	ListReviewsByTenant(ctx context.Context, arg ListReviewsByTenantParams) ([]ListReviewsByTenantRow, error)
 	ListStaffByTenant(ctx context.Context, tenantID uuid.UUID) ([]ListStaffByTenantRow, error)
+	ListSubscriptionsEndingSoon(ctx context.Context) ([]ListSubscriptionsEndingSoonRow, error)
 	ListTenants(ctx context.Context) ([]Tenant, error)
 	ListTicketsAwaitingSettlement(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	ListTicketsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
@@ -87,11 +91,12 @@ type Querier interface {
 	MarkTicketCalled(ctx context.Context, arg MarkTicketCalledParams) error
 	MarkTicketCompleted(ctx context.Context, id uuid.UUID) error
 	MarkTicketInProgress(ctx context.Context, id uuid.UUID) error
-	MarkTicketPaymentFailed(ctx context.Context, id uuid.UUID) error
-	MarkTicketPaymentPaid(ctx context.Context, arg MarkTicketPaymentPaidParams) error
+	MarkTicketPaymentFailed(ctx context.Context, id uuid.UUID) (int64, error)
+	MarkTicketPaymentPaid(ctx context.Context, arg MarkTicketPaymentPaidParams) (int64, error)
 	MarkTicketWaiting(ctx context.Context, id uuid.UUID) error
 	MarkUserEmailVerified(ctx context.Context, id uuid.UUID) error
 	NextWaitingTicketExcluding(ctx context.Context, arg NextWaitingTicketExcludingParams) (Ticket, error)
+	RecordSubscriptionReminder(ctx context.Context, arg RecordSubscriptionReminderParams) error
 	RequeueTicket(ctx context.Context, id uuid.UUID) error
 	SetTicketQueuePosition(ctx context.Context, arg SetTicketQueuePositionParams) error
 	TouchSession(ctx context.Context, id uuid.UUID) error

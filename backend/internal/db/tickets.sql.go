@@ -12,13 +12,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const cancelTicket = `-- name: CancelTicket :exec
-UPDATE tickets SET status = 'canceled', updated_at = now() WHERE id = $1
+const cancelPendingTicket = `-- name: CancelPendingTicket :one
+SELECT cancel_pending_ticket($1) AS canceled
 `
 
-func (q *Queries) CancelTicket(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, cancelTicket, id)
-	return err
+func (q *Queries) CancelPendingTicket(ctx context.Context, pTicketID uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, cancelPendingTicket, pTicketID)
+	var canceled bool
+	err := row.Scan(&canceled)
+	return canceled, err
 }
 
 const claimNextWaitingTicket = `-- name: ClaimNextWaitingTicket :one

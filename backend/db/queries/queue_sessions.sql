@@ -11,8 +11,8 @@ UPDATE queue_sessions SET max_quota = max_quota + $2, updated_at = now() WHERE i
 
 -- name: ClaimNextTicketNumber :one
 UPDATE queue_sessions
-SET next_ticket_number = next_ticket_number + 1, updated_at = now()
-WHERE id = $1 AND next_ticket_number <= max_quota
+SET next_ticket_number = next_ticket_number + 1, used_quota = used_quota + 1, updated_at = now()
+WHERE id = $1 AND used_quota < max_quota
 RETURNING (next_ticket_number - 1)::int AS ticket_number;
 
 -- name: GetQueueSessionByOutletAndDate :one

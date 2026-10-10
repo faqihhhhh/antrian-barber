@@ -51,6 +51,19 @@ func (q *Queries) CreateInvoice(ctx context.Context, arg CreateInvoiceParams) (I
 	return i, err
 }
 
+const expireStaleInvoices = `-- name: ExpireStaleInvoices :execrows
+UPDATE invoices SET status = 'expired', updated_at = now()
+WHERE status = 'pending' AND expires_at < now()
+`
+
+func (q *Queries) ExpireStaleInvoices(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, expireStaleInvoices)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getInvoiceByID = `-- name: GetInvoiceByID :one
 SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at FROM invoices WHERE id = $1
 `
@@ -111,7 +124,9 @@ func (q *Queries) ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) 
 }
 
 const listPendingInvoices = `-- name: ListPendingInvoices :many
-SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at FROM invoices WHERE status = 'pending' ORDER BY created_at
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at FROM invoices
+WHERE status = 'pending' OR (status = 'expired' AND expires_at > now() - interval '14 days')
+ORDER BY created_at
 `
 
 func (q *Queries) ListPendingInvoices(ctx context.Context) ([]Invoice, error) {

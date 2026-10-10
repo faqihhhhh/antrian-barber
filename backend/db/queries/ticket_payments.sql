@@ -9,8 +9,16 @@ SELECT * FROM ticket_payments WHERE id = $1;
 -- name: GetTicketPaymentByTicketID :one
 SELECT * FROM ticket_payments WHERE ticket_id = $1;
 
--- name: MarkTicketPaymentPaid :exec
-UPDATE ticket_payments SET status = 'paid', paid_at = now(), confirmed_by = $2, updated_at = now() WHERE id = $1;
+-- name: MarkTicketPaymentPaid :execrows
+UPDATE ticket_payments SET status = 'paid', paid_at = now(), confirmed_by = $2, updated_at = now()
+WHERE id = $1 AND status = 'pending';
 
--- name: MarkTicketPaymentFailed :exec
-UPDATE ticket_payments SET status = 'failed', updated_at = now() WHERE id = $1;
+-- name: MarkTicketPaymentFailed :execrows
+UPDATE ticket_payments SET status = 'failed', updated_at = now()
+WHERE id = $1 AND status = 'pending';
+
+-- name: ListExpiredPendingPayments :many
+SELECT * FROM ticket_payments
+WHERE status = 'pending' AND expires_at < now() - interval '2 minutes'
+ORDER BY expires_at
+LIMIT 100;

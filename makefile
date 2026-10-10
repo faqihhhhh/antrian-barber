@@ -28,3 +28,6 @@ migrate-new:
 
 sqlc-generate:
 > cd backend && sqlc generate
+
+river-migrate:
+> river migrate-up --line main --database-url "$(DATABASE_URL)"

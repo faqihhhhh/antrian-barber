@@ -114,6 +114,7 @@ type QueueSession struct {
 	CreatedBy        uuid.UUID          `json:"created_by"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	UsedQuota        int32              `json:"used_quota"`
 }
 
 type Review struct {
@@ -143,6 +144,13 @@ type Subscription struct {
 	CurrentPeriodEnd pgtype.Timestamptz `json:"current_period_end"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SubscriptionReminder struct {
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	PeriodEnd pgtype.Timestamptz `json:"period_end"`
+	Kind      string             `json:"kind"`
+	SentAt    pgtype.Timestamptz `json:"sent_at"`
 }
 
 type Tenant struct {

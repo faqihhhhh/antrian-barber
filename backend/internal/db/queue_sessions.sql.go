@@ -14,8 +14,8 @@ import (
 
 const claimNextTicketNumber = `-- name: ClaimNextTicketNumber :one
 UPDATE queue_sessions
-SET next_ticket_number = next_ticket_number + 1, updated_at = now()
-WHERE id = $1 AND next_ticket_number <= max_quota
+SET next_ticket_number = next_ticket_number + 1, used_quota = used_quota + 1, updated_at = now()
+WHERE id = $1 AND used_quota < max_quota
 RETURNING (next_ticket_number - 1)::int AS ticket_number
 `
 
@@ -29,7 +29,7 @@ func (q *Queries) ClaimNextTicketNumber(ctx context.Context, id uuid.UUID) (int3
 const createQueueSession = `-- name: CreateQueueSession :one
 INSERT INTO queue_sessions (tenant_id, outlet_id, session_date, max_quota, created_by)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at
+RETURNING id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at, used_quota
 `
 
 type CreateQueueSessionParams struct {
@@ -60,12 +60,13 @@ func (q *Queries) CreateQueueSession(ctx context.Context, arg CreateQueueSession
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.UsedQuota,
 	)
 	return i, err
 }
 
 const getQueueSessionByID = `-- name: GetQueueSessionByID :one
-SELECT id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at FROM queue_sessions WHERE id = $1
+SELECT id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at, used_quota FROM queue_sessions WHERE id = $1
 `
 
 func (q *Queries) GetQueueSessionByID(ctx context.Context, id uuid.UUID) (QueueSession, error) {
@@ -82,12 +83,13 @@ func (q *Queries) GetQueueSessionByID(ctx context.Context, id uuid.UUID) (QueueS
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.UsedQuota,
 	)
 	return i, err
 }
 
 const getQueueSessionByOutletAndDate = `-- name: GetQueueSessionByOutletAndDate :one
-SELECT id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at FROM queue_sessions WHERE outlet_id = $1 AND session_date = $2
+SELECT id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at, used_quota FROM queue_sessions WHERE outlet_id = $1 AND session_date = $2
 `
 
 type GetQueueSessionByOutletAndDateParams struct {
@@ -109,12 +111,13 @@ func (q *Queries) GetQueueSessionByOutletAndDate(ctx context.Context, arg GetQue
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.UsedQuota,
 	)
 	return i, err
 }
 
 const increaseQueueQuota = `-- name: IncreaseQueueQuota :one
-UPDATE queue_sessions SET max_quota = max_quota + $2, updated_at = now() WHERE id = $1 RETURNING id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at
+UPDATE queue_sessions SET max_quota = max_quota + $2, updated_at = now() WHERE id = $1 RETURNING id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at, used_quota
 `
 
 type IncreaseQueueQuotaParams struct {
@@ -136,12 +139,13 @@ func (q *Queries) IncreaseQueueQuota(ctx context.Context, arg IncreaseQueueQuota
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.UsedQuota,
 	)
 	return i, err
 }
 
 const listQueueSessionsByOutlet = `-- name: ListQueueSessionsByOutlet :many
-SELECT id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at FROM queue_sessions WHERE outlet_id = $1 ORDER BY session_date DESC
+SELECT id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at, used_quota FROM queue_sessions WHERE outlet_id = $1 ORDER BY session_date DESC
 `
 
 func (q *Queries) ListQueueSessionsByOutlet(ctx context.Context, outletID uuid.UUID) ([]QueueSession, error) {
@@ -164,6 +168,7 @@ func (q *Queries) ListQueueSessionsByOutlet(ctx context.Context, outletID uuid.U
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.UsedQuota,
 		); err != nil {
 			return nil, err
 		}

@@ -49,9 +49,6 @@ RETURNING *;
 -- name: MarkTicketWaiting :exec
 UPDATE tickets SET status = 'waiting', updated_at = now() WHERE id = $1 AND status = 'pending_payment';
 
--- name: CancelTicket :exec
-UPDATE tickets SET status = 'canceled', updated_at = now() WHERE id = $1;
-
 -- name: ListTicketsAwaitingSettlement :many
 SELECT * FROM tickets WHERE queue_session_id = $1 AND status = 'completed' AND final_payment_confirmed_at IS NULL ORDER BY updated_at;
 
@@ -70,3 +67,6 @@ LIMIT 2;
 UPDATE tickets SET turn_notified_at = now()
 WHERE id = $1 AND turn_notified_at IS NULL
 RETURNING id;
+
+-- name: CancelPendingTicket :one
+SELECT cancel_pending_ticket($1) AS canceled;

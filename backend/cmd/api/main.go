@@ -26,6 +26,7 @@ import (
 	"kapsflow/internal/notification"
 	"kapsflow/internal/webpush"
 	"kapsflow/internal/review"
+	"kapsflow/internal/jobs"
 )
 
 func main() {
@@ -45,7 +46,14 @@ func run(log *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	pool, err := pgxpool.New(ctx, cfg.AppDatabaseURL)
+	poolCfg, err := pgxpool.ParseConfig(cfg.AppDatabaseURL)
+	if err != nil {
+		return err
+	}
+	// Eksplisit: River menahan beberapa koneksi (listener, worker), dan tiap
+	// request RLS menahan satu koneksi selama request berjalan.
+	poolCfg.MaxConns = 20
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {
 		return err
 	}
@@ -65,7 +73,7 @@ func run(log *slog.Logger) error {
 	mailer := identity.NewMailer(cfg.ResendAPIKey, cfg.EmailFrom, log)
 	identitySvc := identity.NewService(pool, mailer, log, cfg.PublicBaseURL, cfg.DevAutoVerifyEmail)
 	tenantSvc := tenant.NewService(pool)
-	billingSvc := billing.NewService(pool)
+	billingSvc := billing.NewService(pool, mailer, log)
 	profileSvc := profile.NewService(pool, box)
 	staffSvc := staff.NewService(pool, identitySvc)
 	midtransClient := midtrans.NewClient()
@@ -74,6 +82,21 @@ func run(log *slog.Logger) error {
 	notifySvc := notification.NewService(pool, webpushClient, log)
 	queueSvc := queue.NewService(pool, profileSvc, midtransClient, hub, notifySvc, log)
 	reviewSvc := review.NewService(pool)
+
+	jobClient, err := jobs.NewClient(pool, log, queueSvc, billingSvc)
+	if err != nil {
+		return err
+	}
+	if err := jobClient.Start(ctx); err != nil {
+		return err
+	}
+	defer func() {
+		stopCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := jobClient.Stop(stopCtx); err != nil {
+			log.Error("gagal menghentikan job runner", "err", err)
+		}
+	}()
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,

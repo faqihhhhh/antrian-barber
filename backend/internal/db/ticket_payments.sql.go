@@ -114,17 +114,64 @@ func (q *Queries) GetTicketPaymentByTicketID(ctx context.Context, ticketID uuid.
 	return i, err
 }
 
-const markTicketPaymentFailed = `-- name: MarkTicketPaymentFailed :exec
-UPDATE ticket_payments SET status = 'failed', updated_at = now() WHERE id = $1
+const listExpiredPendingPayments = `-- name: ListExpiredPendingPayments :many
+SELECT id, tenant_id, ticket_id, customer_user_id, method, amount_rupiah, unique_code, midtrans_order_id, status, confirmed_by, paid_at, expires_at, created_at, updated_at FROM ticket_payments
+WHERE status = 'pending' AND expires_at < now() - interval '2 minutes'
+ORDER BY expires_at
+LIMIT 100
 `
 
-func (q *Queries) MarkTicketPaymentFailed(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, markTicketPaymentFailed, id)
-	return err
+func (q *Queries) ListExpiredPendingPayments(ctx context.Context) ([]TicketPayment, error) {
+	rows, err := q.db.Query(ctx, listExpiredPendingPayments)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TicketPayment
+	for rows.Next() {
+		var i TicketPayment
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.TicketID,
+			&i.CustomerUserID,
+			&i.Method,
+			&i.AmountRupiah,
+			&i.UniqueCode,
+			&i.MidtransOrderID,
+			&i.Status,
+			&i.ConfirmedBy,
+			&i.PaidAt,
+			&i.ExpiresAt,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-const markTicketPaymentPaid = `-- name: MarkTicketPaymentPaid :exec
-UPDATE ticket_payments SET status = 'paid', paid_at = now(), confirmed_by = $2, updated_at = now() WHERE id = $1
+const markTicketPaymentFailed = `-- name: MarkTicketPaymentFailed :execrows
+UPDATE ticket_payments SET status = 'failed', updated_at = now()
+WHERE id = $1 AND status = 'pending'
+`
+
+func (q *Queries) MarkTicketPaymentFailed(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, markTicketPaymentFailed, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const markTicketPaymentPaid = `-- name: MarkTicketPaymentPaid :execrows
+UPDATE ticket_payments SET status = 'paid', paid_at = now(), confirmed_by = $2, updated_at = now()
+WHERE id = $1 AND status = 'pending'
 `
 
 type MarkTicketPaymentPaidParams struct {
@@ -132,7 +179,10 @@ type MarkTicketPaymentPaidParams struct {
 	ConfirmedBy pgtype.UUID `json:"confirmed_by"`
 }
 
-func (q *Queries) MarkTicketPaymentPaid(ctx context.Context, arg MarkTicketPaymentPaidParams) error {
-	_, err := q.db.Exec(ctx, markTicketPaymentPaid, arg.ID, arg.ConfirmedBy)
-	return err
+func (q *Queries) MarkTicketPaymentPaid(ctx context.Context, arg MarkTicketPaymentPaidParams) (int64, error) {
+	result, err := q.db.Exec(ctx, markTicketPaymentPaid, arg.ID, arg.ConfirmedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

@@ -531,8 +531,12 @@ func (s *Service) RecheckPayment(ctx context.Context, tenantID, ticketID uuid.UU
 }
 
 func (s *Service) settlePaymentPaid(ctx context.Context, q *db.Queries, payment db.TicketPayment) error {
-	if err := q.MarkTicketPaymentPaid(ctx, db.MarkTicketPaymentPaidParams{ID: payment.ID, ConfirmedBy: pgtype.UUID{}}); err != nil {
+	updated, err := q.MarkTicketPaymentPaid(ctx, db.MarkTicketPaymentPaidParams{ID: payment.ID, ConfirmedBy: pgtype.UUID{}})
+	if err != nil {
 		return httpx.Internal(fmt.Errorf("menandai pembayaran lunas: %w", err))
+	}
+	if updated == 0 {
+		return nil // sudah diproses pihak lain (notifikasi ganda atau sudah dibatalkan)
 	}
 	if err := q.MarkTicketWaiting(ctx, payment.TicketID); err != nil {
 		return httpx.Internal(fmt.Errorf("memasukkan tiket ke antrian: %w", err))
@@ -544,10 +548,14 @@ func (s *Service) settlePaymentPaid(ctx context.Context, q *db.Queries, payment 
 }
 
 func (s *Service) settlePaymentFailed(ctx context.Context, q *db.Queries, payment db.TicketPayment) error {
-	if err := q.MarkTicketPaymentFailed(ctx, payment.ID); err != nil {
+	updated, err := q.MarkTicketPaymentFailed(ctx, payment.ID)
+	if err != nil {
 		return httpx.Internal(fmt.Errorf("menandai pembayaran gagal: %w", err))
 	}
-	if err := q.CancelTicket(ctx, payment.TicketID); err != nil {
+	if updated == 0 {
+		return nil // sudah diproses pihak lain
+	}
+	if _, err := q.CancelPendingTicket(ctx, payment.TicketID); err != nil {
 		return httpx.Internal(fmt.Errorf("membatalkan tiket: %w", err))
 	}
 	return nil
@@ -593,8 +601,7 @@ func (s *Service) ProcessMidtransWebhook(ctx context.Context, orderID, statusCod
 
 func (s *Service) ConfirmManualPayment(ctx context.Context, tenantID, ticketID, adminUserID uuid.UUID) error {
 	q := s.queries(ctx)
-	_, err := s.requireAdmin(ctx, q, tenantID, adminUserID)
-	if err != nil {
+	if _, err := s.requireAdmin(ctx, q, tenantID, adminUserID); err != nil {
 		return err
 	}
 	payment, err := q.GetTicketPaymentByTicketID(ctx, ticketID)
@@ -604,11 +611,19 @@ func (s *Service) ConfirmManualPayment(ctx context.Context, tenantID, ticketID, 
 	if payment.Method != "manual" {
 		return httpx.BadRequest("bukan_pembayaran_manual", "Pembayaran ini bukan mode manual", nil)
 	}
-	if payment.Status != "pending" {
-		return httpx.Conflict("sudah_diproses", "Pembayaran ini sudah diproses sebelumnya", nil)
+	switch payment.Status {
+	case "paid":
+		return httpx.Conflict("sudah_diproses", "Pembayaran ini sudah dikonfirmasi sebelumnya", nil)
+	case "failed":
+		return httpx.Conflict("pesanan_kedaluwarsa", "Pesanan ini sudah kedaluwarsa dan dibatalkan. Minta pelanggan memesan ulang, atau tambahkan sebagai pelanggan offline.", nil)
 	}
-	if err := q.MarkTicketPaymentPaid(ctx, db.MarkTicketPaymentPaidParams{ID: payment.ID, ConfirmedBy: dbx.UUID(adminUserID)}); err != nil {
+
+	updated, err := q.MarkTicketPaymentPaid(ctx, db.MarkTicketPaymentPaidParams{ID: payment.ID, ConfirmedBy: dbx.UUID(adminUserID)})
+	if err != nil {
 		return httpx.Internal(fmt.Errorf("menandai pembayaran lunas: %w", err))
+	}
+	if updated == 0 {
+		return httpx.Conflict("sudah_diproses", "Pembayaran ini baru saja diproses, muat ulang daftar pesanan", nil)
 	}
 	if err := q.MarkTicketWaiting(ctx, ticketID); err != nil {
 		return httpx.Internal(fmt.Errorf("memasukkan tiket ke antrian: %w", err))
@@ -820,4 +835,77 @@ func (s *Service) EstimateTicketWait(ctx context.Context, ticketID uuid.UUID) (E
 		ActiveKapsters:       activeKapsters,
 		EstimatedWaitMinutes: (float64(ahead) / float64(divisor)) * perRound,
 	}, nil
+}
+
+// --- Job terjadwal: pesanan kedaluwarsa ---
+
+// ExpireStalePayments dipanggil River tiap menit. Mengembalikan jumlah
+// pesanan yang benar-benar dibatalkan.
+func (s *Service) ExpireStalePayments(ctx context.Context) (int, error) {
+	var stale []db.TicketPayment
+	err := rls.RunAsSystem(ctx, s.pool, func(c context.Context) error {
+		rows, qErr := s.queries(c).ListExpiredPendingPayments(c)
+		stale = rows
+		return qErr
+	})
+	if err != nil {
+		return 0, fmt.Errorf("ambil pembayaran kedaluwarsa: %w", err)
+	}
+
+	expired := 0
+	for _, p := range stale {
+		done, err := s.expireOne(ctx, p)
+		if err != nil {
+			s.log.Error("gagal memproses pembayaran kedaluwarsa", "err", err, "payment_id", p.ID)
+			continue
+		}
+		if done {
+			expired++
+		}
+	}
+	return expired, nil
+}
+
+func (s *Service) expireOne(ctx context.Context, p db.TicketPayment) (bool, error) {
+	if p.Method == "midtrans" {
+		serverKey, _, isProduction, configured, err := s.profileSvc.GetDecryptedMidtransKeys(ctx, p.TenantID)
+		if err != nil {
+			return false, err
+		}
+		if !configured || !p.MidtransOrderID.Valid {
+			return false, fmt.Errorf("kunci midtrans untuk tenant %s tidak tersedia", p.TenantID)
+		}
+		status, err := s.midtransClient.CheckStatus(ctx, serverKey, isProduction, p.MidtransOrderID.String)
+		if err != nil {
+			return false, err
+		}
+		if midtrans.IsPaid(status.TransactionStatus, status.FraudStatus) {
+			// Pelanggan sebenarnya sudah bayar tapi webhook belum sampai.
+			settleErr := rls.RunAsSystem(ctx, s.pool, func(c context.Context) error {
+				return s.settlePaymentPaid(c, s.queries(c), p)
+			})
+			return false, settleErr
+		}
+		if !midtrans.IsFailed(status.TransactionStatus) {
+			return false, nil // masih pending di Midtrans, biarkan Midtrans yang meng-expire
+		}
+	}
+
+	canceled := false
+	err := rls.RunAsSystem(ctx, s.pool, func(c context.Context) error {
+		q := s.queries(c)
+		updated, err := q.MarkTicketPaymentFailed(c, p.ID)
+		if err != nil {
+			return err
+		}
+		if updated == 0 {
+			return nil // admin atau webhook mendahului kita
+		}
+		if _, err := q.CancelPendingTicket(c, p.TicketID); err != nil {
+			return err
+		}
+		canceled = true
+		return nil
+	})
+	return canceled, err
 }
