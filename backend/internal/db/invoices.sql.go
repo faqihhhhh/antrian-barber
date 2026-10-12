@@ -15,6 +15,7 @@ import (
 const createInvoice = `-- name: CreateInvoice :one
 INSERT INTO invoices (tenant_id, plan_id, amount_rupiah, unique_code, expires_at)
 VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT DO NOTHING
 RETURNING id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at
 `
 

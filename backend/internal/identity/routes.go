@@ -18,6 +18,8 @@ func Routes(svc *Service, log *slog.Logger) http.Handler {
 	r.Post("/forgot-password", h.ForgotPassword)
 	r.Get("/reset-password", h.ResetPasswordPage)
 	r.Post("/reset-password", h.ResetPasswordSubmit)
+	r.Post("/verify-email", h.VerifyEmailAPI)
+	r.Post("/resend-verification", h.ResendVerification)
 
 	r.Group(func(pr chi.Router) {
 		pr.Use(RequireAuth(svc, log))

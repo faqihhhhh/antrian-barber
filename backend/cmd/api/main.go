@@ -28,6 +28,7 @@ import (
 	"kapsflow/internal/review"
 	"kapsflow/internal/jobs"
 	"kapsflow/internal/analytics"
+	"kapsflow/internal/account"
 	_ "time/tzdata"
 )
 
@@ -73,7 +74,7 @@ func run(log *slog.Logger) error {
 		log.Warn("DEV_AUTO_VERIFY aktif — semua akun baru langsung terverifikasi tanpa email. JANGAN aktifkan ini di produksi.")
 	}
 	mailer := identity.NewMailer(cfg.ResendAPIKey, cfg.EmailFrom, log)
-	identitySvc := identity.NewService(pool, mailer, log, cfg.PublicBaseURL, cfg.DevAutoVerifyEmail)
+	identitySvc := identity.NewService(pool, mailer, log, cfg.AppBaseURL, cfg.DevAutoVerifyEmail)
 	tenantSvc := tenant.NewService(pool)
 	billingSvc := billing.NewService(pool, mailer, log)
 	profileSvc := profile.NewService(pool, box)
@@ -85,6 +86,7 @@ func run(log *slog.Logger) error {
 	queueSvc := queue.NewService(pool, profileSvc, midtransClient, hub, notifySvc, log)
 	reviewSvc := review.NewService(pool)
 	analyticsSvc := analytics.NewService(pool)
+	accountSvc := account.NewService(pool, billingSvc)
 
 	jobClient, err := jobs.NewClient(pool, log, queueSvc, billingSvc)
 	if err != nil {
@@ -103,7 +105,7 @@ func run(log *slog.Logger) error {
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc, queueSvc, notifySvc, reviewSvc, analyticsSvc),
+		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc, queueSvc, notifySvc, reviewSvc, analyticsSvc, accountSvc),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

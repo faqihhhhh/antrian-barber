@@ -488,8 +488,8 @@ func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUs
 			_ = payment
 			return &BookingResult{Ticket: ticket, PaymentMethod: "manual", AmountRupiah: amount, UniqueCode: code}, nil
 		}
-		if pgerr.IsUniqueViolation(err) {
-			continue
+		if errors.Is(err, pgx.ErrNoRows) {
+			continue // nominal bentrok; ON CONFLICT DO NOTHING tidak membatalkan transaksi
 		}
 		return nil, httpx.Internal(fmt.Errorf("membuat pembayaran manual: %w", err))
 	}

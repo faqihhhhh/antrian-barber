@@ -1,0 +1,309 @@
+openapi: 3.0.3
+info:
+  title: Kapsflow API
+  version: 0.1.0
+  description: |
+    Kontrak API Kapsflow, ditulis bertahap per layar. Endpoint yang belum ada
+    di sini belum didokumentasikan, bukan berarti tidak ada.
+
+    Autentikasi memakai cookie sesi httpOnly (`kapsflow_session`) yang dipasang
+    oleh `POST /v1/auth/login`. Semua error memakai bentuk `ErrorResponse`.
+servers:
+  - url: /
+paths:
+  /v1/auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Daftar akun baru
+      description: |
+        Selalu membalas 202 dengan pesan yang sama, baik email itu baru maupun
+        sudah terdaftar, supaya tidak membocorkan email siapa yang sudah punya akun.
+        Kode error: `password_terlalu_pendek`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        '202':
+          description: Diterima
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Masuk dengan email dan password
+      description: |
+        Kode error: `kredensial_salah` (401), `email_belum_verifikasi` (403).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        '200':
+          description: Berhasil masuk. Cookie sesi dipasang lewat header Set-Cookie.
+          headers:
+            Set-Cookie:
+              description: Cookie sesi httpOnly
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Keluar dan mencabut sesi
+      responses:
+        '200':
+          description: Berhasil keluar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/auth/verify-email:
+    post:
+      operationId: verifyEmail
+      tags: [auth]
+      summary: Verifikasi email dengan token dari tautan di email
+      description: |
+        Kode error: `token_tidak_valid` (tautan salah, sudah dipakai, atau kedaluwarsa),
+        `token_wajib`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+      responses:
+        '200':
+          description: Email terverifikasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/auth/resend-verification:
+    post:
+      operationId: resendVerification
+      tags: [auth]
+      summary: Kirim ulang email verifikasi
+      description: Selalu membalas 202, apa pun status emailnya.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '202':
+          description: Diterima
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Minta tautan atur ulang password
+      description: Selalu membalas 202, apa pun status emailnya. Tautan berlaku 1 jam.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRequest'
+      responses:
+        '202':
+          description: Diterima
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Atur password baru dengan token dari email
+      description: |
+        Kode error: `token_tidak_valid`, `password_terlalu_pendek`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Password berhasil diubah
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/me:
+    get:
+      operationId: getMe
+      tags: [akun]
+      summary: Siapa saya, bisnis dan peran saya, outlet yang boleh saya akses
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Konteks akun
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeContext'
+        default:
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: kapsflow_session
+  responses:
+    Error:
+      description: Terjadi kesalahan
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Kode stabil untuk logika di frontend, misalnya `kredensial_salah`.
+            message:
+              type: string
+              description: Pesan berbahasa Indonesia yang aman ditampilkan ke pengguna.
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+    Credentials:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+    EmailRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+    TokenRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+    ResetPasswordRequest:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          minLength: 8
+    UserInfo:
+      type: object
+      required: [id, email]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+    OutletInfo:
+      type: object
+      required: [id, name, timezone]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        timezone:
+          type: string
+          description: Nama zona waktu IANA, misalnya `Asia/Jakarta`.
+    MembershipInfo:
+      type: object
+      required: [membership_id, tenant_id, tenant_name, roles, outlets, subscription_status, current_period_end]
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        tenant_name:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [owner, admin, kapster]
+        outlets:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutletInfo'
+        subscription_status:
+          type: string
+          enum: [belum_berlangganan, aktif, masa_tenggang, baca_saja]
+        current_period_end:
+          type: string
+          format: date-time
+          nullable: true
+          description: Hanya terisi untuk owner.
+    MeContext:
+      type: object
+      required: [user, is_platform_admin, memberships]
+      properties:
+        user:
+          $ref: '#/components/schemas/UserInfo'
+        is_platform_admin:
+          type: boolean
+        memberships:
+          type: array
+          items:
+            $ref: '#/components/schemas/MembershipInfo'

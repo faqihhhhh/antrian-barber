@@ -178,3 +178,45 @@ func writeSimpleHTML(w http.ResponseWriter, status int, title, message string) {
 	fmt.Fprintf(w, `<!doctype html><html><body style="font-family:sans-serif;max-width:400px;margin:80px auto;text-align:center">
 		<h2>%s</h2><p>%s</p></body></html>`, title, message)
 }
+
+type verifyEmailRequest struct {
+	Token string `json:"token"`
+}
+
+// VerifyEmailAPI dipakai halaman verifikasi di frontend. Versi GET yang
+// membalas HTML tetap ada sebagai cadangan.
+func (h *Handlers) VerifyEmailAPI(w http.ResponseWriter, r *http.Request) {
+	var req verifyEmailRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
+		return
+	}
+	if req.Token == "" {
+		httpx.Error(w, r, h.log, httpx.BadRequest("token_wajib", "Token verifikasi wajib diisi", nil))
+		return
+	}
+	if err := h.svc.VerifyEmail(r.Context(), req.Token); err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Email terverifikasi"})
+}
+
+type resendVerificationRequest struct {
+	Email string `json:"email"`
+}
+
+func (h *Handlers) ResendVerification(w http.ResponseWriter, r *http.Request) {
+	var req resendVerificationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
+		return
+	}
+	if err := h.svc.ResendVerification(r.Context(), req.Email); err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusAccepted, map[string]string{
+		"message": "Kalau akun ada dan belum diverifikasi, email verifikasi sudah dikirim ulang",
+	})
+}

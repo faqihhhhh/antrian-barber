@@ -16,6 +16,7 @@ type Config struct {
 	VAPIDPublicKey     string
 	VAPIDPrivateKey    string
 	VAPIDSubject       string
+	AppBaseURL 		   string
 }
 
 func Load() (Config, error) {
@@ -30,6 +31,7 @@ func Load() (Config, error) {
 		VAPIDPublicKey:     os.Getenv("VAPID_PUBLIC_KEY"),
 		VAPIDPrivateKey:    os.Getenv("VAPID_PRIVATE_KEY"),
 		VAPIDSubject:       getenv("VAPID_SUBJECT", "mailto:admin@kapsflow.com"),
+		AppBaseURL: getenv("APP_BASE_URL", "http://localhost:5173"),
 	}
 	if cfg.AppDatabaseURL == "" {
 		return Config{}, fmt.Errorf("APP_DATABASE_URL wajib diisi")

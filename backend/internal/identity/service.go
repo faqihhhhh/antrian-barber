@@ -91,8 +91,7 @@ func (s *Service) sendVerificationEmail(ctx context.Context, userID uuid.UUID, e
 	if err != nil {
 		return httpx.Internal(fmt.Errorf("menyimpan token verifikasi: %w", err))
 	}
-
-	verifyURL := fmt.Sprintf("%s/v1/auth/verify-email?token=%s", s.baseURL, rawToken)
+	verifyURL := fmt.Sprintf("%s/verifikasi-email?token=%s", s.baseURL, rawToken)
 	if err := s.mailer.Send(ctx, email, "Verifikasi email Kapsflow Anda", verificationEmailHTML(verifyURL)); err != nil {
 		return httpx.Internal(fmt.Errorf("mengirim email verifikasi: %w", err))
 	}
@@ -262,9 +261,27 @@ func (s *Service) SendVerificationEmailUsing(ctx context.Context, q Querier, use
 	if err != nil {
 		return httpx.Internal(fmt.Errorf("menyimpan token verifikasi: %w", err))
 	}
-	verifyURL := fmt.Sprintf("%s/v1/auth/verify-email?token=%s", s.baseURL, rawToken)
+
+	verifyURL := fmt.Sprintf("%s/verifikasi-email?token=%s", s.baseURL, rawToken)
 	if err := s.mailer.Send(ctx, email, "Verifikasi email Kapsflow Anda", verificationEmailHTML(verifyURL)); err != nil {
 		return httpx.Internal(fmt.Errorf("mengirim email verifikasi: %w", err))
 	}
 	return nil
+}
+
+// ResendVerification mengirim ulang email verifikasi kalau akun ada dan belum
+// terverifikasi. Selalu mengembalikan nil untuk email yang tidak dikenal,
+// supaya tidak membocorkan email mana yang sudah terdaftar.
+func (s *Service) ResendVerification(ctx context.Context, email string) error {
+	user, err := s.q.GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		return httpx.Internal(fmt.Errorf("cek user: %w", err))
+	}
+	if user.EmailVerifiedAt.Valid {
+		return nil
+	}
+	return s.sendVerificationEmail(ctx, user.ID, user.Email)
 }

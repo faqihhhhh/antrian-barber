@@ -21,6 +21,7 @@ import (
 	"kapsflow/internal/notification"
 	"kapsflow/internal/review"
 	"kapsflow/internal/analytics"
+	"kapsflow/internal/account"
 )
 
 
@@ -36,6 +37,7 @@ func New(
 	notifySvc *notification.Service,
 	reviewSvc *review.Service,
 	analyticsSvc *analytics.Service,
+	accountSvc *account.Service,
 	) http.Handler {
 	r := chi.NewRouter()
 
@@ -87,6 +89,12 @@ func New(
 		analytics.RegisterAdminRoutes(ar, analyticsSvc, log)
 	})
 
+	r.Route("/v1/me", func(mr chi.Router) {
+		mr.Use(identity.RequireAuth(identitySvc, log))
+		mr.Use(rls.Middleware(pool, log))
+		account.RegisterRoutes(mr, accountSvc, log)
+	})
+	
 	return r
 }
 

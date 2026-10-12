@@ -101,8 +101,8 @@ func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode st
 		if err == nil {
 			return invoice, nil
 		}
-		if isUniqueViolation(err) {
-			continue
+		if errors.Is(err, pgx.ErrNoRows) {
+			continue // nominal bentrok; ON CONFLICT DO NOTHING tidak membatalkan transaksi
 		}
 		return db.Invoice{}, httpx.Internal(fmt.Errorf("membuat invoice: %w", err))
 	}
