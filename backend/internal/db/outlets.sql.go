@@ -13,9 +13,9 @@ import (
 )
 
 const createOutlet = `-- name: CreateOutlet :one
-INSERT INTO outlets (tenant_id, name, timezone, address)
-VALUES ($1, $2, $3, $4)
-RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes
+INSERT INTO outlets (tenant_id, name, timezone, address, slug)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug
 `
 
 type CreateOutletParams struct {
@@ -23,6 +23,7 @@ type CreateOutletParams struct {
 	Name     string      `json:"name"`
 	Timezone string      `json:"timezone"`
 	Address  pgtype.Text `json:"address"`
+	Slug     string      `json:"slug"`
 }
 
 func (q *Queries) CreateOutlet(ctx context.Context, arg CreateOutletParams) (Outlet, error) {
@@ -31,6 +32,7 @@ func (q *Queries) CreateOutlet(ctx context.Context, arg CreateOutletParams) (Out
 		arg.Name,
 		arg.Timezone,
 		arg.Address,
+		arg.Slug,
 	)
 	var i Outlet
 	err := row.Scan(
@@ -43,12 +45,13 @@ func (q *Queries) CreateOutlet(ctx context.Context, arg CreateOutletParams) (Out
 		&i.UpdatedAt,
 		&i.DpPriceRupiah,
 		&i.DefaultDurationMinutes,
+		&i.Slug,
 	)
 	return i, err
 }
 
 const getOutletByID = `-- name: GetOutletByID :one
-SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes FROM outlets WHERE id = $1
+SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug FROM outlets WHERE id = $1
 `
 
 func (q *Queries) GetOutletByID(ctx context.Context, id uuid.UUID) (Outlet, error) {
@@ -64,12 +67,35 @@ func (q *Queries) GetOutletByID(ctx context.Context, id uuid.UUID) (Outlet, erro
 		&i.UpdatedAt,
 		&i.DpPriceRupiah,
 		&i.DefaultDurationMinutes,
+		&i.Slug,
+	)
+	return i, err
+}
+
+const getOutletBySlug = `-- name: GetOutletBySlug :one
+SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug FROM outlets WHERE slug = $1
+`
+
+func (q *Queries) GetOutletBySlug(ctx context.Context, slug string) (Outlet, error) {
+	row := q.db.QueryRow(ctx, getOutletBySlug, slug)
+	var i Outlet
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Name,
+		&i.Timezone,
+		&i.Address,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DpPriceRupiah,
+		&i.DefaultDurationMinutes,
+		&i.Slug,
 	)
 	return i, err
 }
 
 const listOutletsByTenant = `-- name: ListOutletsByTenant :many
-SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes FROM outlets WHERE tenant_id = $1 ORDER BY created_at
+SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug FROM outlets WHERE tenant_id = $1 ORDER BY created_at
 `
 
 func (q *Queries) ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Outlet, error) {
@@ -91,6 +117,7 @@ func (q *Queries) ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) (
 			&i.UpdatedAt,
 			&i.DpPriceRupiah,
 			&i.DefaultDurationMinutes,
+			&i.Slug,
 		); err != nil {
 			return nil, err
 		}
@@ -102,8 +129,19 @@ func (q *Queries) ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) (
 	return items, nil
 }
 
+const slugExists = `-- name: SlugExists :one
+SELECT EXISTS(SELECT 1 FROM outlets WHERE slug = $1)
+`
+
+func (q *Queries) SlugExists(ctx context.Context, slug string) (bool, error) {
+	row := q.db.QueryRow(ctx, slugExists, slug)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const updateOutletSettings = `-- name: UpdateOutletSettings :one
-UPDATE outlets SET dp_price_rupiah = $2, default_duration_minutes = $3, updated_at = now() WHERE id = $1 RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes
+UPDATE outlets SET dp_price_rupiah = $2, default_duration_minutes = $3, updated_at = now() WHERE id = $1 RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug
 `
 
 type UpdateOutletSettingsParams struct {
@@ -125,6 +163,7 @@ func (q *Queries) UpdateOutletSettings(ctx context.Context, arg UpdateOutletSett
 		&i.UpdatedAt,
 		&i.DpPriceRupiah,
 		&i.DefaultDurationMinutes,
+		&i.Slug,
 	)
 	return i, err
 }

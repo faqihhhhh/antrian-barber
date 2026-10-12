@@ -22,6 +22,7 @@ import (
 	"kapsflow/internal/review"
 	"kapsflow/internal/analytics"
 	"kapsflow/internal/account"
+	"kapsflow/internal/publicpage"
 )
 
 
@@ -38,6 +39,7 @@ func New(
 	reviewSvc *review.Service,
 	analyticsSvc *analytics.Service,
 	accountSvc *account.Service,
+	publicSvc *publicpage.Service,
 	) http.Handler {
 	r := chi.NewRouter()
 
@@ -61,6 +63,7 @@ func New(
 
 	r.Route("/v1/public", func(pr chi.Router) {
 		queue.RegisterPublicRoutes(pr, queueSvc, log)
+		publicpage.RegisterRoutes(pr, publicSvc, log)
 	})
 
 	r.Route("/v1/plans", func(pr chi.Router) {
@@ -93,6 +96,7 @@ func New(
 		mr.Use(identity.RequireAuth(identitySvc, log))
 		mr.Use(rls.Middleware(pool, log))
 		account.RegisterRoutes(mr, accountSvc, log)
+		queue.RegisterMeRoutes(mr, queueSvc, log)
 	})
 	
 	return r

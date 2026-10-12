@@ -11,6 +11,8 @@ import (
 
 	crand "crypto/rand"
 	mrand "math/rand/v2"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -393,18 +395,61 @@ func generateMatchCode() (string, error) {
 }
 
 type BookingResult struct {
-	Ticket        db.Ticket `json:"ticket"`
+	TicketID      uuid.UUID `json:"ticket_id"`
+	TicketNumber  int32     `json:"ticket_number"`
+	MatchCode     string    `json:"match_code"`
+	Status        string    `json:"status"`
 	PaymentMethod string    `json:"payment_method"`
 	AmountRupiah  int64     `json:"amount_rupiah"`
 	UniqueCode    int16     `json:"unique_code,omitempty"`
 	QRCodeURL     string    `json:"qr_code_url,omitempty"`
+	ExpiresAt     time.Time `json:"expires_at"`
 }
 
 // BookOnline adalah titik masuk pelanggan memesan tiket. Nomor tiket
 // direbut lewat fungsi SECURITY DEFINER (claim_ticket_number_for_booking),
 // bukan lewat UPDATE biasa — lihat catatan di chat soal kenapa.
-func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUserID uuid.UUID, sessionDate time.Time) (*BookingResult, error) {
+// BookOnline adalah titik masuk pelanggan memesan tiket. Semua pengecekan yang
+// bisa gagal dilakukan SEBELUM nomor tiket direbut. Nomor direbut lewat fungsi
+// SECURITY DEFINER (claim_ticket_number_for_booking), bukan UPDATE biasa.
+func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUserID uuid.UUID, sessionDate time.Time, customerName string) (*BookingResult, error) {
 	q := s.queries(ctx)
+
+	customerName = strings.TrimSpace(customerName)
+	if utf8.RuneCountInString(customerName) > 60 {
+		return nil, httpx.BadRequest("nama_terlalu_panjang", "Nama maksimal 60 karakter", nil)
+	}
+
+	outlet, err := q.GetOutletByID(ctx, outletID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, httpx.NotFound("outlet_tidak_ditemukan", "Outlet tidak ditemukan", nil)
+		}
+		return nil, httpx.Internal(fmt.Errorf("ambil data outlet: %w", err))
+	}
+	if outlet.TenantID != tenantID {
+		return nil, httpx.NotFound("outlet_tidak_ditemukan", "Outlet tidak ditemukan", nil)
+	}
+	if outlet.DpPriceRupiah <= 0 {
+		return nil, httpx.Conflict("harga_dp_belum_diatur", "Harga DP outlet ini belum diatur oleh admin", nil)
+	}
+
+	// Tanggal "hari ini" mengikuti zona waktu outlet, bukan zona waktu server.
+	loc, err := time.LoadLocation(outlet.Timezone)
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("zona waktu outlet tidak valid: %w", err))
+	}
+	if sessionDate.Format("2006-01-02") < time.Now().In(loc).Format("2006-01-02") {
+		return nil, httpx.BadRequest("tanggal_sudah_lewat", "Tanggal antrian sudah lewat", nil)
+	}
+
+	mode, err := s.profileSvc.PaymentMode(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	if mode == "none" {
+		return nil, httpx.Conflict("pembayaran_belum_diatur", "Outlet ini belum mengatur metode pembayaran DP", nil)
+	}
 
 	session, err := q.GetQueueSessionByOutletAndDate(ctx, db.GetQueueSessionByOutletAndDateParams{
 		OutletID: outletID, SessionDate: pgtype.Date{Time: sessionDate, Valid: true},
@@ -432,8 +477,9 @@ func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUs
 	ticket, err := q.CreateOnlineTicket(ctx, db.CreateOnlineTicketParams{
 		TenantID: tenantID, QueueSessionID: session.ID,
 		TicketNumber: num, QueuePosition: num,
-		MatchCode: pgtype.Text{String: matchCode, Valid: true},
+		MatchCode:      pgtype.Text{String: matchCode, Valid: true},
 		CustomerUserID: dbx.UUID(customerUserID),
+		CustomerName:   pgtype.Text{String: customerName, Valid: customerName != ""},
 	})
 	if err != nil {
 		if pgerr.IsUniqueViolationOn(err, "idx_tickets_one_pending_per_customer") {
@@ -442,21 +488,20 @@ func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUs
 		return nil, httpx.Internal(fmt.Errorf("membuat tiket online: %w", err))
 	}
 
-	outlet, err := q.GetOutletByID(ctx, outletID)
-	if err != nil {
-		return nil, httpx.Internal(fmt.Errorf("ambil data outlet: %w", err))
-	}		
-	
-	if outlet.DpPriceRupiah <= 0 {
-		return nil, httpx.Conflict("harga_dp_belum_diatur", "Harga DP outlet ini belum diatur oleh admin", nil)
+	expiresAt := time.Now().Add(paymentWindow)
+	result := &BookingResult{
+		TicketID: ticket.ID, TicketNumber: ticket.TicketNumber, MatchCode: matchCode,
+		Status: ticket.Status, ExpiresAt: expiresAt,
 	}
 
-	serverKey, _, isProduction, configured, err := s.profileSvc.GetDecryptedMidtransKeys(ctx, tenantID)
-	if err != nil {
-		return nil, err
-	}
-
-	if configured {
+	if mode == "midtrans" {
+		serverKey, _, isProduction, configured, err := s.profileSvc.GetDecryptedMidtransKeys(ctx, tenantID)
+		if err != nil {
+			return nil, err
+		}
+		if !configured {
+			return nil, httpx.Internal(fmt.Errorf("mode midtrans tetapi kunci tidak ditemukan untuk tenant %s", tenantID))
+		}
 		paymentID := uuid.New()
 		charge, err := s.midtransClient.ChargeQRIS(ctx, serverKey, isProduction, paymentID.String(), outlet.DpPriceRupiah)
 		if err != nil {
@@ -465,28 +510,33 @@ func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUs
 		_, err = q.CreateTicketPayment(ctx, db.CreateTicketPaymentParams{
 			ID: paymentID, TenantID: tenantID, TicketID: ticket.ID, CustomerUserID: dbx.UUID(customerUserID),
 			Method: "midtrans", AmountRupiah: outlet.DpPriceRupiah,
-			UniqueCode: pgtype.Int2{}, MidtransOrderID: pgtype.Text{String: charge.OrderID, Valid: true},
-			ExpiresAt: dbx.TS(time.Now().Add(paymentWindow)),
+			UniqueCode:      pgtype.Int2{},
+			MidtransOrderID: pgtype.Text{String: charge.OrderID, Valid: true},
+			QrCodeUrl:       pgtype.Text{String: charge.QRCodeURL, Valid: charge.QRCodeURL != ""},
+			ExpiresAt:       dbx.TS(expiresAt),
 		})
 		if err != nil {
 			return nil, httpx.Internal(fmt.Errorf("menyimpan pembayaran: %w", err))
 		}
-		return &BookingResult{Ticket: ticket, PaymentMethod: "midtrans", AmountRupiah: outlet.DpPriceRupiah, QRCodeURL: charge.QRCodeURL}, nil
+		result.PaymentMethod, result.AmountRupiah, result.QRCodeURL = "midtrans", outlet.DpPriceRupiah, charge.QRCodeURL
+		return result, nil
 	}
 
 	// Mode manual: nominal unik per tenant, dikonfirmasi admin.
 	for attempt := 0; attempt < 10; attempt++ {
 		code := int16(1 + mrand.IntN(998))
 		amount := outlet.DpPriceRupiah + int64(code)
-		payment, err := q.CreateTicketPayment(ctx, db.CreateTicketPaymentParams{
+		_, err := q.CreateTicketPayment(ctx, db.CreateTicketPaymentParams{
 			ID: uuid.New(), TenantID: tenantID, TicketID: ticket.ID, CustomerUserID: dbx.UUID(customerUserID),
 			Method: "manual", AmountRupiah: amount,
-			UniqueCode: pgtype.Int2{Int16: code, Valid: true}, MidtransOrderID: pgtype.Text{},
-			ExpiresAt: dbx.TS(time.Now().Add(paymentWindow)),
+			UniqueCode:      pgtype.Int2{Int16: code, Valid: true},
+			MidtransOrderID: pgtype.Text{},
+			QrCodeUrl:       pgtype.Text{},
+			ExpiresAt:       dbx.TS(expiresAt),
 		})
 		if err == nil {
-			_ = payment
-			return &BookingResult{Ticket: ticket, PaymentMethod: "manual", AmountRupiah: amount, UniqueCode: code}, nil
+			result.PaymentMethod, result.AmountRupiah, result.UniqueCode = "manual", amount, code
+			return result, nil
 		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			continue // nominal bentrok; ON CONFLICT DO NOTHING tidak membatalkan transaksi
@@ -796,9 +846,56 @@ type EstimateResult struct {
 // EstimateTicketWait adalah estimasi PERSONAL berdasarkan posisi tiket
 // persis — beda dari GetPublicSnapshot yang agregat untuk siapa saja. Lewat
 // RLS biasa: pelanggan cuma bisa menanyakan tiket miliknya sendiri.
+// estimateAhead menghitung estimasi untuk satu posisi antrian. Sengaja lewat
+// rls.RunAsSystem: pelanggan hanya boleh melihat tiketnya sendiri, jadi lewat
+// RLS biasa antrean orang lain, kapster aktif, dan riwayat panggilan semuanya
+// tersembunyi dan angkanya salah. Pemanggil WAJIB sudah memastikan tiketnya
+// milik pemanggil (atau pemanggil adalah staf tenant) sebelum memanggil ini.
+func (s *Service) estimateAhead(ctx context.Context, sessionID, outletID uuid.UUID, position int32) (EstimateResult, error) {
+	var result EstimateResult
+	err := rls.RunAsSystem(ctx, s.pool, func(c context.Context) error {
+		q := s.queries(c)
+
+		ahead, err := q.CountWaitingAheadOf(c, db.CountWaitingAheadOfParams{QueueSessionID: sessionID, QueuePosition: position})
+		if err != nil {
+			return fmt.Errorf("menghitung antrean di depan: %w", err)
+		}
+		activeKapsters, err := q.CountActiveKapsters(c, sessionID)
+		if err != nil {
+			return fmt.Errorf("menghitung kapster aktif: %w", err)
+		}
+		avgMinutes, err := q.GetAverageCallIntervalMinutes(c, outletID)
+		if err != nil {
+			return fmt.Errorf("menghitung rata-rata waktu: %w", err)
+		}
+		outlet, err := q.GetOutletByID(c, outletID)
+		if err != nil {
+			return fmt.Errorf("ambil data outlet: %w", err)
+		}
+
+		perRound := float64(outlet.DefaultDurationMinutes)
+		if avgMinutes >= 0 {
+			perRound = avgMinutes
+		}
+		divisor := activeKapsters
+		if divisor == 0 {
+			divisor = 1
+		}
+		result = EstimateResult{
+			TicketsAhead:         ahead,
+			ActiveKapsters:       activeKapsters,
+			EstimatedWaitMinutes: (float64(ahead) / float64(divisor)) * perRound,
+		}
+		return nil
+	})
+	return result, err
+}
+
 func (s *Service) EstimateTicketWait(ctx context.Context, ticketID uuid.UUID) (EstimateResult, error) {
 	q := s.queries(ctx)
 
+	// RLS biasa di sini berfungsi sebagai otorisasi: pelanggan hanya bisa
+	// menemukan tiketnya sendiri, staf hanya tiket tenant-nya.
 	ticket, err := q.GetTicketByID(ctx, ticketID)
 	if err != nil {
 		return EstimateResult{}, httpx.NotFound("tiket_tidak_ditemukan", "Tiket tidak ditemukan", nil)
@@ -807,39 +904,12 @@ func (s *Service) EstimateTicketWait(ctx context.Context, ticketID uuid.UUID) (E
 	if err != nil {
 		return EstimateResult{}, httpx.Internal(fmt.Errorf("ambil sesi antrian: %w", err))
 	}
-	ahead, err := q.CountWaitingAheadOf(ctx, db.CountWaitingAheadOfParams{QueueSessionID: ticket.QueueSessionID, QueuePosition: ticket.QueuePosition})
+	result, err := s.estimateAhead(ctx, ticket.QueueSessionID, session.OutletID, ticket.QueuePosition)
 	if err != nil {
-		return EstimateResult{}, httpx.Internal(fmt.Errorf("menghitung antrean di depan: %w", err))
+		return EstimateResult{}, httpx.Internal(err)
 	}
-	activeKapsters, err := q.CountActiveKapsters(ctx, ticket.QueueSessionID)
-	if err != nil {
-		return EstimateResult{}, httpx.Internal(fmt.Errorf("menghitung kapster aktif: %w", err))
-	}
-	avgMinutes, err := q.GetAverageCallIntervalMinutes(ctx, session.OutletID)
-	if err != nil {
-		return EstimateResult{}, httpx.Internal(fmt.Errorf("menghitung rata-rata waktu: %w", err))
-	}
-	outlet, err := q.GetOutletByID(ctx, session.OutletID)
-	if err != nil {
-		return EstimateResult{}, httpx.Internal(fmt.Errorf("ambil data outlet: %w", err))
-	}
-
-	perRound := float64(outlet.DefaultDurationMinutes)
-	if avgMinutes >= 0 {
-		perRound = avgMinutes
-	}
-	divisor := activeKapsters
-	if divisor == 0 {
-		divisor = 1
-	}
-
-	return EstimateResult{
-		TicketsAhead:         ahead,
-		ActiveKapsters:       activeKapsters,
-		EstimatedWaitMinutes: (float64(ahead) / float64(divisor)) * perRound,
-	}, nil
+	return result, nil
 }
-
 // --- Job terjadwal: pesanan kedaluwarsa ---
 
 // ExpireStalePayments dipanggil River tiap menit. Mengembalikan jumlah
@@ -911,4 +981,105 @@ func (s *Service) expireOne(ctx context.Context, p db.TicketPayment) (bool, erro
 		return nil
 	})
 	return canceled, err
+}
+
+// --- Sisi pelanggan: tiket saya dan QRIS manual ---
+
+type MyTicketPayment struct {
+	Method       string    `json:"method"`
+	Status       string    `json:"status"`
+	AmountRupiah int64     `json:"amount_rupiah"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	QRCodeURL    *string   `json:"qr_code_url"`
+}
+
+type MyTicket struct {
+	TicketID       uuid.UUID        `json:"ticket_id"`
+	TenantID       uuid.UUID        `json:"tenant_id"`
+	OutletID       uuid.UUID        `json:"outlet_id"`
+	OutletName     string           `json:"outlet_name"`
+	OutletSlug     string           `json:"outlet_slug"`
+	OutletTimezone string           `json:"outlet_timezone"`
+	SessionID      uuid.UUID        `json:"session_id"`
+	SessionDate    string           `json:"session_date"`
+	TicketNumber   int32            `json:"ticket_number"`
+	Status         string           `json:"status"`
+	MatchCode      *string          `json:"match_code"`
+	CustomerName   *string          `json:"customer_name"`
+	Payment        *MyTicketPayment `json:"payment"`
+	Estimate       *EstimateResult  `json:"estimate"`
+	Reviewed       bool             `json:"reviewed"`
+}
+
+// MyTickets: tiket aktif dan yang selesai 7 hari terakhir milik pelanggan ini.
+// Daftar tiketnya lewat RLS biasa (hanya tiket sendiri); estimasi tunggu
+// dihitung lewat jalur sistem karena butuh melihat antrean orang lain.
+func (s *Service) MyTickets(ctx context.Context, userID uuid.UUID) ([]MyTicket, error) {
+	rows, err := s.queries(ctx).ListMyTickets(ctx, userID)
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("ambil tiket saya: %w", err))
+	}
+
+	result := make([]MyTicket, 0, len(rows))
+	for _, r := range rows {
+		item := MyTicket{
+			TicketID: r.TicketID, TenantID: r.TenantID, OutletID: r.OutletID,
+			OutletName: r.OutletName, OutletSlug: r.OutletSlug, OutletTimezone: r.OutletTimezone,
+			SessionID: r.SessionID, SessionDate: r.SessionDate.Time.Format("2006-01-02"),
+			TicketNumber: r.TicketNumber, Status: r.Status, Reviewed: r.Reviewed,
+		}
+		if r.MatchCode.Valid {
+			v := r.MatchCode.String
+			item.MatchCode = &v
+		}
+		if r.CustomerName.Valid {
+			v := r.CustomerName.String
+			item.CustomerName = &v
+		}
+		if r.PaymentMethod.Valid {
+			p := &MyTicketPayment{
+				Method:       r.PaymentMethod.String,
+				Status:       r.PaymentStatus.String,
+				AmountRupiah: r.AmountRupiah.Int64,
+				ExpiresAt:    r.PaymentExpiresAt.Time,
+			}
+			if r.QrCodeUrl.Valid {
+				v := r.QrCodeUrl.String
+				p.QRCodeURL = &v
+			}
+			item.Payment = p
+		}
+		if r.Status == "waiting" {
+			est, err := s.estimateAhead(ctx, r.SessionID, r.OutletID, r.QueuePosition)
+			if err != nil {
+				return nil, httpx.Internal(err)
+			}
+			item.Estimate = &est
+		}
+		result = append(result, item)
+	}
+	return result, nil
+}
+
+// ManualQRISImage mengembalikan gambar QRIS owner, HANYA untuk pemilik tiket
+// yang pembayaran manualnya masih menunggu. Pemilik tiket dipastikan oleh RLS
+// (GetTicketByID tidak menemukan tiket orang lain).
+func (s *Service) ManualQRISImage(ctx context.Context, ticketID uuid.UUID) (string, []byte, error) {
+	q := s.queries(ctx)
+	ticket, err := q.GetTicketByID(ctx, ticketID)
+	if err != nil {
+		return "", nil, httpx.NotFound("qris_tidak_tersedia", "QRIS tidak tersedia", nil)
+	}
+	payment, err := q.GetTicketPaymentByTicketID(ctx, ticketID)
+	if err != nil || payment.Method != "manual" || payment.Status != "pending" {
+		return "", nil, httpx.NotFound("qris_tidak_tersedia", "QRIS tidak tersedia", nil)
+	}
+	data, contentType, ok, err := s.profileSvc.GetManualQRIS(ctx, ticket.TenantID)
+	if err != nil {
+		return "", nil, err
+	}
+	if !ok {
+		return "", nil, httpx.NotFound("qris_tidak_tersedia", "QRIS tidak tersedia", nil)
+	}
+	return contentType, data, nil
 }

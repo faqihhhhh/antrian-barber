@@ -42,8 +42,8 @@ SELECT * FROM tickets WHERE queue_session_id = $1 ORDER BY queue_position;
 SELECT * FROM tickets WHERE id = $1;
 
 -- name: CreateOnlineTicket :one
-INSERT INTO tickets (tenant_id, queue_session_id, ticket_number, queue_position, channel, match_code, customer_user_id, status)
-VALUES ($1, $2, $3, $4, 'online', $5, $6, 'pending_payment')
+INSERT INTO tickets (tenant_id, queue_session_id, ticket_number, queue_position, channel, match_code, customer_user_id, customer_name, status)
+VALUES ($1, $2, $3, $4, 'online', $5, $6, $7, 'pending_payment')
 RETURNING *;
 
 -- name: MarkTicketWaiting :exec
@@ -70,3 +70,5 @@ RETURNING id;
 
 -- name: CancelPendingTicket :one
 SELECT cancel_pending_ticket($1) AS canceled;
+
+

@@ -179,3 +179,48 @@ func (q *Queries) ListQueueSessionsByOutlet(ctx context.Context, outletID uuid.U
 	}
 	return items, nil
 }
+
+const listQueueSessionsInRange = `-- name: ListQueueSessionsInRange :many
+SELECT id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at, used_quota FROM queue_sessions
+WHERE outlet_id = $1
+  AND session_date BETWEEN $2::date AND $3::date
+ORDER BY session_date
+`
+
+type ListQueueSessionsInRangeParams struct {
+	OutletID uuid.UUID   `json:"outlet_id"`
+	FromDate pgtype.Date `json:"from_date"`
+	ToDate   pgtype.Date `json:"to_date"`
+}
+
+func (q *Queries) ListQueueSessionsInRange(ctx context.Context, arg ListQueueSessionsInRangeParams) ([]QueueSession, error) {
+	rows, err := q.db.Query(ctx, listQueueSessionsInRange, arg.OutletID, arg.FromDate, arg.ToDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []QueueSession
+	for rows.Next() {
+		var i QueueSession
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.OutletID,
+			&i.SessionDate,
+			&i.MaxQuota,
+			&i.NextTicketNumber,
+			&i.Status,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.UsedQuota,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

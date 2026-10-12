@@ -179,12 +179,229 @@ paths:
                 $ref: '#/components/schemas/MeContext'
         default:
           $ref: '#/components/responses/Error'
+  /v1/public/outlets/{slug}:
+    get:
+      operationId: getPublicOutlet
+      tags: [publik]
+      summary: Halaman publik outlet (tanpa login)
+      description: |
+        Dipakai pelanggan yang membuka tautan atau QR outlet. `local_today` dan `days`
+        memakai tanggal lokal outlet (zona waktu outlet), bukan zona waktu server.
+        Kode error: `outlet_tidak_ditemukan` (404).
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Info outlet, 14 hari ke depan, dan kondisi antrian hari ini
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutletPage'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/public/queue-sessions/{sessionID}/stream:
+    get:
+      operationId: streamQueueSession
+      tags: [publik]
+      summary: Aliran realtime kondisi antrian (Server-Sent Events)
+      description: |
+        Koneksi tetap terbuka. Setiap event `data:` berisi JSON `SessionSnapshot`, dikirim
+        sekali saat terhubung lalu setiap kali antrian berubah. Baris `: keep-alive`
+        dikirim berkala dan boleh diabaikan. Pakai `EventSource`, bukan fetch.
+      parameters:
+        - $ref: '#/components/parameters/SessionID'
+      responses:
+        '200':
+          description: Aliran event
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/outlets/{outletID}/book:
+    post:
+      operationId: bookOnline
+      tags: [pelanggan]
+      summary: Pesan tiket antrian online
+      description: |
+        Tiket berstatus `pending_payment` sampai DP dibayar. Satu pelanggan hanya boleh
+        punya satu pesanan belum dibayar per sesi. Pesanan yang tidak dibayar hangus
+        otomatis dan kuotanya kembali.
+        Kode error: `tanggal_sudah_lewat`, `harga_dp_belum_diatur`, `pembayaran_belum_diatur`,
+        `sesi_tidak_ditemukan`, `tidak_bisa_memesan` (kuota penuh atau sesi tutup),
+        `masih_ada_pesanan_belum_dibayar`, `nama_terlalu_panjang`,
+        `berlangganan_diperlukan` (402).
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/OutletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookRequest'
+      responses:
+        '201':
+          description: Tiket dibuat, menunggu pembayaran DP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResult'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/tickets/{ticketID}/recheck-payment:
+    post:
+      operationId: recheckPayment
+      tags: [pelanggan]
+      summary: Cek ulang status pembayaran DP
+      description: |
+        Untuk pembayaran Midtrans, menanyakan status langsung ke Midtrans (berguna kalau
+        notifikasi otomatis terlambat). Untuk pembayaran manual hanya mengembalikan status.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/TicketID'
+      responses:
+        '200':
+          description: Status pembayaran saat ini
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStatusResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/profile/manual-qris:
+    put:
+      operationId: setManualQris
+      tags: [owner]
+      summary: Unggah gambar QRIS statis untuk mode DP manual
+      description: |
+        Hanya owner. Body berisi gambar mentah (bukan multipart), maksimal 512 KB.
+        Jenis file dicek dari isinya.
+        Kode error: `bukan_owner`, `gambar_kosong`, `gambar_terlalu_besar`,
+        `format_gambar_tidak_didukung`.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      requestBody:
+        required: true
+        content:
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/webp:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Tersimpan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/me/tickets:
+    get:
+      operationId: listMyTickets
+      tags: [pelanggan]
+      summary: Tiket saya
+      description: |
+        Tiket aktif dan yang selesai dalam 7 hari terakhir. `estimate` hanya terisi untuk
+        tiket berstatus `waiting`.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Daftar tiket
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MyTicket'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/me/tickets/{ticketID}/qris-image:
+    get:
+      operationId: getTicketQrisImage
+      tags: [pelanggan]
+      summary: Gambar QRIS owner untuk membayar DP manual
+      description: |
+        Hanya untuk pemilik tiket yang pembayaran manualnya masih menunggu.
+        Selain itu membalas 404 `qris_tidak_tersedia`.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TicketID'
+      responses:
+        '200':
+          description: Gambar QRIS
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: '#/components/responses/Error'
 components:
   securitySchemes:
     cookieAuth:
       type: apiKey
       in: cookie
       name: kapsflow_session
+  parameters:
+    TenantID:
+      name: tenantID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    OutletID:
+      name: outletID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TicketID:
+      name: ticketID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SessionID:
+      name: sessionID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   responses:
     Error:
       description: Terjadi kesalahan
@@ -207,6 +424,254 @@ components:
             message:
               type: string
               description: Pesan berbahasa Indonesia yang aman ditampilkan ke pengguna.
+    SessionSnapshot:
+      type: object
+      required: [session_id, status, waiting_count, active_kapsters, estimated_wait_minutes, updated_at]
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [open, closed]
+        waiting_count:
+          type: integer
+          format: int64
+        active_kapsters:
+          type: integer
+          format: int64
+        estimated_wait_minutes:
+          type: number
+          description: |
+            Estimasi menunggu untuk pelanggan yang tiba sekarang. Memakai rata-rata jeda
+            panggilan nyata kalau datanya ada, jika belum ada memakai durasi bawaan outlet.
+        updated_at:
+          type: string
+          format: date-time
+    EstimateResult:
+      type: object
+      required: [tickets_ahead, active_kapsters, estimated_wait_minutes]
+      properties:
+        tickets_ahead:
+          type: integer
+          format: int64
+        active_kapsters:
+          type: integer
+          format: int64
+        estimated_wait_minutes:
+          type: number
+    DayInfo:
+      type: object
+      required: [date, session_id, open, max_quota, remaining]
+      properties:
+        date:
+          type: string
+          format: date
+          description: Tanggal lokal outlet.
+        session_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Null kalau outlet belum membuka antrian di tanggal ini.
+        open:
+          type: boolean
+          description: Sesi terbuka dan kuota masih tersisa.
+        max_quota:
+          type: integer
+        remaining:
+          type: integer
+    OutletPage:
+      type: object
+      required:
+        - outlet_id
+        - tenant_id
+        - slug
+        - business_name
+        - outlet_name
+        - address
+        - timezone
+        - local_today
+        - dp_price_rupiah
+        - default_duration_minutes
+        - payment_mode
+        - accepting_bookings
+        - unavailable_reason
+        - days
+        - today
+      properties:
+        outlet_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        business_name:
+          type: string
+        outlet_name:
+          type: string
+        address:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+        local_today:
+          type: string
+          format: date
+        dp_price_rupiah:
+          type: integer
+          format: int64
+        default_duration_minutes:
+          type: integer
+        payment_mode:
+          type: string
+          enum: [midtrans, manual, none]
+          description: |
+            `midtrans`: QRIS otomatis, tiket aktif begitu dibayar. `manual`: QRIS statis
+            owner, tiket aktif setelah admin mengonfirmasi.
+        accepting_bookings:
+          type: boolean
+        unavailable_reason:
+          type: string
+          nullable: true
+          enum: [langganan_tidak_aktif, harga_dp_belum_diatur, pembayaran_belum_diatur]
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/DayInfo'
+        today:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/SessionSnapshot'
+    BookRequest:
+      type: object
+      required: [session_date]
+      properties:
+        session_date:
+          type: string
+          format: date
+        customer_name:
+          type: string
+          maxLength: 60
+          description: Nama yang dipanggil kapster. Opsional, tapi disarankan.
+    BookingResult:
+      type: object
+      required: [ticket_id, ticket_number, match_code, status, payment_method, amount_rupiah, expires_at]
+      properties:
+        ticket_id:
+          type: string
+          format: uuid
+        ticket_number:
+          type: integer
+        match_code:
+          type: string
+          description: Kode 6 karakter yang dicocokkan dengan kapster saat dipanggil.
+        status:
+          type: string
+        payment_method:
+          type: string
+          enum: [midtrans, manual]
+        amount_rupiah:
+          type: integer
+          format: int64
+          description: Nominal yang harus dibayar persis. Untuk mode manual sudah termasuk kode unik.
+        unique_code:
+          type: integer
+          description: Hanya untuk mode manual.
+        qr_code_url:
+          type: string
+          description: Hanya untuk mode Midtrans. Alamat gambar QR.
+        expires_at:
+          type: string
+          format: date-time
+    PaymentStatusResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pending, paid, failed]
+    MyTicketPayment:
+      type: object
+      required: [method, status, amount_rupiah, expires_at, qr_code_url]
+      properties:
+        method:
+          type: string
+          enum: [midtrans, manual]
+        status:
+          type: string
+          enum: [pending, paid, failed]
+        amount_rupiah:
+          type: integer
+          format: int64
+        expires_at:
+          type: string
+          format: date-time
+        qr_code_url:
+          type: string
+          nullable: true
+    MyTicket:
+      type: object
+      required:
+        - ticket_id
+        - tenant_id
+        - outlet_id
+        - outlet_name
+        - outlet_slug
+        - outlet_timezone
+        - session_id
+        - session_date
+        - ticket_number
+        - status
+        - match_code
+        - customer_name
+        - payment
+        - estimate
+        - reviewed
+      properties:
+        ticket_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        outlet_id:
+          type: string
+          format: uuid
+        outlet_name:
+          type: string
+        outlet_slug:
+          type: string
+        outlet_timezone:
+          type: string
+        session_id:
+          type: string
+          format: uuid
+        session_date:
+          type: string
+          format: date
+        ticket_number:
+          type: integer
+        status:
+          type: string
+          enum: [pending_payment, waiting, called, in_progress, completed, canceled]
+        match_code:
+          type: string
+          nullable: true
+        customer_name:
+          type: string
+          nullable: true
+        payment:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MyTicketPayment'
+        estimate:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/EstimateResult'
+        reviewed:
+          type: boolean    
     MessageResponse:
       type: object
       required: [message]

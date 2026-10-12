@@ -1,7 +1,13 @@
 -- name: CreateOutlet :one
-INSERT INTO outlets (tenant_id, name, timezone, address)
-VALUES ($1, $2, $3, $4)
+INSERT INTO outlets (tenant_id, name, timezone, address, slug)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
+
+-- name: GetOutletBySlug :one
+SELECT * FROM outlets WHERE slug = $1;
+
+-- name: SlugExists :one
+SELECT EXISTS(SELECT 1 FROM outlets WHERE slug = $1);
 
 -- name: ListOutletsByTenant :many
 SELECT * FROM outlets WHERE tenant_id = $1 ORDER BY created_at;

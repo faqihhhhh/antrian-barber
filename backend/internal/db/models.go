@@ -67,6 +67,7 @@ type Outlet struct {
 	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 	DpPriceRupiah          int64              `json:"dp_price_rupiah"`
 	DefaultDurationMinutes int32              `json:"default_duration_minutes"`
+	Slug                   string             `json:"slug"`
 }
 
 type PasswordResetToken struct {
@@ -169,6 +170,9 @@ type TenantProfile struct {
 	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
 	MidtransIsProduction       bool               `json:"midtrans_is_production"`
+	ManualQrisImage            []byte             `json:"manual_qris_image"`
+	ManualQrisContentType      pgtype.Text        `json:"manual_qris_content_type"`
+	ManualQrisUpdatedAt        pgtype.Timestamptz `json:"manual_qris_updated_at"`
 }
 
 type Ticket struct {
@@ -215,6 +219,7 @@ type TicketPayment struct {
 	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	QrCodeUrl       pgtype.Text        `json:"qr_code_url"`
 }
 
 type User struct {

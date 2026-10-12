@@ -259,7 +259,8 @@ func (h *Handlers) Complete(w http.ResponseWriter, r *http.Request) {
 }
 
 type bookOnlineRequest struct {
-	SessionDate string `json:"session_date"`
+	SessionDate  string `json:"session_date"`
+	CustomerName string `json:"customer_name"`
 }
 
 func (h *Handlers) BookOnline(w http.ResponseWriter, r *http.Request) {
@@ -285,7 +286,7 @@ func (h *Handlers) BookOnline(w http.ResponseWriter, r *http.Request) {
 	}
 	user, _ := identity.UserFromContext(r.Context())
 
-	result, err := h.svc.BookOnline(r.Context(), tenantID, outletID, user.ID, date)
+	result, err := h.svc.BookOnline(r.Context(), tenantID, outletID, user.ID, date, req.CustomerName)
 	if err != nil {
 		httpx.Error(w, r, h.log, err)
 		return
@@ -309,7 +310,7 @@ func (h *Handlers) RecheckPayment(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, r, h.log, err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, payment)
+	httpx.JSON(w, http.StatusOK, map[string]string{"status": payment.Status})
 }
 
 func (h *Handlers) ConfirmManualPayment(w http.ResponseWriter, r *http.Request) {
@@ -474,4 +475,32 @@ func (h *Handlers) EstimateTicketWait(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.JSON(w, http.StatusOK, result)
+}
+
+func (h *Handlers) MyTickets(w http.ResponseWriter, r *http.Request) {
+	user, _ := identity.UserFromContext(r.Context())
+	items, err := h.svc.MyTickets(r.Context(), user.ID)
+	if err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, items)
+}
+
+func (h *Handlers) MyQRISImage(w http.ResponseWriter, r *http.Request) {
+	ticketID, err := param(r, "ticketID")
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("ticket_id_tidak_valid", "ID tiket tidak valid", err))
+		return
+	}
+	contentType, data, err := h.svc.ManualQRISImage(r.Context(), ticketID)
+	if err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "private, no-store")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
 }

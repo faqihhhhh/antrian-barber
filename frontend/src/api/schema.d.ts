@@ -161,6 +161,162 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/public/outlets/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Halaman publik outlet (tanpa login)
+         * @description Dipakai pelanggan yang membuka tautan atau QR outlet. `local_today` dan `days`
+         *     memakai tanggal lokal outlet (zona waktu outlet), bukan zona waktu server.
+         *     Kode error: `outlet_tidak_ditemukan` (404).
+         */
+        get: operations["getPublicOutlet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/queue-sessions/{sessionID}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Aliran realtime kondisi antrian (Server-Sent Events)
+         * @description Koneksi tetap terbuka. Setiap event `data:` berisi JSON `SessionSnapshot`, dikirim
+         *     sekali saat terhubung lalu setiap kali antrian berubah. Baris `: keep-alive`
+         *     dikirim berkala dan boleh diabaikan. Pakai `EventSource`, bukan fetch.
+         */
+        get: operations["streamQueueSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/outlets/{outletID}/book": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pesan tiket antrian online
+         * @description Tiket berstatus `pending_payment` sampai DP dibayar. Satu pelanggan hanya boleh
+         *     punya satu pesanan belum dibayar per sesi. Pesanan yang tidak dibayar hangus
+         *     otomatis dan kuotanya kembali.
+         *     Kode error: `tanggal_sudah_lewat`, `harga_dp_belum_diatur`, `pembayaran_belum_diatur`,
+         *     `sesi_tidak_ditemukan`, `tidak_bisa_memesan` (kuota penuh atau sesi tutup),
+         *     `masih_ada_pesanan_belum_dibayar`, `nama_terlalu_panjang`,
+         *     `berlangganan_diperlukan` (402).
+         */
+        post: operations["bookOnline"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/tickets/{ticketID}/recheck-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cek ulang status pembayaran DP
+         * @description Untuk pembayaran Midtrans, menanyakan status langsung ke Midtrans (berguna kalau
+         *     notifikasi otomatis terlambat). Untuk pembayaran manual hanya mengembalikan status.
+         */
+        post: operations["recheckPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/profile/manual-qris": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Unggah gambar QRIS statis untuk mode DP manual
+         * @description Hanya owner. Body berisi gambar mentah (bukan multipart), maksimal 512 KB.
+         *     Jenis file dicek dari isinya.
+         *     Kode error: `bukan_owner`, `gambar_kosong`, `gambar_terlalu_besar`,
+         *     `format_gambar_tidak_didukung`.
+         */
+        put: operations["setManualQris"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tiket saya
+         * @description Tiket aktif dan yang selesai dalam 7 hari terakhir. `estimate` hanya terisi untuk
+         *     tiket berstatus `waiting`.
+         */
+        get: operations["listMyTickets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/tickets/{ticketID}/qris-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Gambar QRIS owner untuk membayar DP manual
+         * @description Hanya untuk pemilik tiket yang pembayaran manualnya masih menunggu.
+         *     Selain itu membalas 404 `qris_tidak_tersedia`.
+         */
+        get: operations["getTicketQrisImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -172,6 +328,138 @@ export interface components {
                 /** @description Pesan berbahasa Indonesia yang aman ditampilkan ke pengguna. */
                 message: string;
             };
+        };
+        SessionSnapshot: {
+            /** Format: uuid */
+            session_id: string;
+            /** @enum {string} */
+            status: "open" | "closed";
+            /** Format: int64 */
+            waiting_count: number;
+            /** Format: int64 */
+            active_kapsters: number;
+            /**
+             * @description Estimasi menunggu untuk pelanggan yang tiba sekarang. Memakai rata-rata jeda
+             *     panggilan nyata kalau datanya ada, jika belum ada memakai durasi bawaan outlet.
+             */
+            estimated_wait_minutes: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        EstimateResult: {
+            /** Format: int64 */
+            tickets_ahead: number;
+            /** Format: int64 */
+            active_kapsters: number;
+            estimated_wait_minutes: number;
+        };
+        DayInfo: {
+            /**
+             * Format: date
+             * @description Tanggal lokal outlet.
+             */
+            date: string;
+            /**
+             * Format: uuid
+             * @description Null kalau outlet belum membuka antrian di tanggal ini.
+             */
+            session_id: string | null;
+            /** @description Sesi terbuka dan kuota masih tersisa. */
+            open: boolean;
+            max_quota: number;
+            remaining: number;
+        };
+        OutletPage: {
+            /** Format: uuid */
+            outlet_id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            slug: string;
+            business_name: string;
+            outlet_name: string;
+            address: string | null;
+            timezone: string;
+            /** Format: date */
+            local_today: string;
+            /** Format: int64 */
+            dp_price_rupiah: number;
+            default_duration_minutes: number;
+            /**
+             * @description `midtrans`: QRIS otomatis, tiket aktif begitu dibayar. `manual`: QRIS statis
+             *     owner, tiket aktif setelah admin mengonfirmasi.
+             * @enum {string}
+             */
+            payment_mode: "midtrans" | "manual" | "none";
+            accepting_bookings: boolean;
+            /** @enum {string|null} */
+            unavailable_reason: "langganan_tidak_aktif" | "harga_dp_belum_diatur" | "pembayaran_belum_diatur" | null;
+            days: components["schemas"]["DayInfo"][];
+            today: components["schemas"]["SessionSnapshot"] | null;
+        };
+        BookRequest: {
+            /** Format: date */
+            session_date: string;
+            /** @description Nama yang dipanggil kapster. Opsional, tapi disarankan. */
+            customer_name?: string;
+        };
+        BookingResult: {
+            /** Format: uuid */
+            ticket_id: string;
+            ticket_number: number;
+            /** @description Kode 6 karakter yang dicocokkan dengan kapster saat dipanggil. */
+            match_code: string;
+            status: string;
+            /** @enum {string} */
+            payment_method: "midtrans" | "manual";
+            /**
+             * Format: int64
+             * @description Nominal yang harus dibayar persis. Untuk mode manual sudah termasuk kode unik.
+             */
+            amount_rupiah: number;
+            /** @description Hanya untuk mode manual. */
+            unique_code?: number;
+            /** @description Hanya untuk mode Midtrans. Alamat gambar QR. */
+            qr_code_url?: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        PaymentStatusResponse: {
+            /** @enum {string} */
+            status: "pending" | "paid" | "failed";
+        };
+        MyTicketPayment: {
+            /** @enum {string} */
+            method: "midtrans" | "manual";
+            /** @enum {string} */
+            status: "pending" | "paid" | "failed";
+            /** Format: int64 */
+            amount_rupiah: number;
+            /** Format: date-time */
+            expires_at: string;
+            qr_code_url: string | null;
+        };
+        MyTicket: {
+            /** Format: uuid */
+            ticket_id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            /** Format: uuid */
+            outlet_id: string;
+            outlet_name: string;
+            outlet_slug: string;
+            outlet_timezone: string;
+            /** Format: uuid */
+            session_id: string;
+            /** Format: date */
+            session_date: string;
+            ticket_number: number;
+            /** @enum {string} */
+            status: "pending_payment" | "waiting" | "called" | "in_progress" | "completed" | "canceled";
+            match_code: string | null;
+            customer_name: string | null;
+            payment: components["schemas"]["MyTicketPayment"] | null;
+            estimate: components["schemas"]["EstimateResult"] | null;
+            reviewed: boolean;
         };
         MessageResponse: {
             message: string;
@@ -237,7 +525,12 @@ export interface components {
             };
         };
     };
-    parameters: never;
+    parameters: {
+        TenantID: string;
+        OutletID: string;
+        TicketID: string;
+        SessionID: string;
+    };
     requestBodies: never;
     headers: never;
     pathItems: never;
@@ -433,6 +726,179 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeContext"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getPublicOutlet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Info outlet, 14 hari ke depan, dan kondisi antrian hari ini */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutletPage"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    streamQueueSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aliran event */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    bookOnline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                outletID: components["parameters"]["OutletID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookRequest"];
+            };
+        };
+        responses: {
+            /** @description Tiket dibuat, menunggu pembayaran DP */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingResult"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    recheckPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                ticketID: components["parameters"]["TicketID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status pembayaran saat ini */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentStatusResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    setManualQris: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "image/png": string;
+                "image/jpeg": string;
+                "image/webp": string;
+            };
+        };
+        responses: {
+            /** @description Tersimpan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listMyTickets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar tiket */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyTicket"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getTicketQrisImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketID: components["parameters"]["TicketID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Gambar QRIS */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/jpeg": string;
+                    "image/webp": string;
                 };
             };
             default: components["responses"]["Error"];

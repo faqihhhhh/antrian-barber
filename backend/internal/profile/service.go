@@ -4,17 +4,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	db "kapsflow/internal/db"
 	"kapsflow/internal/cryptox"
+	db "kapsflow/internal/db"
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/rls"
 )
+
+// maxQRISBytes membatasi ukuran gambar QRIS statis yang disimpan di database.
+const maxQRISBytes = 512 * 1024
 
 type Service struct {
 	fallback *db.Queries
@@ -33,9 +38,26 @@ func (s *Service) queries(ctx context.Context) *db.Queries {
 	return s.fallback
 }
 
+// requireOwner: pengaturan pembayaran menentukan ke mana uang pelanggan masuk,
+// jadi hanya owner yang boleh mengubahnya, bukan admin atau kapster.
+func (s *Service) requireOwner(ctx context.Context, q *db.Queries, tenantID, userID uuid.UUID) error {
+	m, err := q.GetMembershipForUserAndTenant(ctx, db.GetMembershipForUserAndTenantParams{TenantID: tenantID, UserID: userID})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return httpx.Forbidden("bukan_anggota_tenant", "Anda bukan anggota bisnis ini", nil)
+		}
+		return httpx.Internal(fmt.Errorf("ambil membership: %w", err))
+	}
+	if !slices.Contains(m.Roles, "owner") {
+		return httpx.Forbidden("bukan_owner", "Hanya owner yang bisa mengubah pengaturan pembayaran", nil)
+	}
+	return nil
+}
+
 type Info struct {
-	MidtransConfigured  bool `json:"midtrans_configured"`
-	OnboardingCompleted bool `json:"onboarding_completed"`
+	MidtransConfigured   bool `json:"midtrans_configured"`
+	ManualQRISConfigured bool `json:"manual_qris_configured"`
+	OnboardingCompleted  bool `json:"onboarding_completed"`
 }
 
 func (s *Service) GetProfile(ctx context.Context, tenantID uuid.UUID) (Info, error) {
@@ -47,14 +69,19 @@ func (s *Service) GetProfile(ctx context.Context, tenantID uuid.UUID) (Info, err
 		return Info{}, httpx.Internal(fmt.Errorf("ambil profil tenant: %w", err))
 	}
 	return Info{
-		MidtransConfigured:  p.MidtransConfiguredAt.Valid,
-		OnboardingCompleted: p.OnboardingCompletedAt.Valid,
+		MidtransConfigured:   p.MidtransConfiguredAt.Valid,
+		ManualQRISConfigured: p.ManualQrisUpdatedAt.Valid,
+		OnboardingCompleted:  p.OnboardingCompletedAt.Valid,
 	}, nil
 }
 
 // SetMidtransKeys mengenkripsi lalu menyimpan kunci Midtrans milik owner.
 // Kunci mentahnya tidak pernah disimpan di log maupun dikembalikan lewat API.
-func (s *Service) SetMidtransKeys(ctx context.Context, tenantID uuid.UUID, serverKey, clientKey string, isProduction bool) error {
+func (s *Service) SetMidtransKeys(ctx context.Context, tenantID, userID uuid.UUID, serverKey, clientKey string, isProduction bool) error {
+	q := s.queries(ctx)
+	if err := s.requireOwner(ctx, q, tenantID, userID); err != nil {
+		return err
+	}
 	if serverKey == "" || clientKey == "" {
 		return httpx.BadRequest("kunci_midtrans_wajib_diisi", "Server key dan client key Midtrans wajib diisi", nil)
 	}
@@ -67,7 +94,7 @@ func (s *Service) SetMidtransKeys(ctx context.Context, tenantID uuid.UUID, serve
 		return httpx.Internal(fmt.Errorf("mengenkripsi client key: %w", err))
 	}
 
-	err = s.queries(ctx).UpsertTenantProfileMidtrans(ctx, db.UpsertTenantProfileMidtransParams{
+	err = q.UpsertTenantProfileMidtrans(ctx, db.UpsertTenantProfileMidtransParams{
 		TenantID:                   tenantID,
 		MidtransServerKeyEncrypted: pgtype.Text{String: encServer, Valid: true},
 		MidtransClientKeyEncrypted: pgtype.Text{String: encClient, Valid: true},
@@ -79,16 +106,98 @@ func (s *Service) SetMidtransKeys(ctx context.Context, tenantID uuid.UUID, serve
 	return nil
 }
 
-func (s *Service) SkipMidtransForNow(ctx context.Context, tenantID uuid.UUID) error {
-	if err := s.queries(ctx).MarkOnboardingSkippedMidtrans(ctx, tenantID); err != nil {
+func (s *Service) SkipMidtransForNow(ctx context.Context, tenantID, userID uuid.UUID) error {
+	q := s.queries(ctx)
+	if err := s.requireOwner(ctx, q, tenantID, userID); err != nil {
+		return err
+	}
+	if err := q.MarkOnboardingSkippedMidtrans(ctx, tenantID); err != nil {
 		return httpx.Internal(fmt.Errorf("menandai onboarding: %w", err))
 	}
 	return nil
 }
 
-// GetDecryptedMidtransKeys mendekripsi kunci Midtrans tenant untuk dipakai
-// internal (memanggil API Midtrans) — TIDAK PERNAH diekspos lewat handler HTTP.
+// SetManualQRIS menyimpan gambar QRIS statis owner untuk mode DP manual. Jenis
+// file ditentukan dari ISI file (bukan dari header Content-Type kiriman klien).
+func (s *Service) SetManualQRIS(ctx context.Context, tenantID, userID uuid.UUID, data []byte) error {
+	q := s.queries(ctx)
+	if err := s.requireOwner(ctx, q, tenantID, userID); err != nil {
+		return err
+	}
+	if len(data) == 0 {
+		return httpx.BadRequest("gambar_kosong", "Gambar QRIS kosong", nil)
+	}
+	if len(data) > maxQRISBytes {
+		return httpx.BadRequest("gambar_terlalu_besar", "Ukuran gambar QRIS maksimal 512 KB", nil)
+	}
+	contentType := http.DetectContentType(data)
+	if contentType != "image/png" && contentType != "image/jpeg" && contentType != "image/webp" {
+		return httpx.BadRequest("format_gambar_tidak_didukung", "Gunakan gambar PNG, JPG, atau WebP", nil)
+	}
+	err := q.SetManualQRIS(ctx, db.SetManualQRISParams{
+		TenantID:              tenantID,
+		ManualQrisImage:       data,
+		ManualQrisContentType: pgtype.Text{String: contentType, Valid: true},
+	})
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("menyimpan gambar qris: %w", err))
+	}
+	return nil
+}
 
+// GetManualQRIS dipakai internal oleh modul lain. TIDAK memeriksa siapa
+// pemanggilnya: pemanggil wajib sudah memastikan haknya (misalnya pemilik
+// tiket yang pembayarannya masih menunggu).
+func (s *Service) GetManualQRIS(ctx context.Context, tenantID uuid.UUID) (data []byte, contentType string, ok bool, err error) {
+	runErr := rls.RunAsSystem(ctx, s.pool, func(sysCtx context.Context) error {
+		row, qErr := s.queries(sysCtx).GetManualQRIS(sysCtx, tenantID)
+		if qErr != nil {
+			if errors.Is(qErr, pgx.ErrNoRows) {
+				return nil
+			}
+			return httpx.Internal(fmt.Errorf("ambil gambar qris: %w", qErr))
+		}
+		if len(row.ManualQrisImage) == 0 || !row.ManualQrisContentType.Valid {
+			return nil
+		}
+		data, contentType, ok = row.ManualQrisImage, row.ManualQrisContentType.String, true
+		return nil
+	})
+	if runErr != nil {
+		return nil, "", false, runErr
+	}
+	return data, contentType, ok, nil
+}
+
+// PaymentMode: "midtrans" kalau kunci Midtrans terisi (didahulukan), "manual"
+// kalau hanya QRIS statis yang terisi, selain itu "none". Lewat jalur sistem
+// karena pembacanya sering pelanggan, yang tidak boleh membaca profil bisnis.
+func (s *Service) PaymentMode(ctx context.Context, tenantID uuid.UUID) (string, error) {
+	mode := "none"
+	err := rls.RunAsSystem(ctx, s.pool, func(sysCtx context.Context) error {
+		p, qErr := s.queries(sysCtx).GetTenantProfile(sysCtx, tenantID)
+		if qErr != nil {
+			if errors.Is(qErr, pgx.ErrNoRows) {
+				return nil
+			}
+			return httpx.Internal(fmt.Errorf("ambil profil tenant: %w", qErr))
+		}
+		switch {
+		case p.MidtransConfiguredAt.Valid && p.MidtransServerKeyEncrypted.Valid:
+			mode = "midtrans"
+		case p.ManualQrisUpdatedAt.Valid:
+			mode = "manual"
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return mode, nil
+}
+
+// GetDecryptedMidtransKeys mendekripsi kunci Midtrans tenant untuk dipakai
+// internal (memanggil API Midtrans). TIDAK PERNAH diekspos lewat handler HTTP.
 func (s *Service) GetDecryptedMidtransKeys(ctx context.Context, tenantID uuid.UUID) (serverKey, clientKey string, isProduction, configured bool, err error) {
 	runErr := rls.RunAsSystem(ctx, s.pool, func(sysCtx context.Context) error {
 		p, qErr := s.queries(sysCtx).GetTenantProfile(sysCtx, tenantID)

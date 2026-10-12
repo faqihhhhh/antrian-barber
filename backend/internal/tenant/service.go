@@ -11,6 +11,7 @@ import (
 	db "kapsflow/internal/db"
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/rls"
+	"kapsflow/internal/pgerr"
 )
 
 type Service struct {
@@ -62,14 +63,45 @@ func (s *Service) ListTenants(ctx context.Context) ([]db.Tenant, error) {
 	}
 	return httpx.NonNil(tenants), nil
 }
+
+func (s *Service) uniqueSlug(ctx context.Context, q *db.Queries, name string) (string, error) {
+	base := slugify(name)
+	candidate := base
+	for attempt := 0; attempt < 6; attempt++ {
+		taken, err := q.SlugExists(ctx, candidate)
+		if err != nil {
+			return "", httpx.Internal(fmt.Errorf("cek slug: %w", err))
+		}
+		if !taken {
+			return candidate, nil
+		}
+		suffix, err := randomSuffix(4)
+		if err != nil {
+			return "", httpx.Internal(err)
+		}
+		candidate = base + "-" + suffix
+	}
+	return "", httpx.Conflict("slug_bentrok", "Gagal membuat alamat outlet, coba lagi", nil)
+}
+
 func (s *Service) CreateOutlet(ctx context.Context, tenantID uuid.UUID, name, timezone, address string) (db.Outlet, error) {
-	outlet, err := s.queries(ctx).CreateOutlet(ctx, db.CreateOutletParams{
+	q := s.queries(ctx)
+
+	slug, err := s.uniqueSlug(ctx, q, name)
+	if err != nil {
+		return db.Outlet{}, err
+	}
+	outlet, err := q.CreateOutlet(ctx, db.CreateOutletParams{
 		TenantID: tenantID,
 		Name:     name,
 		Timezone: timezone,
 		Address:  pgtype.Text{String: address, Valid: address != ""},
+		Slug:     slug,
 	})
 	if err != nil {
+		if pgerr.IsUniqueViolationOn(err, "idx_outlets_slug") {
+			return db.Outlet{}, httpx.Conflict("slug_bentrok", "Alamat outlet bentrok, coba lagi", nil)
+		}
 		return db.Outlet{}, httpx.Internal(fmt.Errorf("membuat outlet: %w", err))
 	}
 	return outlet, nil

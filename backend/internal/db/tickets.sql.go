@@ -86,8 +86,8 @@ func (q *Queries) ConfirmTicketFinalPayment(ctx context.Context, arg ConfirmTick
 }
 
 const createOnlineTicket = `-- name: CreateOnlineTicket :one
-INSERT INTO tickets (tenant_id, queue_session_id, ticket_number, queue_position, channel, match_code, customer_user_id, status)
-VALUES ($1, $2, $3, $4, 'online', $5, $6, 'pending_payment')
+INSERT INTO tickets (tenant_id, queue_session_id, ticket_number, queue_position, channel, match_code, customer_user_id, customer_name, status)
+VALUES ($1, $2, $3, $4, 'online', $5, $6, $7, 'pending_payment')
 RETURNING id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at, turn_notified_at
 `
 
@@ -98,6 +98,7 @@ type CreateOnlineTicketParams struct {
 	QueuePosition  int32       `json:"queue_position"`
 	MatchCode      pgtype.Text `json:"match_code"`
 	CustomerUserID pgtype.UUID `json:"customer_user_id"`
+	CustomerName   pgtype.Text `json:"customer_name"`
 }
 
 func (q *Queries) CreateOnlineTicket(ctx context.Context, arg CreateOnlineTicketParams) (Ticket, error) {
@@ -108,6 +109,7 @@ func (q *Queries) CreateOnlineTicket(ctx context.Context, arg CreateOnlineTicket
 		arg.QueuePosition,
 		arg.MatchCode,
 		arg.CustomerUserID,
+		arg.CustomerName,
 	)
 	var i Ticket
 	err := row.Scan(

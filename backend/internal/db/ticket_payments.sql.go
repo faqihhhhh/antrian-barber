@@ -13,10 +13,10 @@ import (
 )
 
 const createTicketPayment = `-- name: CreateTicketPayment :one
-INSERT INTO ticket_payments (id, tenant_id, ticket_id, customer_user_id, method, amount_rupiah, unique_code, midtrans_order_id, expires_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT INTO ticket_payments (id, tenant_id, ticket_id, customer_user_id, method, amount_rupiah, unique_code, midtrans_order_id, qr_code_url, expires_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 ON CONFLICT DO NOTHING
-RETURNING id, tenant_id, ticket_id, customer_user_id, method, amount_rupiah, unique_code, midtrans_order_id, status, confirmed_by, paid_at, expires_at, created_at, updated_at
+RETURNING id, tenant_id, ticket_id, customer_user_id, method, amount_rupiah, unique_code, midtrans_order_id, status, confirmed_by, paid_at, expires_at, created_at, updated_at, qr_code_url
 `
 
 type CreateTicketPaymentParams struct {
@@ -28,6 +28,7 @@ type CreateTicketPaymentParams struct {
 	AmountRupiah    int64              `json:"amount_rupiah"`
 	UniqueCode      pgtype.Int2        `json:"unique_code"`
 	MidtransOrderID pgtype.Text        `json:"midtrans_order_id"`
+	QrCodeUrl       pgtype.Text        `json:"qr_code_url"`
 	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
 }
 
@@ -41,6 +42,7 @@ func (q *Queries) CreateTicketPayment(ctx context.Context, arg CreateTicketPayme
 		arg.AmountRupiah,
 		arg.UniqueCode,
 		arg.MidtransOrderID,
+		arg.QrCodeUrl,
 		arg.ExpiresAt,
 	)
 	var i TicketPayment
@@ -59,12 +61,13 @@ func (q *Queries) CreateTicketPayment(ctx context.Context, arg CreateTicketPayme
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.QrCodeUrl,
 	)
 	return i, err
 }
 
 const getTicketPaymentByID = `-- name: GetTicketPaymentByID :one
-SELECT id, tenant_id, ticket_id, customer_user_id, method, amount_rupiah, unique_code, midtrans_order_id, status, confirmed_by, paid_at, expires_at, created_at, updated_at FROM ticket_payments WHERE id = $1
+SELECT id, tenant_id, ticket_id, customer_user_id, method, amount_rupiah, unique_code, midtrans_order_id, status, confirmed_by, paid_at, expires_at, created_at, updated_at, qr_code_url FROM ticket_payments WHERE id = $1
 `
 
 func (q *Queries) GetTicketPaymentByID(ctx context.Context, id uuid.UUID) (TicketPayment, error) {
@@ -85,12 +88,13 @@ func (q *Queries) GetTicketPaymentByID(ctx context.Context, id uuid.UUID) (Ticke
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.QrCodeUrl,
 	)
 	return i, err
 }
 
 const getTicketPaymentByTicketID = `-- name: GetTicketPaymentByTicketID :one
-SELECT id, tenant_id, ticket_id, customer_user_id, method, amount_rupiah, unique_code, midtrans_order_id, status, confirmed_by, paid_at, expires_at, created_at, updated_at FROM ticket_payments WHERE ticket_id = $1
+SELECT id, tenant_id, ticket_id, customer_user_id, method, amount_rupiah, unique_code, midtrans_order_id, status, confirmed_by, paid_at, expires_at, created_at, updated_at, qr_code_url FROM ticket_payments WHERE ticket_id = $1
 `
 
 func (q *Queries) GetTicketPaymentByTicketID(ctx context.Context, ticketID uuid.UUID) (TicketPayment, error) {
@@ -111,12 +115,13 @@ func (q *Queries) GetTicketPaymentByTicketID(ctx context.Context, ticketID uuid.
 		&i.ExpiresAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.QrCodeUrl,
 	)
 	return i, err
 }
 
 const listExpiredPendingPayments = `-- name: ListExpiredPendingPayments :many
-SELECT id, tenant_id, ticket_id, customer_user_id, method, amount_rupiah, unique_code, midtrans_order_id, status, confirmed_by, paid_at, expires_at, created_at, updated_at FROM ticket_payments
+SELECT id, tenant_id, ticket_id, customer_user_id, method, amount_rupiah, unique_code, midtrans_order_id, status, confirmed_by, paid_at, expires_at, created_at, updated_at, qr_code_url FROM ticket_payments
 WHERE status = 'pending' AND expires_at < now() - interval '2 minutes'
 ORDER BY expires_at
 LIMIT 100
@@ -146,6 +151,7 @@ func (q *Queries) ListExpiredPendingPayments(ctx context.Context) ([]TicketPayme
 			&i.ExpiresAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.QrCodeUrl,
 		); err != nil {
 			return nil, err
 		}

@@ -20,3 +20,9 @@ SELECT * FROM queue_sessions WHERE outlet_id = $1 AND session_date = $2;
 
 -- name: GetQueueSessionByID :one
 SELECT * FROM queue_sessions WHERE id = $1;
+
+-- name: ListQueueSessionsInRange :many
+SELECT * FROM queue_sessions
+WHERE outlet_id = $1
+  AND session_date BETWEEN sqlc.arg(from_date)::date AND sqlc.arg(to_date)::date
+ORDER BY session_date;

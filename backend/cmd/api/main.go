@@ -29,6 +29,7 @@ import (
 	"kapsflow/internal/jobs"
 	"kapsflow/internal/analytics"
 	"kapsflow/internal/account"
+	"kapsflow/internal/publicpage"
 	_ "time/tzdata"
 )
 
@@ -84,9 +85,11 @@ func run(log *slog.Logger) error {
 	webpushClient := webpush.NewClient(cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey, cfg.VAPIDSubject)
 	notifySvc := notification.NewService(pool, webpushClient, log)
 	queueSvc := queue.NewService(pool, profileSvc, midtransClient, hub, notifySvc, log)
+	publicSvc := publicpage.NewService(pool, profileSvc, billingSvc, queueSvc)
 	reviewSvc := review.NewService(pool)
 	analyticsSvc := analytics.NewService(pool)
 	accountSvc := account.NewService(pool, billingSvc)
+	
 
 	jobClient, err := jobs.NewClient(pool, log, queueSvc, billingSvc)
 	if err != nil {
@@ -105,7 +108,7 @@ func run(log *slog.Logger) error {
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc, queueSvc, notifySvc, reviewSvc, analyticsSvc, accountSvc),
+		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc, queueSvc, notifySvc, reviewSvc, analyticsSvc, accountSvc, publicSvc),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

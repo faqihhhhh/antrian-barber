@@ -46,3 +46,10 @@ func RegisterPublicRoutes(r chi.Router, svc *Service, log *slog.Logger) {
 	h := NewHandlers(svc, log)
 	r.Get("/queue-sessions/{sessionID}/stream", h.Stream)
 }
+
+// RegisterMeRoutes dipasang di grup /v1/me (sudah lewat login dan RLS).
+func RegisterMeRoutes(r chi.Router, svc *Service, log *slog.Logger) {
+	h := NewHandlers(svc, log)
+	r.Get("/tickets", h.MyTickets)
+	r.Get("/tickets/{ticketID}/qris-image", h.MyQRISImage)
+}

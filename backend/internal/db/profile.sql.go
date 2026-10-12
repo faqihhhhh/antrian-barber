@@ -12,22 +12,49 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getTenantProfile = `-- name: GetTenantProfile :one
-SELECT tenant_id, midtrans_server_key_encrypted, midtrans_client_key_encrypted, midtrans_configured_at, onboarding_completed_at, created_at, updated_at, midtrans_is_production FROM tenant_profiles WHERE tenant_id = $1
+const getManualQRIS = `-- name: GetManualQRIS :one
+SELECT manual_qris_image, manual_qris_content_type FROM tenant_profiles WHERE tenant_id = $1
 `
 
-func (q *Queries) GetTenantProfile(ctx context.Context, tenantID uuid.UUID) (TenantProfile, error) {
+type GetManualQRISRow struct {
+	ManualQrisImage       []byte      `json:"manual_qris_image"`
+	ManualQrisContentType pgtype.Text `json:"manual_qris_content_type"`
+}
+
+func (q *Queries) GetManualQRIS(ctx context.Context, tenantID uuid.UUID) (GetManualQRISRow, error) {
+	row := q.db.QueryRow(ctx, getManualQRIS, tenantID)
+	var i GetManualQRISRow
+	err := row.Scan(&i.ManualQrisImage, &i.ManualQrisContentType)
+	return i, err
+}
+
+const getTenantProfile = `-- name: GetTenantProfile :one
+SELECT tenant_id, midtrans_server_key_encrypted, midtrans_client_key_encrypted, midtrans_is_production,
+       midtrans_configured_at, onboarding_completed_at, manual_qris_updated_at
+FROM tenant_profiles WHERE tenant_id = $1
+`
+
+type GetTenantProfileRow struct {
+	TenantID                   uuid.UUID          `json:"tenant_id"`
+	MidtransServerKeyEncrypted pgtype.Text        `json:"midtrans_server_key_encrypted"`
+	MidtransClientKeyEncrypted pgtype.Text        `json:"midtrans_client_key_encrypted"`
+	MidtransIsProduction       bool               `json:"midtrans_is_production"`
+	MidtransConfiguredAt       pgtype.Timestamptz `json:"midtrans_configured_at"`
+	OnboardingCompletedAt      pgtype.Timestamptz `json:"onboarding_completed_at"`
+	ManualQrisUpdatedAt        pgtype.Timestamptz `json:"manual_qris_updated_at"`
+}
+
+func (q *Queries) GetTenantProfile(ctx context.Context, tenantID uuid.UUID) (GetTenantProfileRow, error) {
 	row := q.db.QueryRow(ctx, getTenantProfile, tenantID)
-	var i TenantProfile
+	var i GetTenantProfileRow
 	err := row.Scan(
 		&i.TenantID,
 		&i.MidtransServerKeyEncrypted,
 		&i.MidtransClientKeyEncrypted,
+		&i.MidtransIsProduction,
 		&i.MidtransConfiguredAt,
 		&i.OnboardingCompletedAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.MidtransIsProduction,
+		&i.ManualQrisUpdatedAt,
 	)
 	return i, err
 }
@@ -40,6 +67,27 @@ ON CONFLICT (tenant_id) DO UPDATE SET onboarding_completed_at = now(), updated_a
 
 func (q *Queries) MarkOnboardingSkippedMidtrans(ctx context.Context, tenantID uuid.UUID) error {
 	_, err := q.db.Exec(ctx, markOnboardingSkippedMidtrans, tenantID)
+	return err
+}
+
+const setManualQRIS = `-- name: SetManualQRIS :exec
+INSERT INTO tenant_profiles (tenant_id, manual_qris_image, manual_qris_content_type, manual_qris_updated_at)
+VALUES ($1, $2, $3, now())
+ON CONFLICT (tenant_id) DO UPDATE SET
+  manual_qris_image = EXCLUDED.manual_qris_image,
+  manual_qris_content_type = EXCLUDED.manual_qris_content_type,
+  manual_qris_updated_at = now(),
+  updated_at = now()
+`
+
+type SetManualQRISParams struct {
+	TenantID              uuid.UUID   `json:"tenant_id"`
+	ManualQrisImage       []byte      `json:"manual_qris_image"`
+	ManualQrisContentType pgtype.Text `json:"manual_qris_content_type"`
+}
+
+func (q *Queries) SetManualQRIS(ctx context.Context, arg SetManualQRISParams) error {
+	_, err := q.db.Exec(ctx, setManualQRIS, arg.TenantID, arg.ManualQrisImage, arg.ManualQrisContentType)
 	return err
 }
 

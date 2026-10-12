@@ -52,7 +52,7 @@ func (q *Queries) ListMembershipContextForUser(ctx context.Context, userID uuid.
 }
 
 const listOutletsForMembership = `-- name: ListOutletsForMembership :many
-SELECT o.id, o.tenant_id, o.name, o.timezone, o.address, o.created_at, o.updated_at, o.dp_price_rupiah, o.default_duration_minutes FROM outlets o
+SELECT o.id, o.tenant_id, o.name, o.timezone, o.address, o.created_at, o.updated_at, o.dp_price_rupiah, o.default_duration_minutes, o.slug FROM outlets o
 WHERE o.tenant_id = $1::uuid
   AND (
     $2::boolean
@@ -89,6 +89,7 @@ func (q *Queries) ListOutletsForMembership(ctx context.Context, arg ListOutletsF
 			&i.UpdatedAt,
 			&i.DpPriceRupiah,
 			&i.DefaultDurationMinutes,
+			&i.Slug,
 		); err != nil {
 			return nil, err
 		}
