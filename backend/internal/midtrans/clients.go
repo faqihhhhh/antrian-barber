@@ -10,16 +10,20 @@ import (
 	"io"
 	"net/http"
 	"time"
+	"os"
 )
 
 type Client struct {
-	httpClient *http.Client
+	httpClient   *http.Client
+	baseOverride string
 }
 
 func NewClient() *Client {
-	return &Client{httpClient: &http.Client{Timeout: 15 * time.Second}}
+	return &Client{
+		httpClient:   &http.Client{Timeout: 15 * time.Second},
+		baseOverride: os.Getenv("MIDTRANS_BASE_URL_OVERRIDE"),
+	}
 }
-
 // baseURL otomatis sandbox kalau server key diawali "SB-", produksi kalau
 // tidak — mengikuti konvensi penamaan kunci Midtrans sendiri.
 func baseURL(isProduction bool) string {
@@ -27,6 +31,15 @@ func baseURL(isProduction bool) string {
 		return "https://api.midtrans.com"
 	}
 	return "https://api.sandbox.midtrans.com"
+}
+
+// base memilih alamat API Midtrans. MIDTRANS_BASE_URL_OVERRIDE hanya untuk tes
+// lokal dengan Midtrans tiruan (tanpa garis miring di akhir). JANGAN diisi di produksi.
+func (c *Client) base(isProduction bool) string {
+	if c.baseOverride != "" {
+		return c.baseOverride
+	}
+	return baseURL(isProduction)
 }
 
 type ChargeResult struct {
@@ -49,7 +62,7 @@ func (c *Client) ChargeQRIS(ctx context.Context, serverKey string, isProduction 
 		},
 	})
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL(isProduction)+"/v2/charge", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.base(isProduction)+"/v2/charge", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +108,7 @@ type StatusResult struct {
 }
 
 func (c *Client) CheckStatus(ctx context.Context, serverKey string, isProduction bool, orderID string) (*StatusResult, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL(isProduction)+"/v2/"+orderID+"/status", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.base(isProduction)+"/v2/"+orderID+"/status", nil)
 	if err != nil {
 		return nil, err
 	}

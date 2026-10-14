@@ -18,6 +18,6 @@ export default function RequireLogin({ children }: { children: ReactNode }) {
       </main>
     )
   }
-  if (!me.data) return <Navigate to="/masuk" replace state={{ from: location.pathname }} />
+  if (!me.data) return <Navigate to="/masuk" replace state={{ from: location.pathname + location.search }} />
   return <>{children}</>
 }

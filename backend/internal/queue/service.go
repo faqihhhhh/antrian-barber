@@ -553,13 +553,16 @@ func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUs
 func (s *Service) RecheckPayment(ctx context.Context, tenantID, ticketID uuid.UUID) (db.TicketPayment, error) {
 	q := s.queries(ctx)
 
+	// Dibaca lewat transaksi pemanggil, jadi RLS yang memastikan pembayaran ini
+	// milik pemanggil (atau staf tenant ini). Milik orang lain tidak terlihat.
 	payment, err := q.GetTicketPaymentByTicketID(ctx, ticketID)
-	if err != nil {
+	if err != nil || payment.TenantID != tenantID {
 		return db.TicketPayment{}, httpx.NotFound("pembayaran_tidak_ditemukan", "Pembayaran tidak ditemukan", nil)
 	}
 	if payment.Method != "midtrans" || payment.Status != "pending" {
 		return payment, nil
 	}
+
 	serverKey, _, isProduction, configured, err := s.profileSvc.GetDecryptedMidtransKeys(ctx, tenantID)
 	if err != nil || !configured {
 		return db.TicketPayment{}, httpx.Internal(fmt.Errorf("midtrans tidak terkonfigurasi untuk tenant ini"))
@@ -570,15 +573,21 @@ func (s *Service) RecheckPayment(ctx context.Context, tenantID, ticketID uuid.UU
 		return db.TicketPayment{}, httpx.Internal(fmt.Errorf("mengecek status midtrans: %w", err))
 	}
 
+	// Mengubah pembayaran dan tiket butuh hak sistem: pelanggan tidak punya hak
+	// UPDATE lewat RLS, jadi tanpa ini perubahannya diam-diam 0 baris. Hak pemanggil
+	// sudah dibuktikan oleh pembacaan di atas.
 	switch {
 	case midtrans.IsPaid(status.TransactionStatus, status.FraudStatus):
-		if err := s.settlePaymentPaid(ctx, q, payment); err != nil {
-			return db.TicketPayment{}, err
-		}
+		err = rls.RunAsSystem(ctx, s.pool, func(c context.Context) error {
+			return s.settlePaymentPaid(c, s.queries(c), payment)
+		})
 	case midtrans.IsFailed(status.TransactionStatus):
-		if err := s.settlePaymentFailed(ctx, q, payment); err != nil {
-			return db.TicketPayment{}, err
-		}
+		err = rls.RunAsSystem(ctx, s.pool, func(c context.Context) error {
+			return s.settlePaymentFailed(c, s.queries(c), payment)
+		})
+	}
+	if err != nil {
+		return db.TicketPayment{}, err
 	}
 	return q.GetTicketPaymentByTicketID(ctx, ticketID)
 }

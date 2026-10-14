@@ -18,11 +18,26 @@ export function Button({ variant = 'primary', loading, disabled, className = '',
   )
 }
 
-export function LinkButton({ to, children }: { to: string; children: ReactNode }) {
+export function LinkButton({
+  to,
+  state,
+  variant = 'primary',
+  children,
+}: {
+  to: string
+  state?: unknown
+  variant?: 'primary' | 'outline'
+  children: ReactNode
+}) {
+  const styles =
+    variant === 'primary'
+      ? 'bg-stone-900 text-white hover:bg-stone-800'
+      : 'border border-stone-300 bg-white text-stone-900 hover:bg-stone-100'
   return (
     <Link
       to={to}
-      className="inline-flex w-full items-center justify-center rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-stone-800"
+      state={state}
+      className={`inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 ${styles}`}
     >
       {children}
     </Link>

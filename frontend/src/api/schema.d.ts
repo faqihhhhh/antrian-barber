@@ -317,6 +317,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/tickets/{ticketID}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Beri nilai layanan setelah tiket selesai
+         * @description Hanya pemilik tiket, hanya untuk tiket berstatus `completed`, satu kali per tiket.
+         *     Kode error: `rating_tidak_valid` (harus 1 sampai 5), `komentar_terlalu_panjang`,
+         *     `tiket_belum_selesai`, `sudah_memberi_ulasan`, `bukan_pemilik_tiket`.
+         */
+        post: operations["submitReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -512,6 +534,15 @@ export interface components {
             user: components["schemas"]["UserInfo"];
             is_platform_admin: boolean;
             memberships: components["schemas"]["MembershipInfo"][];
+        };
+        ReviewRequest: {
+            rating: number;
+            /** @description Opsional. */
+            comment?: string;
+        };
+        /** @description Ulasan yang tersimpan. Layar pelanggan hanya memakai status 201-nya. */
+        Review: {
+            [key: string]: unknown;
         };
     };
     responses: {
@@ -899,6 +930,34 @@ export interface operations {
                     "image/png": string;
                     "image/jpeg": string;
                     "image/webp": string;
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    submitReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                ticketID: components["parameters"]["TicketID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Ulasan tersimpan */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Review"];
                 };
             };
             default: components["responses"]["Error"];

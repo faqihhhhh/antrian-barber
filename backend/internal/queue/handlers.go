@@ -310,6 +310,7 @@ func (h *Handlers) RecheckPayment(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, r, h.log, err)
 		return
 	}
+	// Hanya status. Baris database mentah tidak perlu sampai ke pelanggan.
 	httpx.JSON(w, http.StatusOK, map[string]string{"status": payment.Status})
 }
 

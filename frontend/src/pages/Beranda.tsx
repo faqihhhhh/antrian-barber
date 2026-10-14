@@ -1,8 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { api } from '../api/client'
 import { useMe } from '../auth/useMe'
 import { Alert, Button } from '../components/ui'
+import { lastOutlet } from '../lib/storage'
 
 const ROLE_LABEL: Record<string, string> = {
   owner: 'Pemilik bisnis',
@@ -35,6 +36,7 @@ export default function Beranda() {
   })
 
   const data = me.data
+  const outlet = lastOutlet()
   if (!data) return null // RequireLogin sudah memastikan data ada
 
   return (
@@ -51,10 +53,22 @@ export default function Beranda() {
       </header>
 
       <section className="space-y-3">
+        <Link
+          to="/tiket"
+          className="block rounded-2xl border border-stone-900 bg-white p-4 font-semibold transition hover:bg-stone-100"
+        >
+          Tiket saya
+          <span className="block text-sm font-normal text-stone-600">Lihat antrian dan status pembayaran</span>
+        </Link>
+        {outlet && (
+          <Link to={`/b/${outlet}`} className="block px-1 text-sm font-semibold underline">
+            Kembali ke halaman pemesanan terakhir
+          </Link>
+        )}
+
         {data.memberships.length === 0 && (
           <Alert tone="info">
-            Akun ini belum terhubung ke bisnis mana pun. Fitur pemesanan antrian untuk pelanggan akan hadir di tahap
-            berikutnya.
+            Akun ini belum terhubung ke bisnis mana pun. Untuk memesan antrian, buka tautan atau scan QR dari outlet.
           </Alert>
         )}
 

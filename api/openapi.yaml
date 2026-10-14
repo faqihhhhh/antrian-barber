@@ -367,6 +367,36 @@ paths:
                 format: binary
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/tickets/{ticketID}/review:
+    post:
+      operationId: submitReview
+      tags: [pelanggan]
+      summary: Beri nilai layanan setelah tiket selesai
+      description: |
+        Hanya pemilik tiket, hanya untuk tiket berstatus `completed`, satu kali per tiket.
+        Kode error: `rating_tidak_valid` (harus 1 sampai 5), `komentar_terlalu_panjang`,
+        `tiket_belum_selesai`, `sudah_memberi_ulasan`, `bukan_pemilik_tiket`.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/TicketID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      responses:
+        '201':
+          description: Ulasan tersimpan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        default:
+          $ref: '#/components/responses/Error'
+  
 components:
   securitySchemes:
     cookieAuth:
@@ -772,3 +802,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MembershipInfo'
+    ReviewRequest:
+      type: object
+      required: [rating]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+          maxLength: 1000
+          description: Opsional.
+    Review:
+      type: object
+      description: Ulasan yang tersimpan. Layar pelanggan hanya memakai status 201-nya.
+      additionalProperties: true
