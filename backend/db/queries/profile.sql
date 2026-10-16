@@ -12,6 +12,14 @@ ON CONFLICT (tenant_id) DO UPDATE SET
   manual_qris_updated_at = now(),
   updated_at = now();
 
+-- name: ClearManualQRIS :exec
+UPDATE tenant_profiles
+SET manual_qris_image = NULL,
+    manual_qris_content_type = NULL,
+    manual_qris_updated_at = NULL,
+    updated_at = now()
+WHERE tenant_id = $1;
+
 -- name: GetManualQRIS :one
 SELECT manual_qris_image, manual_qris_content_type FROM tenant_profiles WHERE tenant_id = $1;
 

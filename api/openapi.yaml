@@ -349,6 +349,24 @@ paths:
                 $ref: '#/components/schemas/StaffMember'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/profile:
+    get:
+      operationId: getOwnerPaymentProfile
+      tags: [owner]
+      summary: Status pengaturan pembayaran bisnis tanpa mengirim rahasia
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: Status konfigurasi pembayaran
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnerPaymentProfile'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/public/outlets/{slug}:
     get:
       operationId: getPublicOutlet
@@ -749,6 +767,24 @@ paths:
         default:
           $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/profile/manual-qris:
+    delete:
+      operationId: deleteManualQris
+      tags: [owner]
+      summary: Hapus QRIS manual yang tersimpan
+      description: Hanya owner. Pemesanan DP manual tidak dapat dilakukan sampai QRIS dipasang kembali.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: QRIS dihapus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
     put:
       operationId: setManualQris
       tags: [owner]
@@ -1399,6 +1435,16 @@ components:
           items:
             type: string
             format: uuid
+    OwnerPaymentProfile:
+      type: object
+      required: [midtrans_configured, manual_qris_configured, onboarding_completed]
+      properties:
+        midtrans_configured:
+          type: boolean
+        manual_qris_configured:
+          type: boolean
+        onboarding_completed:
+          type: boolean
     MembershipInfo:
       type: object
       required: [membership_id, tenant_id, tenant_name, roles, outlets, subscription_status, current_period_end]

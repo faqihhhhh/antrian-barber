@@ -13,4 +13,5 @@ func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger, requireActive 
 	r.With(requireActive).Post("/{tenantID}/profile/midtrans", h.SetMidtrans)
 	r.With(requireActive).Post("/{tenantID}/profile/skip-midtrans", h.SkipMidtrans)
 	r.With(requireActive).Put("/{tenantID}/profile/manual-qris", h.SetManualQRIS)
+	r.With(requireActive).Delete("/{tenantID}/profile/manual-qris", h.DeleteManualQRIS)
 }

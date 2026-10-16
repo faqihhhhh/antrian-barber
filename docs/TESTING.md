@@ -32,10 +32,12 @@ Akun tes dibuat dengan `DEV_AUTO_VERIFY=true`. Jangan memakai kata sandi nyata.
 
 Skrip integrasi yang sudah disimpan di `scripts/verify/` mencakup `verify_fase11c1.sh`,
 `verify_fase11d.sh`, `verify_fase12b_expired_sessions.sh`, dan
-`verify_fase12c1_owner_outlet_settings.sh`, dan `verify_fase12c2_owner_staff_access.sh`. Skrip 11d
+`verify_fase12c1_owner_outlet_settings.sh`, `verify_fase12c2_owner_staff_access.sh`, dan
+`verify_fase12c3_owner_payment_profile.sh`. Skrip 11d
 memeriksa matriks owner, admin, kapster, pelanggan, dan orang luar; 11c1 menguji pembayaran lewat
 Midtrans tiruan; 12b menguji penutupan sesi lewat tanggal; 12c1 memeriksa respons outlet; 12c2
-memastikan daftar staf hanya bisa dibaca owner. Pola semuanya sama:
+memastikan daftar staf hanya bisa dibaca owner; 12c3 memeriksa status pembayaran dan izin QRIS owner.
+Pola semuanya sama:
 
 ```bash
 check() {  # nama, diharapkan, didapat
@@ -87,6 +89,10 @@ publiknya masih bisa dibuka.
 Untuk staf owner: dari **Pengaturan outlet**, buka **Kelola staf**. Pastikan daftar staf dan status
 verifikasi email tampil. Form undangan harus menyediakan pilihan peran Admin/Kapster (boleh keduanya)
 dan penugasan outlet; role Owner tidak boleh tersedia.
+
+Untuk pembayaran owner: buka **Pengaturan outlet → Pembayaran DP**. Pastikan status QRIS manual tampil.
+Pilih gambar QRIS PNG/JPG/WebP maksimal 512 KB dan simpan hanya jika ingin mengganti QRIS aktif.
+Midtrans hanya menampilkan status konfigurasi; jangan isi kunci tanpa akun Midtrans.
 
 ## Sebelum commit
 

@@ -13,6 +13,7 @@ import TiketSaya from './pages/TiketSaya'
 import VerifikasiEmail from './pages/VerifikasiEmail'
 import Pemilik from './pages/Pemilik'
 import PemilikStaf from './pages/PemilikStaf'
+import PemilikPembayaran from './pages/PemilikPembayaran'
 
 function NotFound() {
   return (
@@ -64,6 +65,14 @@ export default function App() {
         element={
           <RequireLogin>
             <PemilikStaf />
+          </RequireLogin>
+        }
+      />
+      <Route
+        path="/pemilik/pembayaran"
+        element={
+          <RequireLogin>
+            <PemilikPembayaran />
           </RequireLogin>
         }
       />

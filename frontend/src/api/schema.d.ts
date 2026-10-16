@@ -264,6 +264,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Status pengaturan pembayaran bisnis tanpa mengirim rahasia */
+        get: operations["getOwnerPaymentProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/public/outlets/{slug}": {
         parameters: {
             query?: never;
@@ -564,7 +581,11 @@ export interface paths {
          */
         put: operations["setManualQris"];
         post?: never;
-        delete?: never;
+        /**
+         * Hapus QRIS manual yang tersimpan
+         * @description Hanya owner. Pemesanan DP manual tidak dapat dilakukan sampai QRIS dipasang kembali.
+         */
+        delete: operations["deleteManualQris"];
         options?: never;
         head?: never;
         patch?: never;
@@ -895,6 +916,11 @@ export interface components {
             password: string;
             roles: ("admin" | "kapster")[];
             outlet_ids: string[];
+        };
+        OwnerPaymentProfile: {
+            midtrans_configured: boolean;
+            manual_qris_configured: boolean;
+            onboarding_completed: boolean;
         };
         MembershipInfo: {
             /** Format: uuid */
@@ -1323,6 +1349,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffMember"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getOwnerPaymentProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status konfigurasi pembayaran */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerPaymentProfile"];
                 };
             };
             default: components["responses"]["Error"];
@@ -1777,6 +1826,29 @@ export interface operations {
         };
         responses: {
             /** @description Tersimpan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    deleteManualQris: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description QRIS dihapus */
             200: {
                 headers: {
                     [name: string]: unknown;

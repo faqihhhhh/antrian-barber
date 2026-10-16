@@ -97,3 +97,17 @@ func (h *Handlers) SetManualQRIS(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Gambar QRIS tersimpan"})
 }
+
+func (h *Handlers) DeleteManualQRIS(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenantID"))
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("tenant_id_tidak_valid", "ID tenant tidak valid", err))
+		return
+	}
+	user, _ := identity.UserFromContext(r.Context())
+	if err := h.svc.ClearManualQRIS(r.Context(), tenantID, user.ID); err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Gambar QRIS dihapus"})
+}

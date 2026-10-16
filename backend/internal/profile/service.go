@@ -15,6 +15,7 @@ import (
 	"kapsflow/internal/cryptox"
 	db "kapsflow/internal/db"
 	"kapsflow/internal/httpx"
+	"kapsflow/internal/identity"
 	"kapsflow/internal/rls"
 )
 
@@ -61,7 +62,15 @@ type Info struct {
 }
 
 func (s *Service) GetProfile(ctx context.Context, tenantID uuid.UUID) (Info, error) {
-	p, err := s.queries(ctx).GetTenantProfile(ctx, tenantID)
+	user, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return Info{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	q := s.queries(ctx)
+	if err := s.requireOwner(ctx, q, tenantID, user.ID); err != nil {
+		return Info{}, err
+	}
+	p, err := q.GetTenantProfile(ctx, tenantID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Info{}, nil // belum pernah diisi sama sekali
@@ -141,6 +150,18 @@ func (s *Service) SetManualQRIS(ctx context.Context, tenantID, userID uuid.UUID,
 	})
 	if err != nil {
 		return httpx.Internal(fmt.Errorf("menyimpan gambar qris: %w", err))
+	}
+	return nil
+}
+
+// ClearManualQRIS menghapus QRIS statis tanpa mengubah pengaturan pembayaran Midtrans.
+func (s *Service) ClearManualQRIS(ctx context.Context, tenantID, userID uuid.UUID) error {
+	q := s.queries(ctx)
+	if err := s.requireOwner(ctx, q, tenantID, userID); err != nil {
+		return err
+	}
+	if err := q.ClearManualQRIS(ctx, tenantID); err != nil {
+		return httpx.Internal(fmt.Errorf("menghapus gambar qris: %w", err))
 	}
 	return nil
 }

@@ -12,6 +12,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const clearManualQRIS = `-- name: ClearManualQRIS :exec
+UPDATE tenant_profiles
+SET manual_qris_image = NULL,
+    manual_qris_content_type = NULL,
+    manual_qris_updated_at = NULL,
+    updated_at = now()
+WHERE tenant_id = $1
+`
+
+func (q *Queries) ClearManualQRIS(ctx context.Context, tenantID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, clearManualQRIS, tenantID)
+	return err
+}
+
 const getManualQRIS = `-- name: GetManualQRIS :one
 SELECT manual_qris_image, manual_qris_content_type FROM tenant_profiles WHERE tenant_id = $1
 `

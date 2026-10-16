@@ -19,6 +19,7 @@ type Querier interface {
 	ClaimNextWaitingTicket(ctx context.Context, queueSessionID uuid.UUID) (Ticket, error)
 	ClaimTicketNumberForBooking(ctx context.Context, pSessionID uuid.UUID) (int32, error)
 	ClaimTurnNotification(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	ClearManualQRIS(ctx context.Context, tenantID uuid.UUID) error
 	ClosePastQueueSessions(ctx context.Context) ([]uuid.UUID, error)
 	CloseQueueSession(ctx context.Context, id uuid.UUID) (QueueSession, error)
 	ConfirmTicketFinalPayment(ctx context.Context, arg ConfirmTicketFinalPaymentParams) error

@@ -27,6 +27,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 12b-7 | Tutup otomatis sesi lewat tanggal lokal; hentikan pesanan baru, tetapi izinkan antrean tersisa diselesaikan |
 | 12c-1 | Layar owner untuk melihat outlet, mengubah harga DP dan durasi bawaan, serta membuka tautan outlet |
 | 12c-2 | Layar owner untuk melihat staf dan mengundang admin/kapster dengan penugasan outlet |
+| 12c-3 | Layar owner untuk memasang, mengganti, atau menghapus QRIS manual dan melihat status Midtrans |
 
 ## Berikutnya (urutan wajib)
 
