@@ -94,6 +94,10 @@ Untuk pembayaran owner: buka **Pengaturan outlet → Pembayaran DP**. Pastikan s
 Pilih gambar QRIS PNG/JPG/WebP maksimal 512 KB dan simpan hanya jika ingin mengganti QRIS aktif.
 Midtrans hanya menampilkan status konfigurasi; jangan isi kunci tanpa akun Midtrans.
 
+Untuk tautan outlet owner: di **Pengaturan outlet**, tekan **Salin tautan** dan pastikan pesan
+konfirmasi tampil serta URL dapat ditempel di tab baru. Tekan **Buka halaman** dan pastikan halaman
+publik outlet terbuka di tab baru.
+
 ## Sebelum commit
 
 `go build -C backend ./...`, skrip verifikasi fase terkait (0 gagal), `npm run build`, `npm run lint`,

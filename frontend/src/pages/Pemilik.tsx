@@ -95,6 +95,9 @@ function OutletSettings({ tenantID, outlet }: { tenantID: string; outlet: Outlet
   const [dpPrice, setDpPrice] = useState(String(outlet.dp_price_rupiah))
   const [duration, setDuration] = useState(String(outlet.default_duration_minutes))
   const [saved, setSaved] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
+  const [copyError, setCopyError] = useState(false)
+  const publicURL = `${window.location.origin}/b/${outlet.slug}`
 
   const save = useMutation({
     mutationFn: async () => {
@@ -120,13 +123,30 @@ function OutletSettings({ tenantID, outlet }: { tenantID: string; outlet: Outlet
     save.mutate()
   }
 
+  async function copyPublicURL() {
+    setLinkCopied(false)
+    setCopyError(false)
+    try {
+      await navigator.clipboard.writeText(publicURL)
+      setLinkCopied(true)
+    } catch {
+      setCopyError(true)
+    }
+  }
+
   return (
     <article className="rounded-3xl border border-stone-200 bg-white p-5">
       <h2 className="text-lg font-bold">{outlet.name}</h2>
       <p className="mt-1 text-sm text-stone-600">{outlet.address || 'Alamat belum diisi'} · {outlet.timezone}</p>
       <p className="mt-2 text-sm text-stone-600">
-        Tautan: <a className="font-semibold underline" href={`/b/${outlet.slug}`}>{window.location.origin}/b/{outlet.slug}</a>
+        Tautan publik: <a className="font-semibold underline" href={`/b/${outlet.slug}`}>{publicURL}</a>
       </p>
+      <div className="mt-3 flex gap-2">
+        <Button type="button" variant="ghost" className="border border-stone-300" onClick={copyPublicURL}>Salin tautan</Button>
+        <a className="inline-flex w-full items-center justify-center rounded-xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-900 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-stone-900" href={`/b/${outlet.slug}`} target="_blank" rel="noreferrer">Buka halaman</a>
+      </div>
+      {linkCopied && <p className="mt-2 text-sm text-emerald-700" role="status">Tautan outlet disalin.</p>}
+      {copyError && <p className="mt-2 text-sm text-red-700" role="alert">Tautan tidak bisa disalin. Pilih dan salin alamat di atas.</p>}
       <form className="mt-5 space-y-4" onSubmit={submit}>
         <Field
           label="Harga DP pelanggan (rupiah)"

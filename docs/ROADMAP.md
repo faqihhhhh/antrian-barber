@@ -28,6 +28,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 12c-1 | Layar owner untuk melihat outlet, mengubah harga DP dan durasi bawaan, serta membuka tautan outlet |
 | 12c-2 | Layar owner untuk melihat staf dan mengundang admin/kapster dengan penugasan outlet |
 | 12c-3 | Layar owner untuk memasang, mengganti, atau menghapus QRIS manual dan melihat status Midtrans |
+| 12c-4 | Aksi salin tautan outlet publik dan buka halaman outlet dari layar owner |
 
 ## Berikutnya (urutan wajib)
 
