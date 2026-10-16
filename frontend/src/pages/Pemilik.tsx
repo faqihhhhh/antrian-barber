@@ -30,7 +30,10 @@ export default function Pemilik() {
           <p className="text-sm font-semibold tracking-wide text-stone-500">KAPSFLOW</p>
           <h1 className="mt-1 text-2xl font-bold">Pengaturan outlet</h1>
         </div>
-        <Link to="/" className="pt-1 text-sm font-semibold underline">Beranda</Link>
+        <nav className="flex flex-col items-end gap-2 pt-1 text-sm font-semibold underline">
+          <Link to="/pemilik/staf">Kelola staf</Link>
+          <Link to="/">Beranda</Link>
+        </nav>
       </header>
 
       {memberships.length === 0 ? (

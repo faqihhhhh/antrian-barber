@@ -306,6 +306,49 @@ paths:
                 $ref: '#/components/schemas/OwnerOutlet'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/staff:
+    get:
+      operationId: listTenantStaff
+      tags: [staf]
+      summary: Daftar staf bisnis untuk owner
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: Daftar admin dan kapster
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StaffMember'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: inviteTenantStaff
+      tags: [staf]
+      summary: Buat akun staf dan kirim verifikasi email
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteStaffRequest'
+      responses:
+        '201':
+          description: Akun staf dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffMember'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/public/outlets/{slug}:
     get:
       operationId: getPublicOutlet
@@ -1310,6 +1353,52 @@ components:
           type: integer
           format: int32
           minimum: 1
+    StaffMember:
+      type: object
+      required: [membership_id, email, roles, email_verified, outlet_ids]
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [admin, kapster]
+        email_verified:
+          type: boolean
+        outlet_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+    InviteStaffRequest:
+      type: object
+      required: [email, password, roles, outlet_ids]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        roles:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            enum: [admin, kapster]
+        outlet_ids:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
     MembershipInfo:
       type: object
       required: [membership_id, tenant_id, tenant_name, roles, outlets, subscription_status, current_period_end]

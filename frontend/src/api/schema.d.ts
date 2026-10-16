@@ -246,6 +246,24 @@ export interface paths {
         patch: operations["updateOwnerOutletSettings"];
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar staf bisnis untuk owner */
+        get: operations["listTenantStaff"];
+        put?: never;
+        /** Buat akun staf dan kirim verifikasi email */
+        post: operations["inviteTenantStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/public/outlets/{slug}": {
         parameters: {
             query?: never;
@@ -862,6 +880,22 @@ export interface components {
             /** Format: int32 */
             default_duration_minutes: number;
         };
+        StaffMember: {
+            /** Format: uuid */
+            membership_id: string;
+            /** Format: email */
+            email: string;
+            roles: ("admin" | "kapster")[];
+            email_verified: boolean;
+            outlet_ids: string[];
+        };
+        InviteStaffRequest: {
+            /** Format: email */
+            email: string;
+            password: string;
+            roles: ("admin" | "kapster")[];
+            outlet_ids: string[];
+        };
         MembershipInfo: {
             /** Format: uuid */
             membership_id: string;
@@ -1239,6 +1273,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnerOutlet"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listTenantStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar admin dan kapster */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffMember"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    inviteTenantStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteStaffRequest"];
+            };
+        };
+        responses: {
+            /** @description Akun staf dibuat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffMember"];
                 };
             };
             default: components["responses"]["Error"];

@@ -117,32 +117,47 @@ func (s *Service) InviteStaff(ctx context.Context, tenantID uuid.UUID, in Invite
 	}
 
 	return Member{
-		MembershipID: membership.ID,
-		Email:        user.Email,
-		Roles:        membership.Roles,
+		MembershipID:  membership.ID,
+		Email:         user.Email,
+		Roles:         membership.Roles,
 		EmailVerified: false,
+		OutletIDs:     in.OutletIDs,
 	}, nil
 }
 
 type Member struct {
-	MembershipID  uuid.UUID `json:"membership_id"`
-	Email         string    `json:"email"`
-	Roles         []string  `json:"roles"`
-	EmailVerified bool      `json:"email_verified"`
+	MembershipID  uuid.UUID   `json:"membership_id"`
+	Email         string      `json:"email"`
+	Roles         []string    `json:"roles"`
+	EmailVerified bool        `json:"email_verified"`
+	OutletIDs     []uuid.UUID `json:"outlet_ids"`
 }
 
 func (s *Service) ListStaff(ctx context.Context, tenantID uuid.UUID) ([]Member, error) {
-	rows, err := s.queries(ctx).ListStaffByTenant(ctx, tenantID)
+	caller, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return nil, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	q := s.queries(ctx)
+	if err := authorization.RequireTenantRole(ctx, q, tenantID, caller.ID, "owner"); err != nil {
+		return nil, err
+	}
+	rows, err := q.ListStaffByTenant(ctx, tenantID)
 	if err != nil {
 		return nil, httpx.Internal(fmt.Errorf("ambil daftar staf: %w", err))
 	}
 	result := make([]Member, 0, len(rows))
 	for _, row := range rows {
+		outletIDs, err := q.ListMembershipOutletIDs(ctx, row.MembershipID)
+		if err != nil {
+			return nil, httpx.Internal(fmt.Errorf("ambil penugasan outlet staf: %w", err))
+		}
 		result = append(result, Member{
 			MembershipID:  row.MembershipID,
 			Email:         row.Email,
 			Roles:         row.Roles,
 			EmailVerified: row.EmailVerifiedAt.Valid,
+			OutletIDs:     outletIDs,
 		})
 	}
 	return result, nil
