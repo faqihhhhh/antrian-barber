@@ -102,6 +102,10 @@ Untuk statistik owner: dari **Pengaturan outlet**, buka **Statistik**. Pastikan 
 total tiket, tiket selesai, pendapatan DP, DP belum lunas, rata-rata DP, dan tingkat penyelesaian tampil.
 Jika memiliki beberapa tenant owner, ganti pilihan bisnis dan pastikan angka ikut berganti.
 
+Untuk ulasan owner: buka **Ulasan pelanggan**. Pastikan ringkasan rating tiap kapster dan ulasan
+terbaru tampil, komentar kosong diberi keterangan, serta tombol halaman berikutnya bekerja bila ada
+20 ulasan. Admin/kapster tidak boleh bisa membaca daftar ulasan.
+
 ## Sebelum commit
 
 `go build -C backend ./...`, skrip verifikasi fase terkait (0 gagal), `npm run build`, `npm run lint`,

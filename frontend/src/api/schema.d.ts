@@ -281,6 +281,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar ulasan pelanggan tanpa identitas pelanggan */
+        get: operations["listOwnerReviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/reviews/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ringkasan rating untuk setiap kapster */
+        get: operations["getOwnerReviewSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/profile": {
         parameters: {
             query?: never;
@@ -987,6 +1021,30 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        OwnerReview: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            ticket_id: string;
+            /** Format: uuid */
+            kapster_membership_id: string;
+            /** Format: email */
+            kapster_email: string;
+            rating: number;
+            comment: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        OwnerReviewSummary: {
+            /** Format: uuid */
+            membership_id: string;
+            /** Format: email */
+            kapster_email: string;
+            /** Format: int64 */
+            review_count: number;
+            /** Format: double */
+            avg_rating: number;
+        };
         MembershipInfo: {
             /** Format: uuid */
             membership_id: string;
@@ -1437,6 +1495,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatsOverview"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listOwnerReviews: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ulasan terbaru */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerReview"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getOwnerReviewSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Jumlah dan rata-rata rating kapster */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerReviewSummary"][];
                 };
             };
             default: components["responses"]["Error"];

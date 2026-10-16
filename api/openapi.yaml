@@ -367,6 +367,50 @@ paths:
                 $ref: '#/components/schemas/StatsOverview'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/reviews:
+    get:
+      operationId: listOwnerReviews
+      tags: [ulasan]
+      summary: Daftar ulasan pelanggan tanpa identitas pelanggan
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        '200':
+          description: Ulasan terbaru
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/OwnerReview' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/reviews/summary:
+    get:
+      operationId: getOwnerReviewSummary
+      tags: [ulasan]
+      summary: Ringkasan rating untuk setiap kapster
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: Jumlah dan rata-rata rating kapster
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/OwnerReviewSummary' }
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/profile:
     get:
       operationId: getOwnerPaymentProfile
@@ -1495,6 +1539,25 @@ components:
         by_outlet: { type: array, items: { type: object, additionalProperties: true } }
         timing: { type: object, additionalProperties: true }
         peak_hours: { type: array, items: { type: object, additionalProperties: true } }
+    OwnerReview:
+      type: object
+      required: [id, ticket_id, kapster_membership_id, kapster_email, rating, comment, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        ticket_id: { type: string, format: uuid }
+        kapster_membership_id: { type: string, format: uuid }
+        kapster_email: { type: string, format: email }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+    OwnerReviewSummary:
+      type: object
+      required: [membership_id, kapster_email, review_count, avg_rating]
+      properties:
+        membership_id: { type: string, format: uuid }
+        kapster_email: { type: string, format: email }
+        review_count: { type: integer, format: int64 }
+        avg_rating: { type: number, format: double }
     MembershipInfo:
       type: object
       required: [membership_id, tenant_id, tenant_name, roles, outlets, subscription_status, current_period_end]
