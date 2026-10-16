@@ -20,7 +20,7 @@ import (
 
 type ExpirePaymentsArgs struct{}
 
-func (ExpirePaymentsArgs) Kind() string                  { return "expire_stale_payments" }
+func (ExpirePaymentsArgs) Kind() string                 { return "expire_stale_payments" }
 func (ExpirePaymentsArgs) InsertOpts() river.InsertOpts { return river.InsertOpts{MaxAttempts: 1} }
 
 type ExpirePaymentsWorker struct {
@@ -40,9 +40,33 @@ func (w *ExpirePaymentsWorker) Work(ctx context.Context, job *river.Job[ExpirePa
 	return nil
 }
 
+type ClosePastQueueSessionsArgs struct{}
+
+func (ClosePastQueueSessionsArgs) Kind() string { return "close_past_queue_sessions" }
+func (ClosePastQueueSessionsArgs) InsertOpts() river.InsertOpts {
+	return river.InsertOpts{MaxAttempts: 1}
+}
+
+type ClosePastQueueSessionsWorker struct {
+	river.WorkerDefaults[ClosePastQueueSessionsArgs]
+	queueSvc *queue.Service
+	log      *slog.Logger
+}
+
+func (w *ClosePastQueueSessionsWorker) Work(ctx context.Context, job *river.Job[ClosePastQueueSessionsArgs]) error {
+	n, err := w.queueSvc.ClosePastQueueSessions(ctx)
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		w.log.Info("sesi antrian dengan tanggal lewat ditutup", "jumlah", n)
+	}
+	return nil
+}
+
 type ExpireInvoicesArgs struct{}
 
-func (ExpireInvoicesArgs) Kind() string                  { return "expire_stale_invoices" }
+func (ExpireInvoicesArgs) Kind() string                 { return "expire_stale_invoices" }
 func (ExpireInvoicesArgs) InsertOpts() river.InsertOpts { return river.InsertOpts{MaxAttempts: 1} }
 
 type ExpireInvoicesWorker struct {
@@ -64,7 +88,7 @@ func (w *ExpireInvoicesWorker) Work(ctx context.Context, job *river.Job[ExpireIn
 
 type RenewalRemindersArgs struct{}
 
-func (RenewalRemindersArgs) Kind() string                  { return "send_renewal_reminders" }
+func (RenewalRemindersArgs) Kind() string                 { return "send_renewal_reminders" }
 func (RenewalRemindersArgs) InsertOpts() river.InsertOpts { return river.InsertOpts{MaxAttempts: 1} }
 
 type RenewalRemindersWorker struct {
@@ -84,17 +108,18 @@ func (w *RenewalRemindersWorker) Work(ctx context.Context, job *river.Job[Renewa
 	return nil
 }
 
-func every(d time.Duration, args river.JobArgs) *river.PeriodicJob {
+func every(id string, d time.Duration, args river.JobArgs) *river.PeriodicJob {
 	return river.NewPeriodicJob(
 		river.PeriodicInterval(d),
 		func() (river.JobArgs, *river.InsertOpts) { return args, nil },
-		&river.PeriodicJobOpts{RunOnStart: true},
+		&river.PeriodicJobOpts{ID: id, RunOnStart: true},
 	)
 }
 
 func NewClient(pool *pgxpool.Pool, log *slog.Logger, queueSvc *queue.Service, billingSvc *billing.Service) (*river.Client[pgx.Tx], error) {
 	workers := river.NewWorkers()
 	river.AddWorker(workers, &ExpirePaymentsWorker{queueSvc: queueSvc, log: log})
+	river.AddWorker(workers, &ClosePastQueueSessionsWorker{queueSvc: queueSvc, log: log})
 	river.AddWorker(workers, &ExpireInvoicesWorker{billingSvc: billingSvc, log: log})
 	river.AddWorker(workers, &RenewalRemindersWorker{billingSvc: billingSvc, log: log})
 
@@ -112,9 +137,10 @@ func NewClient(pool *pgxpool.Pool, log *slog.Logger, queueSvc *queue.Service, bi
 		// indeks, sedangkan kapsflow_app bukan pemilik. Dimatikan.
 		ReindexerSchedule: river.NeverSchedule(),
 		PeriodicJobs: []*river.PeriodicJob{
-			every(1*time.Minute, ExpirePaymentsArgs{}),
-			every(10*time.Minute, ExpireInvoicesArgs{}),
-			every(1*time.Hour, RenewalRemindersArgs{}),
+			every("expire_stale_payments", 1*time.Minute, ExpirePaymentsArgs{}),
+			every("close_past_queue_sessions", 1*time.Minute, ClosePastQueueSessionsArgs{}),
+			every("expire_stale_invoices", 10*time.Minute, ExpireInvoicesArgs{}),
+			every("renewal_reminders", 1*time.Hour, RenewalRemindersArgs{}),
 		},
 	})
 }

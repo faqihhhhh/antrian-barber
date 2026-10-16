@@ -24,6 +24,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 12b-4 | Kontrol penambahan kuota dari layar admin |
 | 12b-5 | Form pembukaan sesi antrian baru dari layar admin |
 | 12b-6 | Endpoint tutup sesi yang menolak jika masih ada DP atau tiket aktif, plus kontrol admin |
+| 12b-7 | Tutup otomatis sesi lewat tanggal lokal; hentikan pesanan baru, tetapi izinkan antrean tersisa diselesaikan |
 
 ## Berikutnya (urutan wajib)
 

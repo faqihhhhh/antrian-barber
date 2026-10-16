@@ -227,7 +227,7 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
         {!currentTicket && myState?.status !== 'busy' && (
           <button
             type="button"
-            disabled={session.status !== 'open' || action.isPending}
+            disabled={action.isPending || waiting.length === 0}
             onClick={() => action.mutate('ready')}
             className="w-full rounded-xl bg-stone-900 px-4 py-4 text-base font-semibold text-white transition hover:bg-stone-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:opacity-60"
           >
@@ -237,7 +237,7 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
         {currentTicket?.status === 'called' && (
           <button
             type="button"
-            disabled={session.status !== 'open' || action.isPending}
+            disabled={action.isPending}
             onClick={() => action.mutate('start')}
             className="w-full rounded-xl bg-stone-900 px-4 py-4 text-base font-semibold text-white transition hover:bg-stone-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:opacity-60"
           >
@@ -247,7 +247,7 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
         {currentTicket?.status === 'called' && (
           <button
             type="button"
-            disabled={session.status !== 'open' || action.isPending}
+            disabled={action.isPending}
             onClick={() => action.mutate('skip')}
             className="w-full rounded-xl border border-stone-300 bg-white px-3 py-4 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:opacity-60"
           >
@@ -258,7 +258,7 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              disabled={session.status !== 'open' || action.isPending}
+              disabled={action.isPending}
               onClick={() => action.mutate('complete')}
               className="rounded-xl bg-stone-900 px-3 py-4 text-sm font-semibold text-white transition hover:bg-stone-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:opacity-60"
             >
@@ -266,7 +266,7 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
             </button>
             <button
               type="button"
-              disabled={session.status !== 'open' || action.isPending}
+              disabled={action.isPending}
               onClick={() => action.mutate('skip')}
               className="rounded-xl border border-stone-300 bg-white px-3 py-4 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:opacity-60"
             >
@@ -275,7 +275,7 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
           </div>
         )}
         {action.isError && <Alert>{messageOf(action.error)}</Alert>}
-        {session.status !== 'open' && <Alert tone="info">Sesi ini sudah ditutup. Aksi kapster tidak tersedia.</Alert>}
+        {session.status !== 'open' && <Alert tone="info">Sesi ditutup untuk pesanan baru. Selesaikan tiket yang masih tersisa.</Alert>}
       </section>
 
       <section aria-label="Antrian menunggu" className="rounded-3xl border border-stone-200 bg-white p-5">

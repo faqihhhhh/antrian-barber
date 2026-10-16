@@ -192,6 +192,20 @@ func (s *Service) OpenQueueSession(ctx context.Context, tenantID, outletID, user
 	if err := s.requireOutletAssignment(ctx, q, tenantID, outletID, membership); err != nil {
 		return QueueSessionResponse{}, err
 	}
+	outlet, err := q.GetOutletByID(ctx, outletID)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && outlet.TenantID != tenantID) {
+		return QueueSessionResponse{}, httpx.NotFound("outlet_tidak_ditemukan", "Outlet tidak ditemukan", nil)
+	}
+	if err != nil {
+		return QueueSessionResponse{}, httpx.Internal(fmt.Errorf("memeriksa tanggal sesi outlet: %w", err))
+	}
+	location, err := time.LoadLocation(outlet.Timezone)
+	if err != nil {
+		return QueueSessionResponse{}, httpx.Internal(fmt.Errorf("zona waktu outlet tidak valid: %w", err))
+	}
+	if sessionDate.Format("2006-01-02") < time.Now().In(location).Format("2006-01-02") {
+		return QueueSessionResponse{}, httpx.BadRequest("tanggal_sudah_lewat", "Sesi baru tidak bisa dibuka untuk tanggal yang sudah lewat", nil)
+	}
 	if maxQuota <= 0 {
 		return QueueSessionResponse{}, httpx.BadRequest("kuota_tidak_valid", "Kuota maksimal harus lebih dari 0", nil)
 	}
@@ -223,6 +237,9 @@ func (s *Service) IncreaseQuota(ctx context.Context, tenantID, sessionID, userID
 	}
 	// MaxQuota di sini berarti JUMLAH TAMBAHAN, bukan total baru — lihat SQL-nya.
 	session, err := q.IncreaseQueueQuota(ctx, db.IncreaseQueueQuotaParams{ID: sessionID, MaxQuota: by})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return QueueSessionResponse{}, httpx.Conflict("sesi_sudah_ditutup", "Kuota tidak bisa ditambah karena sesi sudah ditutup", nil)
+	}
 	if err != nil {
 		return QueueSessionResponse{}, httpx.Internal(fmt.Errorf("menambah kuota: %w", err))
 	}
@@ -266,6 +283,35 @@ func (s *Service) CloseQueueSession(ctx context.Context, tenantID, sessionID, us
 	return queueSessionResponse(closedSession), nil
 }
 
+// ClosePastQueueSessions menutup sesi setelah tanggal lokal outlet terlewati.
+// Tiket aktif tetap tersimpan dan bisa diselesaikan kapster; status closed
+// hanya menghentikan pemesanan serta tiket baru.
+func (s *Service) ClosePastQueueSessions(ctx context.Context) (int, error) {
+	closedIDs := make([]uuid.UUID, 0)
+	err := rls.RunAsSystem(ctx, s.pool, func(systemCtx context.Context) error {
+		q := s.queries(systemCtx)
+		ids, err := q.ClosePastQueueSessions(systemCtx)
+		if err != nil {
+			return fmt.Errorf("menutup sesi yang tanggalnya lewat: %w", err)
+		}
+		closedIDs = ids
+		for _, sessionID := range ids {
+			snapshot, snapshotErr := s.buildSnapshot(systemCtx, q, sessionID)
+			if snapshotErr != nil {
+				s.log.Error("gagal membangun snapshot sesi yang ditutup otomatis", "err", snapshotErr, "session_id", sessionID)
+				continue
+			}
+			payload, _ := json.Marshal(snapshot)
+			s.hub.Publish(sessionID.String(), payload)
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, httpx.Internal(err)
+	}
+	return len(closedIDs), nil
+}
+
 func (s *Service) AddOfflineTicket(ctx context.Context, tenantID, sessionID, userID uuid.UUID, customerName string) (TicketResponse, error) {
 	q := s.queries(ctx)
 	admin, err := s.requireAdmin(ctx, q, tenantID, userID)
@@ -282,6 +328,9 @@ func (s *Service) AddOfflineTicket(ctx context.Context, tenantID, sessionID, use
 	num, err := q.ClaimNextTicketNumber(ctx, sessionID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			if session, sessionErr := q.GetQueueSessionByID(ctx, sessionID); sessionErr == nil && session.Status == "closed" {
+				return TicketResponse{}, httpx.Conflict("sesi_sudah_ditutup", "Tiket baru tidak bisa ditambahkan karena sesi sudah ditutup", nil)
+			}
 			return TicketResponse{}, httpx.Conflict("kuota_penuh", "Kuota antrian hari ini sudah penuh", nil)
 		}
 		return TicketResponse{}, httpx.Internal(fmt.Errorf("mengambil nomor tiket: %w", err))

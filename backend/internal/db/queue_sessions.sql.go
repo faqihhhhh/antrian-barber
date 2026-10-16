@@ -16,6 +16,7 @@ const claimNextTicketNumber = `-- name: ClaimNextTicketNumber :one
 UPDATE queue_sessions
 SET next_ticket_number = next_ticket_number + 1, used_quota = used_quota + 1, updated_at = now()
 WHERE id = $1 AND used_quota < max_quota
+  AND status = 'open'
 RETURNING (next_ticket_number - 1)::int AS ticket_number
 `
 
@@ -24,6 +25,36 @@ func (q *Queries) ClaimNextTicketNumber(ctx context.Context, id uuid.UUID) (int3
 	var ticket_number int32
 	err := row.Scan(&ticket_number)
 	return ticket_number, err
+}
+
+const closePastQueueSessions = `-- name: ClosePastQueueSessions :many
+UPDATE queue_sessions AS qs
+SET status = 'closed', updated_at = now()
+FROM outlets AS o
+WHERE qs.outlet_id = o.id
+  AND qs.status = 'open'
+  AND qs.session_date < (now() AT TIME ZONE o.timezone)::date
+RETURNING qs.id
+`
+
+func (q *Queries) ClosePastQueueSessions(ctx context.Context) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, closePastQueueSessions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const closeQueueSession = `-- name: CloseQueueSession :one
@@ -178,7 +209,9 @@ func (q *Queries) GetQueueSessionForUpdate(ctx context.Context, id uuid.UUID) (Q
 }
 
 const increaseQueueQuota = `-- name: IncreaseQueueQuota :one
-UPDATE queue_sessions SET max_quota = max_quota + $2, updated_at = now() WHERE id = $1 RETURNING id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at, used_quota
+UPDATE queue_sessions SET max_quota = max_quota + $2, updated_at = now()
+WHERE id = $1 AND status = 'open'
+RETURNING id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at, used_quota
 `
 
 type IncreaseQueueQuotaParams struct {

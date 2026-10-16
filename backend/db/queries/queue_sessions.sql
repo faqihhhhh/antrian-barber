@@ -7,12 +7,15 @@ RETURNING *;
 SELECT * FROM queue_sessions WHERE outlet_id = $1 ORDER BY session_date DESC;
 
 -- name: IncreaseQueueQuota :one
-UPDATE queue_sessions SET max_quota = max_quota + $2, updated_at = now() WHERE id = $1 RETURNING *;
+UPDATE queue_sessions SET max_quota = max_quota + $2, updated_at = now()
+WHERE id = $1 AND status = 'open'
+RETURNING *;
 
 -- name: ClaimNextTicketNumber :one
 UPDATE queue_sessions
 SET next_ticket_number = next_ticket_number + 1, used_quota = used_quota + 1, updated_at = now()
 WHERE id = $1 AND used_quota < max_quota
+  AND status = 'open'
 RETURNING (next_ticket_number - 1)::int AS ticket_number;
 
 -- name: GetQueueSessionByOutletAndDate :one
@@ -33,6 +36,15 @@ WHERE queue_session_id = $1
 UPDATE queue_sessions SET status = 'closed', updated_at = now()
 WHERE id = $1 AND status = 'open'
 RETURNING *;
+
+-- name: ClosePastQueueSessions :many
+UPDATE queue_sessions AS qs
+SET status = 'closed', updated_at = now()
+FROM outlets AS o
+WHERE qs.outlet_id = o.id
+  AND qs.status = 'open'
+  AND qs.session_date < (now() AT TIME ZONE o.timezone)::date
+RETURNING qs.id;
 
 -- name: ListQueueSessionsInRange :many
 SELECT * FROM queue_sessions

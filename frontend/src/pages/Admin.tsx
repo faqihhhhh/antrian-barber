@@ -427,7 +427,7 @@ function PaymentPanel({ membership, session }: { membership: Membership; session
           <Button
             type="button"
             loading={confirm.isPending && confirm.variables === payment.ticket_id}
-            disabled={confirm.isPending || session.status !== 'open'}
+            disabled={confirm.isPending}
             onClick={() => confirm.mutate(payment.ticket_id)}
           >
             Konfirmasi DP dan masukkan ke antrean
