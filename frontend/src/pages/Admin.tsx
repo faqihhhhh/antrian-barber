@@ -21,6 +21,17 @@ const TICKET_STATUS_LABEL: Record<string, string> = {
   canceled: 'Dibatalkan',
 }
 
+function dateInTimezone(timeZone: string): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const part = (type: string) => parts.find((value) => value.type === type)?.value ?? ''
+  return `${part('year')}-${part('month')}-${part('day')}`
+}
+
 export default function Admin() {
   const me = useMe()
   const [outletChoice, setOutletChoice] = useState('')
@@ -82,6 +93,9 @@ function SessionPanel({
   sessionChoice: string
   onSessionChange: (sessionID: string) => void
 }) {
+  const queryClient = useQueryClient()
+  const [sessionDate, setSessionDate] = useState(() => dateInTimezone(selected.outlet.timezone))
+  const [initialQuota, setInitialQuota] = useState('10')
   const sessions = useQuery({
     queryKey: ['admin-sessions', selected.membership.tenant_id, selected.outlet.id],
     queryFn: async (): Promise<QueueSession[]> => {
@@ -94,16 +108,72 @@ function SessionPanel({
     refetchInterval: POLL_INTERVAL,
   })
 
+  const openSession = useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/outlets/{outletID}/queue-sessions', {
+        params: { path: { tenantID: selected.membership.tenant_id, outletID: selected.outlet.id } },
+        body: { session_date: sessionDate, max_quota: Number(initialQuota) },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: async (createdSession) => {
+      onSessionChange(createdSession.id)
+      await queryClient.invalidateQueries({ queryKey: ['admin-sessions', selected.membership.tenant_id, selected.outlet.id] })
+    },
+  })
+
   const currentSession = sessions.data?.find((session) => session.id === sessionChoice)
     ?? sessions.data?.find((session) => session.status === 'open')
     ?? sessions.data?.[0]
 
   if (sessions.isPending) return <p className="py-6 text-center text-sm text-stone-500" role="status">Memuat sesi antrian…</p>
   if (sessions.isError) return <Alert>{messageOf(sessions.error)}</Alert>
-  if (!currentSession) return <Alert tone="info">Belum ada sesi antrian di outlet ini.</Alert>
+
+  const outletToday = dateInTimezone(selected.outlet.timezone)
+  const validInitialQuota = Number.isInteger(Number(initialQuota)) && Number(initialQuota) > 0 && Number(initialQuota) <= 1000
 
   return (
     <>
+      <form
+        className="space-y-3 rounded-2xl border border-stone-200 bg-white p-4"
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (sessionDate && validInitialQuota) openSession.mutate()
+        }}
+      >
+        <h2 className="font-bold">Buka sesi baru</h2>
+        <Field
+          label="Tanggal sesi"
+          name="new-session-date"
+          type="date"
+          min={outletToday}
+          value={sessionDate}
+          onChange={(event) => setSessionDate(event.target.value)}
+        />
+        <Field
+          label="Kuota awal"
+          name="new-session-quota"
+          type="number"
+          min={1}
+          max={1000}
+          step={1}
+          inputMode="numeric"
+          value={initialQuota}
+          onChange={(event) => setInitialQuota(event.target.value)}
+          hint="Masukkan 1–1.000 tiket."
+        />
+        {openSession.isError && <Alert>{messageOf(openSession.error)}</Alert>}
+        {openSession.isSuccess && <Alert tone="info">Sesi berhasil dibuka.</Alert>}
+        <Button type="submit" loading={openSession.isPending} disabled={!sessionDate || !validInitialQuota}>
+          Buka sesi
+        </Button>
+      </form>
+
+      {!currentSession ? (
+        <Alert tone="info">Belum ada sesi antrian di outlet ini. Buka sesi baru untuk mulai menerima pelanggan.</Alert>
+      ) : (
+        <>
       <label className="block">
         <span className="mb-1 block text-sm font-medium text-stone-700">Sesi antrian</span>
         <select
@@ -121,6 +191,8 @@ function SessionPanel({
       </label>
       <PaymentPanel membership={selected.membership} session={currentSession} />
       <OfflineTicketPanel membership={selected.membership} session={currentSession} />
+        </>
+      )}
     </>
   )
 }

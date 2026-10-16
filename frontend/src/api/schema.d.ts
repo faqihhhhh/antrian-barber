@@ -266,7 +266,8 @@ export interface paths {
         /** Daftar sesi antrian outlet */
         get: operations["listQueueSessions"];
         put?: never;
-        post?: never;
+        /** Buka sesi antrian baru untuk outlet */
+        post: operations["createQueueSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1185,6 +1186,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueueSession"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    createQueueSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                outletID: components["parameters"]["OutletID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: date */
+                    session_date: string;
+                    max_quota: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Sesi baru dibuka */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueSession"];
                 };
             };
             default: components["responses"]["Error"];

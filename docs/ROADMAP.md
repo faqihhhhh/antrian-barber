@@ -22,6 +22,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 12b-2 | Layar admin untuk memilih outlet/sesi, melihat DP manual, dan mengonfirmasikannya |
 | 12b-3 | Form tiket pelanggan datang langsung, daftar tiket sesi, dan batas kuota pada layar admin |
 | 12b-4 | Kontrol penambahan kuota dari layar admin |
+| 12b-5 | Form pembukaan sesi antrian baru dari layar admin |
 
 ## Berikutnya (urutan wajib)
 

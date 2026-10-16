@@ -326,6 +326,38 @@ paths:
                   $ref: '#/components/schemas/QueueSession'
         default:
           $ref: '#/components/responses/Error'
+    post:
+      operationId: createQueueSession
+      tags: [admin]
+      summary: Buka sesi antrian baru untuk outlet
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/OutletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [session_date, max_quota]
+              properties:
+                session_date:
+                  type: string
+                  format: date
+                max_quota:
+                  type: integer
+                  minimum: 1
+      responses:
+        '201':
+          description: Sesi baru dibuka
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueSession'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/queue-sessions/{sessionID}/tickets:
     get:
       operationId: listQueueTickets
