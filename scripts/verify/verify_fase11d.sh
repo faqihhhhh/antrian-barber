@@ -35,6 +35,13 @@ invite_probe() {
 
 check_code "owner menolak outlet milik tenant lain" "outlet_tidak_valid" "$(invite_probe cookiesB.txt)"
 check_code "admin tidak boleh mengundang staf" "bukan_owner" "$(invite_probe cookiesAdminB.txt)"
+STAFF_EMAIL="staff-dto-$RANDOM-$$@example.test"
+curl -fsS -b cookiesB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/staff" \
+  -H 'Content-Type: application/json' \
+  -d "{\"email\":\"$STAFF_EMAIL\",\"password\":\"password-uji-lokal\",\"roles\":[\"kapster\"],\"outlet_ids\":[\"3ae1bd6e-fb87-4963-9ef4-d93e998e03c6\"]}" -o "$TMP"
+check_code "respons undang staf tidak mengirim ID internal user" "OK" "$(jq -r 'if has("user_id") or has("tenant_id") then "BOCOR" else "OK" end' "$TMP")"
+curl -fsS -b cookiesB.txt "$API_BASE/v1/tenants/$TENANT_B/staff" -o "$TMP"
+check_code "daftar staf tidak mengirim ID internal user" "OK" "$(jq -r 'if any(.[]; has("user_id") or has("tenant_id")) then "BOCOR" else "OK" end' "$TMP")"
 
 SESSION_DATE="$(date -d "+$((RANDOM % 300 + 20)) days" +%F)"
 curl -sS -b cookiesAdminB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/outlets/3ae1bd6e-fb87-4963-9ef4-d93e998e03c6/queue-sessions" \
