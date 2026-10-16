@@ -53,6 +53,11 @@ curl -sS -b cookiesAdminB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/queue-sess
   -H 'Content-Type: application/json' -d '{"customer_name":"Tes penugasan outlet"}' -o "$TMP"
 check_code "admin tidak boleh menambah tiket di outlet yang tidak ditugaskan" "outlet_tidak_ditugaskan" "$(jq -r '.error.code // "OK"' "$TMP")"
 
+for action in ready start skip complete; do
+  curl -sS -b cookiesKapsterB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/queue-sessions/$SESSION_ID/$action" -o "$TMP"
+  check_code "kapster tidak boleh melakukan $action pada outlet yang tidak ditugaskan" "outlet_tidak_ditugaskan" "$(jq -r '.error.code // "OK"' "$TMP")"
+done
+
 echo
 echo "Selesai: $FAILS pemeriksaan gagal."
 exit "$FAILS"

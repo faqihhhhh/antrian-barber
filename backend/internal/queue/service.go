@@ -257,6 +257,9 @@ func (s *Service) KapsterReady(ctx context.Context, tenantID, sessionID, userID 
 	if err != nil {
 		return nil, err
 	}
+	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, sessionID, membership); err != nil {
+		return nil, err
+	}
 
 	state, stErr := q.GetKapsterSessionState(ctx, db.GetKapsterSessionStateParams{QueueSessionID: sessionID, MembershipID: membership.ID})
 	if stErr == nil {
@@ -302,6 +305,9 @@ func (s *Service) KapsterStart(ctx context.Context, tenantID, sessionID, userID 
 	if err != nil {
 		return err
 	}
+	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, sessionID, membership); err != nil {
+		return err
+	}
 	state, err := q.GetKapsterSessionState(ctx, db.GetKapsterSessionStateParams{QueueSessionID: sessionID, MembershipID: membership.ID})
 	if err != nil {
 		return httpx.Conflict("tidak_ada_tiket_aktif", "Tidak ada pelanggan yang sedang dipanggil", nil)
@@ -329,6 +335,9 @@ func (s *Service) KapsterSkip(ctx context.Context, tenantID, sessionID, userID u
 	q := s.queries(ctx)
 	membership, err := s.requireKapster(ctx, q, tenantID, userID)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, sessionID, membership); err != nil {
 		return nil, err
 	}
 	state, err := q.GetKapsterSessionState(ctx, db.GetKapsterSessionStateParams{QueueSessionID: sessionID, MembershipID: membership.ID})
@@ -395,6 +404,9 @@ func (s *Service) KapsterComplete(ctx context.Context, tenantID, sessionID, user
 	q := s.queries(ctx)
 	membership, err := s.requireKapster(ctx, q, tenantID, userID)
 	if err != nil {
+		return err
+	}
+	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, sessionID, membership); err != nil {
 		return err
 	}
 	state, err := q.GetKapsterSessionState(ctx, db.GetKapsterSessionStateParams{QueueSessionID: sessionID, MembershipID: membership.ID})
