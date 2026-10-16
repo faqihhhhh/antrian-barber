@@ -26,6 +26,44 @@ func (q *Queries) ClaimNextTicketNumber(ctx context.Context, id uuid.UUID) (int3
 	return ticket_number, err
 }
 
+const closeQueueSession = `-- name: CloseQueueSession :one
+UPDATE queue_sessions SET status = 'closed', updated_at = now()
+WHERE id = $1 AND status = 'open'
+RETURNING id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at, used_quota
+`
+
+func (q *Queries) CloseQueueSession(ctx context.Context, id uuid.UUID) (QueueSession, error) {
+	row := q.db.QueryRow(ctx, closeQueueSession, id)
+	var i QueueSession
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.OutletID,
+		&i.SessionDate,
+		&i.MaxQuota,
+		&i.NextTicketNumber,
+		&i.Status,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UsedQuota,
+	)
+	return i, err
+}
+
+const countActiveTicketsInQueueSession = `-- name: CountActiveTicketsInQueueSession :one
+SELECT count(*) FROM tickets
+WHERE queue_session_id = $1
+  AND status IN ('pending_payment', 'waiting', 'called', 'in_progress')
+`
+
+func (q *Queries) CountActiveTicketsInQueueSession(ctx context.Context, queueSessionID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countActiveTicketsInQueueSession, queueSessionID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createQueueSession = `-- name: CreateQueueSession :one
 INSERT INTO queue_sessions (tenant_id, outlet_id, session_date, max_quota, created_by)
 VALUES ($1, $2, $3, $4, $5)
@@ -99,6 +137,29 @@ type GetQueueSessionByOutletAndDateParams struct {
 
 func (q *Queries) GetQueueSessionByOutletAndDate(ctx context.Context, arg GetQueueSessionByOutletAndDateParams) (QueueSession, error) {
 	row := q.db.QueryRow(ctx, getQueueSessionByOutletAndDate, arg.OutletID, arg.SessionDate)
+	var i QueueSession
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.OutletID,
+		&i.SessionDate,
+		&i.MaxQuota,
+		&i.NextTicketNumber,
+		&i.Status,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UsedQuota,
+	)
+	return i, err
+}
+
+const getQueueSessionForUpdate = `-- name: GetQueueSessionForUpdate :one
+SELECT id, tenant_id, outlet_id, session_date, max_quota, next_ticket_number, status, created_by, created_at, updated_at, used_quota FROM queue_sessions WHERE id = $1 FOR UPDATE
+`
+
+func (q *Queries) GetQueueSessionForUpdate(ctx context.Context, id uuid.UUID) (QueueSession, error) {
+	row := q.db.QueryRow(ctx, getQueueSessionForUpdate, id)
 	var i QueueSession
 	err := row.Scan(
 		&i.ID,

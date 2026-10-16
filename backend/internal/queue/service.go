@@ -229,6 +229,43 @@ func (s *Service) IncreaseQuota(ctx context.Context, tenantID, sessionID, userID
 	return queueSessionResponse(session), nil
 }
 
+func (s *Service) CloseQueueSession(ctx context.Context, tenantID, sessionID, userID uuid.UUID) (QueueSessionResponse, error) {
+	q := s.queries(ctx)
+	membership, err := s.requireAdmin(ctx, q, tenantID, userID)
+	if err != nil {
+		return QueueSessionResponse{}, err
+	}
+	session, err := q.GetQueueSessionForUpdate(ctx, sessionID)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && session.TenantID != tenantID) {
+		return QueueSessionResponse{}, httpx.NotFound("sesi_tidak_ditemukan", "Sesi antrian tidak ditemukan", nil)
+	}
+	if err != nil {
+		return QueueSessionResponse{}, httpx.Internal(fmt.Errorf("mengunci sesi antrian: %w", err))
+	}
+	if err := s.requireOutletAssignment(ctx, q, tenantID, session.OutletID, membership); err != nil {
+		return QueueSessionResponse{}, err
+	}
+	if session.Status == "closed" {
+		return QueueSessionResponse{}, httpx.Conflict("sesi_sudah_ditutup", "Sesi antrian ini sudah ditutup", nil)
+	}
+	activeCount, err := q.CountActiveTicketsInQueueSession(ctx, sessionID)
+	if err != nil {
+		return QueueSessionResponse{}, httpx.Internal(fmt.Errorf("memeriksa tiket aktif sesi: %w", err))
+	}
+	if activeCount > 0 {
+		return QueueSessionResponse{}, httpx.Conflict("tiket_belum_selesai", "Selesaikan tiket yang menunggu, sedang dilayani, atau menunggu pembayaran sebelum menutup sesi", nil)
+	}
+	closedSession, err := q.CloseQueueSession(ctx, sessionID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return QueueSessionResponse{}, httpx.Conflict("sesi_sudah_ditutup", "Sesi antrian ini sudah ditutup", nil)
+	}
+	if err != nil {
+		return QueueSessionResponse{}, httpx.Internal(fmt.Errorf("menutup sesi antrian: %w", err))
+	}
+	s.broadcastSnapshot(ctx, q, sessionID)
+	return queueSessionResponse(closedSession), nil
+}
+
 func (s *Service) AddOfflineTicket(ctx context.Context, tenantID, sessionID, userID uuid.UUID, customerName string) (TicketResponse, error) {
 	q := s.queries(ctx)
 	admin, err := s.requireAdmin(ctx, q, tenantID, userID)

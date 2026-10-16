@@ -326,6 +326,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tutup sesi setelah semua tiket selesai
+         * @description Sesi ditolak untuk ditutup selama masih ada tiket pending pembayaran atau belum selesai dilayani.
+         */
+        post: operations["closeQueueSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/tickets/{ticketID}/confirm-manual-payment": {
         parameters: {
             query?: never;
@@ -1321,6 +1341,30 @@ export interface operations {
         };
         responses: {
             /** @description Kuota sesi setelah ditambahkan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueSession"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    closeQueueSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesi ditutup */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -460,6 +460,26 @@ paths:
                 $ref: '#/components/schemas/QueueSession'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/queue-sessions/{sessionID}/close:
+    post:
+      operationId: closeQueueSession
+      tags: [admin]
+      summary: Tutup sesi setelah semua tiket selesai
+      description: Sesi ditolak untuk ditutup selama masih ada tiket pending pembayaran atau belum selesai dilayani.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/SessionID'
+      responses:
+        '200':
+          description: Sesi ditutup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueSession'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/tickets/{ticketID}/confirm-manual-payment:
     post:
       operationId: confirmManualPayment

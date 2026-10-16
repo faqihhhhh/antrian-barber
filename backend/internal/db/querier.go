@@ -19,8 +19,10 @@ type Querier interface {
 	ClaimNextWaitingTicket(ctx context.Context, queueSessionID uuid.UUID) (Ticket, error)
 	ClaimTicketNumberForBooking(ctx context.Context, pSessionID uuid.UUID) (int32, error)
 	ClaimTurnNotification(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
+	CloseQueueSession(ctx context.Context, id uuid.UUID) (QueueSession, error)
 	ConfirmTicketFinalPayment(ctx context.Context, arg ConfirmTicketFinalPaymentParams) error
 	CountActiveKapsters(ctx context.Context, queueSessionID uuid.UUID) (int64, error)
+	CountActiveTicketsInQueueSession(ctx context.Context, queueSessionID uuid.UUID) (int64, error)
 	CountWaitingAheadOf(ctx context.Context, arg CountWaitingAheadOfParams) (int64, error)
 	CountWaitingInSession(ctx context.Context, queueSessionID uuid.UUID) (int64, error)
 	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) (EmailVerificationToken, error)
@@ -53,6 +55,7 @@ type Querier interface {
 	GetPlanByID(ctx context.Context, id uuid.UUID) (Plan, error)
 	GetQueueSessionByID(ctx context.Context, id uuid.UUID) (QueueSession, error)
 	GetQueueSessionByOutletAndDate(ctx context.Context, arg GetQueueSessionByOutletAndDateParams) (QueueSession, error)
+	GetQueueSessionForUpdate(ctx context.Context, id uuid.UUID) (QueueSession, error)
 	GetReviewByTicketID(ctx context.Context, ticketID uuid.UUID) (Review, error)
 	GetReviewSummaryByTenant(ctx context.Context, tenantID uuid.UUID) ([]GetReviewSummaryByTenantRow, error)
 	GetSubscriptionByTenant(ctx context.Context, tenantID uuid.UUID) (Subscription, error)

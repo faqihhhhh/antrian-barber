@@ -21,6 +21,19 @@ SELECT * FROM queue_sessions WHERE outlet_id = $1 AND session_date = $2;
 -- name: GetQueueSessionByID :one
 SELECT * FROM queue_sessions WHERE id = $1;
 
+-- name: GetQueueSessionForUpdate :one
+SELECT * FROM queue_sessions WHERE id = $1 FOR UPDATE;
+
+-- name: CountActiveTicketsInQueueSession :one
+SELECT count(*) FROM tickets
+WHERE queue_session_id = $1
+  AND status IN ('pending_payment', 'waiting', 'called', 'in_progress');
+
+-- name: CloseQueueSession :one
+UPDATE queue_sessions SET status = 'closed', updated_at = now()
+WHERE id = $1 AND status = 'open'
+RETURNING *;
+
 -- name: ListQueueSessionsInRange :many
 SELECT * FROM queue_sessions
 WHERE outlet_id = $1

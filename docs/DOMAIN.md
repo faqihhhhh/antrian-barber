@@ -75,6 +75,10 @@ tiket `canceled`, kuota kembali. Untuk Midtrans, job mengecek status dulu (bisa 
 Antrian diurutkan `queue_position`. Kapster yang menekan "siap" saat masih sibuk tidak boleh
 menghasilkan tiket yatim (ada guard `busy`).
 
+Admin hanya dapat menutup sesi jika tidak ada tiket `pending_payment`, `waiting`, `called`, atau
+`in_progress`. Sesi yang masih memiliki DP tertunda atau layanan belum selesai tetap terbuka, supaya
+pelanggan dan kapster dapat menyelesaikan antrean. Setelah ditutup, pemesanan baru ditolak.
+
 ## Estimasi menunggu
 
 Rata-rata jeda antar panggilan nyata kalau datanya ada, jika belum ada memakai

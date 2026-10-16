@@ -189,11 +189,54 @@ function SessionPanel({
           ))}
         </select>
       </label>
+      {currentSession.status === 'open' ? (
+        <CloseSessionControl membership={selected.membership} session={currentSession} />
+      ) : (
+        <Alert tone="info">Sesi sudah ditutup. Pelanggan tidak bisa membuat pesanan baru.</Alert>
+      )}
       <PaymentPanel membership={selected.membership} session={currentSession} />
       <OfflineTicketPanel membership={selected.membership} session={currentSession} />
         </>
       )}
     </>
+  )
+}
+
+function CloseSessionControl({ membership, session }: { membership: Membership; session: QueueSession }) {
+  const queryClient = useQueryClient()
+  const closeSession = useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/close', {
+        params: { path: { tenantID: membership.tenant_id, sessionID: session.id } },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-sessions', membership.tenant_id, session.outlet_id] })
+    },
+  })
+
+  return (
+    <section className="space-y-3 rounded-2xl border border-stone-200 bg-white p-4">
+      <div>
+        <h2 className="font-bold">Tutup sesi</h2>
+        <p className="mt-1 text-sm text-stone-600">Selesaikan semua tiket dan pembayaran tertunda sebelum menutup sesi.</p>
+      </div>
+      {closeSession.isError && <Alert>{messageOf(closeSession.error)}</Alert>}
+      <Button
+        type="button"
+        variant="ghost"
+        loading={closeSession.isPending}
+        onClick={() => {
+          if (window.confirm('Tutup sesi ini? Tiket yang masih menunggu pembayaran atau layanan harus diselesaikan terlebih dahulu.')) {
+            closeSession.mutate()
+          }
+        }}
+      >
+        Tutup sesi antrian
+      </Button>
+    </section>
   )
 }
 

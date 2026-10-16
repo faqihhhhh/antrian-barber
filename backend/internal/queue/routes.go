@@ -16,6 +16,7 @@ func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger, pool *pgxpool.
 	r.With(requireActive).Post("/{tenantID}/outlets/{outletID}/book", h.BookOnline)
 
 	r.With(requireActive).Post("/{tenantID}/queue-sessions/{sessionID}/increase-quota", h.IncreaseQuota)
+	r.With(requireActive).Post("/{tenantID}/queue-sessions/{sessionID}/close", h.CloseQueueSession)
 	r.With(requireActive).Post("/{tenantID}/queue-sessions/{sessionID}/tickets", h.AddOfflineTicket)
 	r.Get("/{tenantID}/queue-sessions/{sessionID}/tickets", h.ListTickets)
 	r.Get("/{tenantID}/queue-sessions/{sessionID}/pending-manual-payments", h.ListPendingManualPayments)
