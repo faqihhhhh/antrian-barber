@@ -78,11 +78,51 @@ func (s *Service) requireKapster(ctx context.Context, q *db.Queries, tenantID, u
 	return m, nil
 }
 
+func (s *Service) requireOutletAssignment(ctx context.Context, q *db.Queries, tenantID, outletID uuid.UUID, membership db.Membership) error {
+	outlet, err := q.GetOutletByID(ctx, outletID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return httpx.NotFound("outlet_tidak_ditemukan", "Outlet tidak ditemukan", nil)
+	}
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("ambil outlet untuk pemeriksaan penugasan: %w", err))
+	}
+	if outlet.TenantID != tenantID {
+		return httpx.NotFound("outlet_tidak_ditemukan", "Outlet tidak ditemukan", nil)
+	}
+	if slices.Contains(membership.Roles, "owner") {
+		return nil
+	}
+
+	assigned, err := q.ListMembershipOutletIDs(ctx, membership.ID)
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("ambil penugasan outlet: %w", err))
+	}
+	if !slices.Contains(assigned, outletID) {
+		return httpx.Forbidden("outlet_tidak_ditugaskan", "Anda tidak ditugaskan di outlet ini", nil)
+	}
+	return nil
+}
+
+func (s *Service) requireSessionOutletAssignment(ctx context.Context, q *db.Queries, tenantID, sessionID uuid.UUID, membership db.Membership) error {
+	session, err := q.GetQueueSessionByID(ctx, sessionID)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && session.TenantID != tenantID) {
+		return httpx.NotFound("sesi_tidak_ditemukan", "Sesi antrian tidak ditemukan", nil)
+	}
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("ambil sesi untuk pemeriksaan penugasan: %w", err))
+	}
+	return s.requireOutletAssignment(ctx, q, tenantID, session.OutletID, membership)
+}
+
 // --- Admin: sesi antrian & tiket offline ---
 
 func (s *Service) OpenQueueSession(ctx context.Context, tenantID, outletID, userID uuid.UUID, sessionDate time.Time, maxQuota int32) (db.QueueSession, error) {
 	q := s.queries(ctx)
-	if _, err := s.requireAdmin(ctx, q, tenantID, userID); err != nil {
+	membership, err := s.requireAdmin(ctx, q, tenantID, userID)
+	if err != nil {
+		return db.QueueSession{}, err
+	}
+	if err := s.requireOutletAssignment(ctx, q, tenantID, outletID, membership); err != nil {
 		return db.QueueSession{}, err
 	}
 	if maxQuota <= 0 {
@@ -104,7 +144,11 @@ func (s *Service) OpenQueueSession(ctx context.Context, tenantID, outletID, user
 
 func (s *Service) IncreaseQuota(ctx context.Context, tenantID, sessionID, userID uuid.UUID, by int32) (db.QueueSession, error) {
 	q := s.queries(ctx)
-	if _, err := s.requireAdmin(ctx, q, tenantID, userID); err != nil {
+	membership, err := s.requireAdmin(ctx, q, tenantID, userID)
+	if err != nil {
+		return db.QueueSession{}, err
+	}
+	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, sessionID, membership); err != nil {
 		return db.QueueSession{}, err
 	}
 	if by <= 0 {
@@ -122,6 +166,9 @@ func (s *Service) AddOfflineTicket(ctx context.Context, tenantID, sessionID, use
 	q := s.queries(ctx)
 	admin, err := s.requireAdmin(ctx, q, tenantID, userID)
 	if err != nil {
+		return db.Ticket{}, err
+	}
+	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, sessionID, admin); err != nil {
 		return db.Ticket{}, err
 	}
 	if customerName == "" {
@@ -663,12 +710,20 @@ func (s *Service) ProcessMidtransWebhook(ctx context.Context, orderID, statusCod
 
 func (s *Service) ConfirmManualPayment(ctx context.Context, tenantID, ticketID, adminUserID uuid.UUID) error {
 	q := s.queries(ctx)
-	if _, err := s.requireAdmin(ctx, q, tenantID, adminUserID); err != nil {
+	membership, err := s.requireAdmin(ctx, q, tenantID, adminUserID)
+	if err != nil {
 		return err
 	}
 	payment, err := q.GetTicketPaymentByTicketID(ctx, ticketID)
 	if err != nil {
 		return httpx.NotFound("pembayaran_tidak_ditemukan", "Pembayaran tidak ditemukan", nil)
+	}
+	ticket, err := q.GetTicketByID(ctx, ticketID)
+	if err != nil || ticket.TenantID != tenantID {
+		return httpx.NotFound("pembayaran_tidak_ditemukan", "Pembayaran tidak ditemukan", nil)
+	}
+	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, ticket.QueueSessionID, membership); err != nil {
+		return err
 	}
 	if payment.Method != "manual" {
 		return httpx.BadRequest("bukan_pembayaran_manual", "Pembayaran ini bukan mode manual", nil)
@@ -709,8 +764,15 @@ func (s *Service) ConfirmFinalPayment(ctx context.Context, tenantID, ticketID, a
 	if totalAmount <= 0 {
 		return httpx.BadRequest("jumlah_tidak_valid", "Jumlah total pembayaran harus lebih dari 0", nil)
 	}
-	_, err := s.requireAdmin(ctx, q, tenantID, adminUserID)
+	membership, err := s.requireAdmin(ctx, q, tenantID, adminUserID)
 	if err != nil {
+		return err
+	}
+	ticket, err := q.GetTicketByID(ctx, ticketID)
+	if err != nil || ticket.TenantID != tenantID {
+		return httpx.NotFound("tiket_tidak_ditemukan", "Tiket tidak ditemukan", nil)
+	}
+	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, ticket.QueueSessionID, membership); err != nil {
 		return err
 	}
 	if err := q.ConfirmTicketFinalPayment(ctx, db.ConfirmTicketFinalPaymentParams{

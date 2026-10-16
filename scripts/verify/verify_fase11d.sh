@@ -36,6 +36,23 @@ invite_probe() {
 check_code "owner menolak outlet milik tenant lain" "outlet_tidak_valid" "$(invite_probe cookiesB.txt)"
 check_code "admin tidak boleh mengundang staf" "bukan_owner" "$(invite_probe cookiesAdminB.txt)"
 
+SESSION_DATE="$(date -d "+$((RANDOM % 300 + 20)) days" +%F)"
+curl -sS -b cookiesAdminB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/outlets/3ae1bd6e-fb87-4963-9ef4-d93e998e03c6/queue-sessions" \
+  -H 'Content-Type: application/json' \
+  -d "{\"session_date\":\"$SESSION_DATE\",\"max_quota\":5}" \
+  -o "$TMP"
+check_code "admin tidak boleh membuka sesi outlet yang tidak ditugaskan" "outlet_tidak_ditugaskan" "$(jq -r '.error.code // "OK"' "$TMP")"
+
+SESSION_ID="$(curl -fsS -b cookiesB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/outlets/3ae1bd6e-fb87-4963-9ef4-d93e998e03c6/queue-sessions" \
+  -H 'Content-Type: application/json' \
+  -d "{\"session_date\":\"$SESSION_DATE\",\"max_quota\":5}" | jq -er '.id')"
+curl -sS -b cookiesAdminB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/queue-sessions/$SESSION_ID/increase-quota" \
+  -H 'Content-Type: application/json' -d '{"by":1}' -o "$TMP"
+check_code "admin tidak boleh menambah kuota outlet yang tidak ditugaskan" "outlet_tidak_ditugaskan" "$(jq -r '.error.code // "OK"' "$TMP")"
+curl -sS -b cookiesAdminB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/queue-sessions/$SESSION_ID/tickets" \
+  -H 'Content-Type: application/json' -d '{"customer_name":"Tes penugasan outlet"}' -o "$TMP"
+check_code "admin tidak boleh menambah tiket di outlet yang tidak ditugaskan" "outlet_tidak_ditugaskan" "$(jq -r '.error.code // "OK"' "$TMP")"
+
 echo
 echo "Selesai: $FAILS pemeriksaan gagal."
 exit "$FAILS"
