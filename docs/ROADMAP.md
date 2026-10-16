@@ -16,22 +16,18 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 11c-1 | `RecheckPayment` lewat jalur sistem, respons hanya status, Midtrans tiruan untuk tes |
 | 11c-2 | Layar pelanggan: halaman outlet, pesan, bayar, tiket, penilaian |
 | 11c-3 | Notifikasi push giliran di perangkat, service worker, manifest dan pemasangan PWA |
+| 11d | Otorisasi owner/admin/kapster, penugasan outlet, DTO respons staf/antrian, dan kebijakan RLS pelanggan; matriks PASS/FAIL |
 
 ## Berikutnya (urutan wajib)
 
-1. **11d: otorisasi peran di backend** (wajib sebelum layar staf; sedang dikerjakan).
-   - Selesai: pemeriksaan peran owner untuk `POST /staff`, `POST /outlets`, `PATCH /outlets/{id}/settings`, dan `POST /subscribe`; undangan staf memeriksa outlet tenant; operasi tulis admin dan kapster dibatasi ke outlet penugasannya; respons staf, sesi, dan tiket memakai DTO; pelanggan tidak bisa mengubah tiket atau pembayaran langsung lewat RLS.
-   - Masih perlu:
-     - Respons tiket, sesi operasional, dan staf sudah memakai DTO tanpa kolom internal.
-     - Tes: skrip PASS/FAIL per peran (owner, admin, kapster, pelanggan, orang luar).
-2. **12a** layar kapster. **12b** layar admin (konfirmasi DP, tiket offline, buka/tutup sesi, kuota).
+1. **12a** layar kapster. **12b** layar admin (konfirmasi DP, tiket offline, buka/tutup sesi, kuota).
    **12c** layar owner (outlet, staf, harga DP, pembayaran, tautan dan QR outlet, langganan, statistik, ulasan).
    **12d** layar pemilik SaaS (tenant, MRR, ARR, churn).
-3. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama.
-4. **14** pengerasan produksi: rate limit login dan pemesanan, header keamanan, backup database dengan uji
+2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama.
+3. **14** pengerasan produksi: rate limit login dan pemesanan, header keamanan, backup database dengan uji
    restore, Sentry, `DEV_AUTO_VERIFY` mati, domain pengirim Resend terverifikasi.
-5. **15** deploy: satu VPS, Docker, Caddy (HTTPS), CI sederhana, migrasi otomatis.
-6. **16** uji coba dengan 1 sampai 2 barber sungguhan, perbaikan, lalu buka pendaftaran.
+4. **15** deploy: satu VPS, Docker, Caddy (HTTPS), CI sederhana, migrasi otomatis.
+5. **16** uji coba dengan 1 sampai 2 barber sungguhan, perbaikan, lalu buka pendaftaran.
 
 ## Risiko dan utang yang diketahui
 

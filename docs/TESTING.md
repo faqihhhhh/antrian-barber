@@ -30,9 +30,10 @@ Akun tes dibuat dengan `DEV_AUTO_VERIFY=true`. Jangan memakai kata sandi nyata.
 
 ## Skrip verifikasi
 
-Satu skrip per fase: `verify_fase10.sh`, `verify_fase11a.sh`, `verify_fase11b.sh`, `verify_fase11c1.sh`.
-Saat ini tersimpan di `/tmp` dan **hilang saat restart**. Pindahkan ke `scripts/verify/` dan commit
-(lihat `docs/ROADMAP.md`). Pola semuanya sama:
+Skrip integrasi yang sudah disimpan di `scripts/verify/`: `verify_fase11c1.sh` dan
+`verify_fase11d.sh`. Skrip 11d memeriksa matriks owner, admin, kapster, pelanggan, dan orang luar;
+11c1 menguji pembayaran lewat Midtrans tiruan dan memastikan RLS menolak perubahan langsung oleh
+pelanggan. Pola semuanya sama:
 
 ```bash
 check() {  # nama, diharapkan, didapat
