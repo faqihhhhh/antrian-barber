@@ -132,6 +132,11 @@ done
 KAPSTER_READY_CODE="$(curl -sS -b cookiesKapsterB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/queue-sessions/$KAPSTER_SESSION_ID/ready" -o "$TMP" -w '%{http_code}')"
 check_code "kapster bisa memanggil tiket di outlet penugasannya" "200" "$KAPSTER_READY_CODE"
 check_code "kapster memanggil tiket yang benar" "1" "$(jq -r '.ticket_number // 0' "$TMP")"
+KAPSTER_TICKET_ID="$(jq -er '.id' "$TMP")"
+KAPSTER_MEMBERSHIP_ID="$(curl -fsS -b cookiesKapsterB.txt "$API_BASE/v1/me" | jq -er --arg tenant "$TENANT_B" '.memberships[] | select(.tenant_id == $tenant and (.roles | index("kapster"))) | .membership_id')"
+curl -fsS -b cookiesKapsterB.txt "$API_BASE/v1/tenants/$TENANT_B/queue-sessions/$KAPSTER_SESSION_ID/kapster-states" -o "$TMP"
+check_code "status kapster tidak mengirim kolom database internal" "OK" "$(jq -r 'if any(.[]; has("tenant_id") or has("queue_session_id") or has("created_at") or has("updated_at")) then "BOCOR" else "OK" end' "$TMP")"
+check_code "status memulihkan tiket milik kapster ini" "$KAPSTER_TICKET_ID" "$(jq -er --arg id "$KAPSTER_MEMBERSHIP_ID" '.[] | select(.membership_id == $id) | .current_ticket_id' "$TMP")"
 
 curl -sS -b cookiesAdminB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/queue-sessions/$SESSION_ID/increase-quota" \
   -H 'Content-Type: application/json' -d '{"by":1}' -o "$TMP"

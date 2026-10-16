@@ -16,7 +16,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 11c-1 | `RecheckPayment` lewat jalur sistem, respons hanya status, Midtrans tiruan untuk tes |
 | 11c-2 | Layar pelanggan: halaman outlet, pesan, bayar, tiket, penilaian |
 | 11c-3 | Notifikasi push giliran di perangkat, service worker, manifest dan pemasangan PWA |
-| 11d | Otorisasi owner/admin/kapster, penugasan outlet, DTO respons staf/antrian, dan kebijakan RLS pelanggan; matriks PASS/FAIL |
+| 11d | Otorisasi owner/admin/kapster, penugasan outlet, DTO staf/antrian/kapster, kebijakan RLS pelanggan, dan matriks PASS/FAIL |
 
 ## Berikutnya (urutan wajib)
 

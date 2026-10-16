@@ -63,6 +63,12 @@ type QueueSessionResponse struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
+type KapsterStateResponse struct {
+	MembershipID    uuid.UUID  `json:"membership_id"`
+	Status          string     `json:"status"`
+	CurrentTicketID *uuid.UUID `json:"current_ticket_id"`
+}
+
 func queueSessionResponse(session db.QueueSession) QueueSessionResponse {
 	date := ""
 	if session.SessionDate.Valid {
@@ -277,12 +283,21 @@ func (s *Service) ListTickets(ctx context.Context, sessionID uuid.UUID) ([]Ticke
 	return responses, nil
 }
 
-func (s *Service) ListKapsterStates(ctx context.Context, sessionID uuid.UUID) ([]db.KapsterSessionState, error) {
+func (s *Service) ListKapsterStates(ctx context.Context, sessionID uuid.UUID) ([]KapsterStateResponse, error) {
 	states, err := s.queries(ctx).ListKapsterStatesBySession(ctx, sessionID)
 	if err != nil {
 		return nil, httpx.Internal(fmt.Errorf("ambil status kapster: %w", err))
 	}
-	return httpx.NonNil(states), nil
+	responses := make([]KapsterStateResponse, 0, len(states))
+	for _, state := range states {
+		response := KapsterStateResponse{MembershipID: state.MembershipID, Status: state.Status}
+		if state.CurrentTicketID.Valid {
+			currentTicketID := uuid.UUID(state.CurrentTicketID.Bytes)
+			response.CurrentTicketID = &currentTicketID
+		}
+		responses = append(responses, response)
+	}
+	return responses, nil
 }
 
 // --- Kapster: siap, mulai, ganti, selesai ---
