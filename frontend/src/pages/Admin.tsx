@@ -127,6 +127,7 @@ function SessionPanel({
 
 function OfflineTicketPanel({ membership, session }: { membership: Membership; session: QueueSession }) {
   const [customerName, setCustomerName] = useState('')
+  const [quotaBy, setQuotaBy] = useState('')
   const queryClient = useQueryClient()
   const tickets = useQuery({
     queryKey: ['admin-tickets', membership.tenant_id, session.id],
@@ -156,8 +157,24 @@ function OfflineTicketPanel({ membership, session }: { membership: Membership; s
       ])
     },
   })
+  const increaseQuota = useMutation({
+    mutationFn: async (by: number) => {
+      const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/increase-quota', {
+        params: { path: { tenantID: membership.tenant_id, sessionID: session.id } },
+        body: { by },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: async () => {
+      setQuotaBy('')
+      await queryClient.invalidateQueries({ queryKey: ['admin-sessions', membership.tenant_id, session.outlet_id] })
+    },
+  })
   const quotaFull = session.used_quota >= session.max_quota
   const recentTickets = [...(tickets.data ?? [])].reverse().slice(0, 5)
+  const quotaValue = Number(quotaBy)
+  const validQuotaIncrease = Number.isInteger(quotaValue) && quotaValue > 0 && quotaValue <= 1000
 
   return (
     <section aria-label="Tiket pelanggan datang langsung" className="space-y-3 border-t border-stone-200 pt-5">
@@ -167,6 +184,31 @@ function OfflineTicketPanel({ membership, session }: { membership: Membership; s
       </div>
       {session.status !== 'open' && <Alert tone="info">Sesi ditutup. Buka sesi untuk menambah tiket.</Alert>}
       {quotaFull && session.status === 'open' && <Alert tone="info">Kuota sesi penuh. Tambah kuota sebelum membuat tiket lagi.</Alert>}
+      <form
+        className="space-y-3 rounded-2xl border border-stone-200 bg-white p-4"
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (validQuotaIncrease) increaseQuota.mutate(quotaValue)
+        }}
+      >
+        <Field
+          label="Tambahan kuota"
+          name="quota-increase"
+          type="number"
+          min={1}
+          max={1000}
+          step={1}
+          inputMode="numeric"
+          value={quotaBy}
+          onChange={(event) => setQuotaBy(event.target.value)}
+          hint="Masukkan jumlah kursi tambahan, maksimal 1.000 per aksi."
+        />
+        {increaseQuota.isError && <Alert>{messageOf(increaseQuota.error)}</Alert>}
+        {increaseQuota.isSuccess && <Alert tone="info">Kuota berhasil ditambahkan.</Alert>}
+        <Button type="submit" loading={increaseQuota.isPending} disabled={!validQuotaIncrease || session.status !== 'open'}>
+          Tambah kuota sesi
+        </Button>
+      </form>
       <form
         className="space-y-3 rounded-2xl border border-stone-200 bg-white p-4"
         onSubmit={(event) => {

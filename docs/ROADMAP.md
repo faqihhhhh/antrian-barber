@@ -21,6 +21,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 12b-1 | Endpoint daftar DP manual tertunda untuk admin, DTO aman, serta kontrak OpenAPI |
 | 12b-2 | Layar admin untuk memilih outlet/sesi, melihat DP manual, dan mengonfirmasikannya |
 | 12b-3 | Form tiket pelanggan datang langsung, daftar tiket sesi, dan batas kuota pada layar admin |
+| 12b-4 | Kontrol penambahan kuota dari layar admin |
 
 ## Berikutnya (urutan wajib)
 

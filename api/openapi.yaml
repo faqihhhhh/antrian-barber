@@ -397,6 +397,37 @@ paths:
                   $ref: '#/components/schemas/PendingManualPayment'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/queue-sessions/{sessionID}/increase-quota:
+    post:
+      operationId: increaseQueueQuota
+      tags: [admin]
+      summary: Tambahkan kuota sesi antrian
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/SessionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [by]
+              properties:
+                by:
+                  type: integer
+                  minimum: 1
+                  description: Jumlah tambahan kuota, bukan nilai kuota total.
+      responses:
+        '200':
+          description: Kuota sesi setelah ditambahkan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueSession'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/tickets/{ticketID}/confirm-manual-payment:
     post:
       operationId: confirmManualPayment

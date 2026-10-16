@@ -308,6 +308,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/increase-quota": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tambahkan kuota sesi antrian */
+        post: operations["increaseQueueQuota"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/tickets/{ticketID}/confirm-manual-payment": {
         parameters: {
             query?: never;
@@ -1246,6 +1263,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PendingManualPayment"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    increaseQueueQuota: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Jumlah tambahan kuota, bukan nilai kuota total. */
+                    by: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Kuota sesi setelah ditambahkan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueSession"];
                 };
             };
             default: components["responses"]["Error"];
