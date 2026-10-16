@@ -17,10 +17,12 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 11c-2 | Layar pelanggan: halaman outlet, pesan, bayar, tiket, penilaian |
 | 11c-3 | Notifikasi push giliran di perangkat, service worker, manifest dan pemasangan PWA |
 | 11d | Otorisasi owner/admin/kapster, penugasan outlet, DTO staf/antrian/kapster, kebijakan RLS pelanggan, dan matriks PASS/FAIL |
+| 12a | Layar kapster: pantau sesi/tiket dan aksi siap, mulai, lewati, selesai; sudah diperiksa pemilik di browser |
+| 12b-1 | Endpoint daftar DP manual tertunda untuk admin, DTO aman, serta kontrak OpenAPI |
 
 ## Berikutnya (urutan wajib)
 
-1. **12a** layar kapster (pemantauan sesi/tiket dan aksi siap, mulai, lewati, selesai tersedia; uji browser masih perlu). **12b** layar admin (konfirmasi DP, tiket offline, buka/tutup sesi, kuota).
+1. **12b** layar admin (konfirmasi DP, tiket offline, buka/tutup sesi, kuota).
    **12c** layar owner (outlet, staf, harga DP, pembayaran, tautan dan QR outlet, langganan, statistik, ulasan).
    **12d** layar pemilik SaaS (tenant, MRR, ARR, churn).
 2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama.

@@ -23,11 +23,11 @@ import (
 	"kapsflow/internal/dbx"
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/midtrans"
+	"kapsflow/internal/notification"
 	"kapsflow/internal/pgerr"
 	"kapsflow/internal/profile"
 	"kapsflow/internal/realtime"
 	"kapsflow/internal/rls"
-	"kapsflow/internal/notification"
 )
 
 type Service struct {
@@ -67,6 +67,18 @@ type KapsterStateResponse struct {
 	MembershipID    uuid.UUID  `json:"membership_id"`
 	Status          string     `json:"status"`
 	CurrentTicketID *uuid.UUID `json:"current_ticket_id"`
+}
+
+// PendingManualPaymentResponse memuat informasi yang admin perlukan untuk mencocokkan DP.
+type PendingManualPaymentResponse struct {
+	TicketID     uuid.UUID `json:"ticket_id"`
+	TicketNumber int32     `json:"ticket_number"`
+	CustomerName string    `json:"customer_name"`
+	MatchCode    string    `json:"match_code"`
+	Method       string    `json:"method"`
+	AmountRupiah int64     `json:"amount_rupiah"`
+	UniqueCode   *int16    `json:"unique_code"`
+	ExpiresAt    time.Time `json:"expires_at"`
 }
 
 func queueSessionResponse(session db.QueueSession) QueueSessionResponse {
@@ -283,6 +295,40 @@ func (s *Service) ListTickets(ctx context.Context, sessionID uuid.UUID) ([]Ticke
 	return responses, nil
 }
 
+func (s *Service) ListPendingManualPayments(ctx context.Context, tenantID, sessionID, userID uuid.UUID) ([]PendingManualPaymentResponse, error) {
+	q := s.queries(ctx)
+	membership, err := s.requireAdmin(ctx, q, tenantID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, sessionID, membership); err != nil {
+		return nil, err
+	}
+	rows, err := q.ListPendingManualTicketPaymentsBySession(ctx, sessionID)
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("ambil pembayaran DP manual: %w", err))
+	}
+	responses := make([]PendingManualPaymentResponse, 0, len(rows))
+	for _, row := range rows {
+		response := PendingManualPaymentResponse{
+			TicketID: row.TicketID, TicketNumber: row.TicketNumber, Method: row.Method,
+			AmountRupiah: row.AmountRupiah, ExpiresAt: row.ExpiresAt.Time,
+		}
+		if row.CustomerName.Valid {
+			response.CustomerName = row.CustomerName.String
+		}
+		if row.MatchCode.Valid {
+			response.MatchCode = row.MatchCode.String
+		}
+		if row.UniqueCode.Valid {
+			code := row.UniqueCode.Int16
+			response.UniqueCode = &code
+		}
+		responses = append(responses, response)
+	}
+	return responses, nil
+}
+
 func (s *Service) ListKapsterStates(ctx context.Context, sessionID uuid.UUID) ([]KapsterStateResponse, error) {
 	states, err := s.queries(ctx).ListKapsterStatesBySession(ctx, sessionID)
 	if err != nil {
@@ -341,7 +387,7 @@ func (s *Service) KapsterReady(ctx context.Context, tenantID, sessionID, userID 
 	} else if !errors.Is(stErr, pgx.ErrNoRows) {
 		return nil, httpx.Internal(fmt.Errorf("cek status kapster: %w", stErr))
 	}
-	
+
 	ticket, err := q.ClaimNextWaitingTicket(ctx, sessionID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -770,7 +816,7 @@ func (s *Service) ProcessMidtransWebhook(ctx context.Context, orderID, statusCod
 	if err != nil {
 		return httpx.NotFound("pembayaran_tidak_ditemukan", "Pembayaran tidak ditemukan", nil)
 	}
-	
+
 	serverKey, _, _, configured, err := s.profileSvc.GetDecryptedMidtransKeys(ctx, payment.TenantID)
 	if err != nil || !configured {
 		return httpx.Internal(fmt.Errorf("midtrans tidak terkonfigurasi untuk tenant %s", payment.TenantID))
@@ -873,7 +919,6 @@ func (s *Service) ConfirmFinalPayment(ctx context.Context, tenantID, ticketID, a
 	}
 	return nil
 }
-
 
 // --- Realtime & estimasi waktu tunggu ---
 
@@ -1071,6 +1116,7 @@ func (s *Service) EstimateTicketWait(ctx context.Context, ticketID uuid.UUID) (E
 	}
 	return result, nil
 }
+
 // --- Job terjadwal: pesanan kedaluwarsa ---
 
 // ExpireStalePayments dipanggil River tiap menit. Mengembalikan jumlah

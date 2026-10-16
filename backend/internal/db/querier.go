@@ -81,6 +81,7 @@ type Querier interface {
 	ListOutletsForMembership(ctx context.Context, arg ListOutletsForMembershipParams) ([]Outlet, error)
 	ListOwnerEmailsByTenant(ctx context.Context, tenantID uuid.UUID) ([]string, error)
 	ListPendingInvoices(ctx context.Context) ([]Invoice, error)
+	ListPendingManualTicketPaymentsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]ListPendingManualTicketPaymentsBySessionRow, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID uuid.UUID) ([]PushSubscription, error)
 	ListQueueSessionsByOutlet(ctx context.Context, outletID uuid.UUID) ([]QueueSession, error)
 	ListQueueSessionsInRange(ctx context.Context, arg ListQueueSessionsInRangeParams) ([]QueueSession, error)

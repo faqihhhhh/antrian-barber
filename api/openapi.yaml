@@ -347,6 +347,27 @@ paths:
                   $ref: '#/components/schemas/QueueTicket'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/queue-sessions/{sessionID}/pending-manual-payments:
+    get:
+      operationId: listPendingManualPayments
+      tags: [antrian]
+      summary: Daftar DP QRIS manual yang belum dikonfirmasi admin
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/SessionID'
+      responses:
+        '200':
+          description: Data tiket dan nominal DP untuk pencocokan pembayaran
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingManualPayment'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/queue-sessions/{sessionID}/kapster-states:
     get:
       operationId: listKapsterStates
@@ -752,6 +773,32 @@ components:
         status:
           type: string
           enum: [pending_payment, waiting, called, in_progress, completed, canceled]
+    PendingManualPayment:
+      type: object
+      required: [ticket_id, ticket_number, customer_name, match_code, method, amount_rupiah, expires_at]
+      properties:
+        ticket_id:
+          type: string
+          format: uuid
+        ticket_number:
+          type: integer
+        customer_name:
+          type: string
+        match_code:
+          type: string
+        method:
+          type: string
+          enum: [manual]
+        amount_rupiah:
+          type: integer
+          format: int64
+        unique_code:
+          type: integer
+          format: int32
+          nullable: true
+        expires_at:
+          type: string
+          format: date-time
     KapsterState:
       type: object
       required: [membership_id, status, current_ticket_id]

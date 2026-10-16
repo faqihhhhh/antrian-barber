@@ -163,6 +163,56 @@ func (q *Queries) ListExpiredPendingPayments(ctx context.Context) ([]TicketPayme
 	return items, nil
 }
 
+const listPendingManualTicketPaymentsBySession = `-- name: ListPendingManualTicketPaymentsBySession :many
+SELECT t.id AS ticket_id, t.ticket_number, t.customer_name, t.match_code,
+       p.method, p.amount_rupiah, p.unique_code, p.expires_at
+FROM tickets t
+JOIN ticket_payments p ON p.ticket_id = t.id
+WHERE t.queue_session_id = $1 AND t.status = 'pending_payment'
+  AND p.method = 'manual' AND p.status = 'pending'
+ORDER BY p.created_at, t.ticket_number
+`
+
+type ListPendingManualTicketPaymentsBySessionRow struct {
+	TicketID     uuid.UUID          `json:"ticket_id"`
+	TicketNumber int32              `json:"ticket_number"`
+	CustomerName pgtype.Text        `json:"customer_name"`
+	MatchCode    pgtype.Text        `json:"match_code"`
+	Method       string             `json:"method"`
+	AmountRupiah int64              `json:"amount_rupiah"`
+	UniqueCode   pgtype.Int2        `json:"unique_code"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) ListPendingManualTicketPaymentsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]ListPendingManualTicketPaymentsBySessionRow, error) {
+	rows, err := q.db.Query(ctx, listPendingManualTicketPaymentsBySession, queueSessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPendingManualTicketPaymentsBySessionRow
+	for rows.Next() {
+		var i ListPendingManualTicketPaymentsBySessionRow
+		if err := rows.Scan(
+			&i.TicketID,
+			&i.TicketNumber,
+			&i.CustomerName,
+			&i.MatchCode,
+			&i.Method,
+			&i.AmountRupiah,
+			&i.UniqueCode,
+			&i.ExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const markTicketPaymentFailed = `-- name: MarkTicketPaymentFailed :execrows
 UPDATE ticket_payments SET status = 'failed', updated_at = now()
 WHERE id = $1 AND status = 'pending'

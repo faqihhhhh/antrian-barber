@@ -2,18 +2,18 @@ package queue
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
-	"fmt"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	"kapsflow/internal/httpx"
-	"kapsflow/internal/identity"
 	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"kapsflow/internal/httpx"
+	"kapsflow/internal/identity"
 	"kapsflow/internal/rls"
 )
 
@@ -152,6 +152,26 @@ func (h *Handlers) ListTickets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.JSON(w, http.StatusOK, tickets)
+}
+
+func (h *Handlers) ListPendingManualPayments(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := param(r, "tenantID")
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("tenant_id_tidak_valid", "ID tenant tidak valid", err))
+		return
+	}
+	sessionID, err := param(r, "sessionID")
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("session_id_tidak_valid", "ID sesi tidak valid", err))
+		return
+	}
+	user, _ := identity.UserFromContext(r.Context())
+	payments, err := h.svc.ListPendingManualPayments(r.Context(), tenantID, sessionID, user.ID)
+	if err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, payments)
 }
 
 func (h *Handlers) ListKapsterStates(w http.ResponseWriter, r *http.Request) {

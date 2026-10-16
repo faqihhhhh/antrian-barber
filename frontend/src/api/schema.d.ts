@@ -290,6 +290,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/pending-manual-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar DP QRIS manual yang belum dikonfirmasi admin */
+        get: operations["listPendingManualPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/kapster-states": {
         parameters: {
             query?: never;
@@ -567,6 +584,21 @@ export interface components {
             match_code: string;
             /** @enum {string} */
             status: "pending_payment" | "waiting" | "called" | "in_progress" | "completed" | "canceled";
+        };
+        PendingManualPayment: {
+            /** Format: uuid */
+            ticket_id: string;
+            ticket_number: number;
+            customer_name: string;
+            match_code: string;
+            /** @enum {string} */
+            method: "manual";
+            /** Format: int64 */
+            amount_rupiah: number;
+            /** Format: int32 */
+            unique_code?: number | null;
+            /** Format: date-time */
+            expires_at: string;
         };
         KapsterState: {
             /** Format: uuid */
@@ -1142,6 +1174,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueueTicket"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listPendingManualPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Data tiket dan nominal DP untuk pencocokan pembayaran */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingManualPayment"][];
                 };
             };
             default: components["responses"]["Error"];

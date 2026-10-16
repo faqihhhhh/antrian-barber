@@ -10,6 +10,15 @@ SELECT * FROM ticket_payments WHERE id = $1;
 -- name: GetTicketPaymentByTicketID :one
 SELECT * FROM ticket_payments WHERE ticket_id = $1;
 
+-- name: ListPendingManualTicketPaymentsBySession :many
+SELECT t.id AS ticket_id, t.ticket_number, t.customer_name, t.match_code,
+       p.method, p.amount_rupiah, p.unique_code, p.expires_at
+FROM tickets t
+JOIN ticket_payments p ON p.ticket_id = t.id
+WHERE t.queue_session_id = $1 AND t.status = 'pending_payment'
+  AND p.method = 'manual' AND p.status = 'pending'
+ORDER BY p.created_at, t.ticket_number;
+
 
 
 -- name: MarkTicketPaymentPaid :execrows
