@@ -67,8 +67,8 @@ Fungsi `SECURITY DEFINER` untuk operasi yang harus atomik lintas hak: `claim_tic
   pakai `INSERT ... ON CONFLICT DO NOTHING` dan cek `pgx.ErrNoRows`, bukan menangkap error unik.
 - Siaran realtime dan notifikasi harus dibangun dengan hak sistem, kalau tidak hanya terlihat
   data milik pemicunya.
-- Kebijakan pelanggan di `tickets` dan `ticket_payments` saat ini `FOR ALL` (pelanggan bisa
-  mengubah barisnya sendiri di level SQL). Jangan bergantung pada itu. Rencananya dipangkas di Fase 11d.
+- Pelanggan hanya dapat membaca dan membuat baris miliknya di `tickets` dan `ticket_payments`.
+  UPDATE hanya tersedia bagi anggota tenant, untuk dipakai admin dan proses sistem.
 
 ## Migrasi
 

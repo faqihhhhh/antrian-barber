@@ -3,8 +3,9 @@ cd ~/kapsflow || exit 1
 
 T=3159e203-02c0-49b0-8fe5-1e94ebbae2e1
 OUTLET=3ae1bd6e-fb87-4963-9ef4-d93e998e03c6
-S=localhost:8080/v1/tenants/$T
-P=localhost:8080/v1
+API_BASE="${API_BASE:-http://localhost:8080}"
+S=$API_BASE/v1/tenants/$T
+P=$API_BASE/v1
 H='Content-Type: application/json'
 SK="SB-Mid-server-FAKE"
 GROSS="15000.00"
@@ -116,11 +117,13 @@ check "QR berasal dari Midtrans tiruan" "http://localhost:9099/qr/$PID1.png" "$(
 MT=$(curl -s -b cookiesPembeli2.txt $P/me/tickets | jq --arg id "$TK1" '.[] | select(.ticket_id==$id)')
 check "tiket saya memuat alamat QR yang sama" "http://localhost:9099/qr/$PID1.png" "$(echo "$MT" | jq -r '.payment.qr_code_url')"
 
-echo "== 2. Hak UPDATE pelanggan lewat RLS (informasi, belum jadi syarat lulus) =="
+echo "== 2. Hak UPDATE pelanggan lewat RLS =="
 UID2=$(curl -s -b cookiesPembeli2.txt $P/me | jq -r '.user.id')
 PID1=$(sql "SELECT id FROM ticket_payments WHERE ticket_id='$TK1';")
 CNT=$(docker compose exec -T db psql -q -U kapsflow_app -d kapsflow -At -c "BEGIN; SELECT set_config('app.user_id','$UID2',true); WITH u AS (UPDATE ticket_payments SET status='paid' WHERE id='$PID1' RETURNING 1) SELECT count(*) FROM u; ROLLBACK;" | grep -E '^[0-9]+$' | tail -1)
-echo "INFO  baris pembayaran yang bisa diubah pelanggan lewat RLS: $CNT (target di Fase 11d: 0)"
+check "pelanggan tidak bisa mengubah pembayaran lewat RLS" "0" "$CNT"
+CNT_TICKET=$(docker compose exec -T db psql -q -U kapsflow_app -d kapsflow -At -c "BEGIN; SELECT set_config('app.user_id','$UID2',true); WITH u AS (UPDATE tickets SET status='canceled' WHERE id='$TK1' RETURNING 1) SELECT count(*) FROM u; ROLLBACK;" | grep -E '^[0-9]+$' | tail -1)
+check "pelanggan tidak bisa mengubah tiket lewat RLS" "0" "$CNT_TICKET"
 
 echo "== 3. Cek ulang saat belum dibayar =="
 RC=$(post cookiesPembeli2.txt $S/tickets/$TK1/recheck-payment '{}')
@@ -131,7 +134,7 @@ check "tiket masih menunggu pembayaran" "pending_payment" "$(sql "SELECT status 
 echo "== 4. Hak akses =="
 check "pelanggan lain ditolak" "pembayaran_tidak_ditemukan" "$(post cookiesPembeli.txt $S/tickets/$TK1/recheck-payment '{}' | code)"
 OTHER=$(sql "SELECT id FROM tenants WHERE id<>'$T' LIMIT 1;")
-WRONG=$(post cookiesPembeli2.txt localhost:8080/v1/tenants/$OTHER/tickets/$TK1/recheck-payment '{}' | code)
+WRONG=$(post cookiesPembeli2.txt $API_BASE/v1/tenants/$OTHER/tickets/$TK1/recheck-payment '{}' | code)
 check "alamat tenant yang salah tidak diproses" "ditolak" "$([ "$WRONG" != "OK" ] && echo ditolak || echo diproses)"
 
 echo "== 5. Cek ulang setelah dibayar =="

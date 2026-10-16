@@ -20,11 +20,9 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 ## Berikutnya (urutan wajib)
 
 1. **11d: otorisasi peran di backend** (wajib sebelum layar staf; sedang dikerjakan).
-   - Selesai: pemeriksaan peran owner untuk `POST /staff`, `POST /outlets`, `PATCH /outlets/{id}/settings`, dan `POST /subscribe`; undangan staf memeriksa outlet tenant; operasi tulis admin dan kapster dibatasi ke outlet penugasannya.
+   - Selesai: pemeriksaan peran owner untuk `POST /staff`, `POST /outlets`, `PATCH /outlets/{id}/settings`, dan `POST /subscribe`; undangan staf memeriksa outlet tenant; operasi tulis admin dan kapster dibatasi ke outlet penugasannya; respons staf, sesi, dan tiket memakai DTO; pelanggan tidak bisa mengubah tiket atau pembayaran langsung lewat RLS.
    - Masih perlu:
      - Respons tiket, sesi operasional, dan staf sudah memakai DTO tanpa kolom internal.
-     - Kebijakan RLS pelanggan di `tickets` dan `ticket_payments` masih `FOR ALL`. Pangkas jadi baca (dan tambah
-     saat memesan). Tesnya: baris INFO di `verify_fase11c1.sh` bagian 2 berubah jadi syarat lulus dengan nilai 0.
      - Tes: skrip PASS/FAIL per peran (owner, admin, kapster, pelanggan, orang luar).
 2. **12a** layar kapster. **12b** layar admin (konfirmasi DP, tiket offline, buka/tutup sesi, kuota).
    **12c** layar owner (outlet, staf, harga DP, pembayaran, tautan dan QR outlet, langganan, statistik, ulasan).
