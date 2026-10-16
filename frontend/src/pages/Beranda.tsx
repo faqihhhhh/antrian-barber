@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { useMe } from '../auth/useMe'
 import { Alert, Button } from '../components/ui'
 import { lastOutlet } from '../lib/storage'
+import { removePushSubscription } from '../hooks/usePushNotifications'
 
 const ROLE_LABEL: Record<string, string> = {
   owner: 'Pemilik bisnis',
@@ -25,6 +26,11 @@ export default function Beranda() {
 
   const logout = useMutation({
     mutationFn: async () => {
+      try {
+        await removePushSubscription()
+      } catch {
+        // Logout harus tetap bisa dilakukan jika penghapusan subscription gagal.
+      }
       await api.POST('/v1/auth/logout')
     },
     onSuccess: () => {

@@ -9,6 +9,7 @@ import { MY_TICKETS_KEY, useMyTickets, type MyTicket } from '../hooks/useMyTicke
 import { useQueueStream } from '../hooks/useQueueStream'
 import { formatWait, isActiveStatus } from '../lib/format'
 import { usePollWhileActive } from '../hooks/usePollWhileActive'
+import PushPrompt from '../components/PushPrompt'
 
 export default function Tiket() {
   const { ticketId } = useParams()
@@ -53,6 +54,7 @@ export default function Tiket() {
         Semua tiket
       </Link>
       <TicketStub ticket={ticket} showCode={ticket.status !== 'pending_payment' && ticket.status !== 'canceled'} />
+      {(ticket.status === 'waiting' || ticket.status === 'called') && <PushPrompt />}
       <StatusBody ticket={ticket} />
     </main>
   )

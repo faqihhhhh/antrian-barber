@@ -11,6 +11,88 @@ info:
 servers:
   - url: /
 paths:
+  /v1/tenants/push/public-key:
+    get:
+      operationId: getPushPublicKey
+      tags: [notifikasi]
+      summary: Kunci publik VAPID untuk mendaftarkan notifikasi perangkat
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Kunci publik VAPID
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [public_key]
+                properties:
+                  public_key:
+                    type: string
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/push/subscribe:
+    post:
+      operationId: subscribePush
+      tags: [notifikasi]
+      summary: Simpan subscription notifikasi untuk akun saat ini
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [endpoint, keys]
+              properties:
+                endpoint:
+                  type: string
+                  format: uri
+                keys:
+                  type: object
+                  required: [p256dh, auth]
+                  properties:
+                    p256dh:
+                      type: string
+                    auth:
+                      type: string
+      responses:
+        '201':
+          description: Notifikasi diaktifkan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/push/unsubscribe:
+    post:
+      operationId: unsubscribePush
+      tags: [notifikasi]
+      summary: Hapus subscription notifikasi dari akun saat ini
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [endpoint]
+              properties:
+                endpoint:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Notifikasi dimatikan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/auth/register:
     post:
       operationId: register

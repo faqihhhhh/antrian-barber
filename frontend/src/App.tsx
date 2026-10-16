@@ -9,6 +9,7 @@ import Outlet from './pages/Outlet'
 import Tiket from './pages/Tiket'
 import TiketSaya from './pages/TiketSaya'
 import VerifikasiEmail from './pages/VerifikasiEmail'
+import InstallPrompt from './components/InstallPrompt'
 
 function NotFound() {
   return (
@@ -23,6 +24,7 @@ function NotFound() {
 
 export default function App() {
   return (
+    <>
     <Routes>
       <Route path="/masuk" element={<Masuk />} />
       <Route path="/daftar" element={<Daftar />} />
@@ -56,5 +58,7 @@ export default function App() {
       />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    <InstallPrompt />
+    </>
   )
 }
