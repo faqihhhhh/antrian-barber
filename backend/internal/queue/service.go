@@ -40,6 +40,31 @@ type Service struct {
 	log            *slog.Logger
 }
 
+// TicketResponse berisi data tiket yang diperlukan layar staf, tanpa kolom internal database.
+type TicketResponse struct {
+	ID            uuid.UUID `json:"id"`
+	TicketNumber  int32     `json:"ticket_number"`
+	QueuePosition int32     `json:"queue_position"`
+	Channel       string    `json:"channel"`
+	CustomerName  string    `json:"customer_name"`
+	MatchCode     string    `json:"match_code"`
+	Status        string    `json:"status"`
+}
+
+func ticketResponse(ticket db.Ticket) TicketResponse {
+	response := TicketResponse{
+		ID: ticket.ID, TicketNumber: ticket.TicketNumber, QueuePosition: ticket.QueuePosition,
+		Channel: ticket.Channel, Status: ticket.Status,
+	}
+	if ticket.CustomerName.Valid {
+		response.CustomerName = ticket.CustomerName.String
+	}
+	if ticket.MatchCode.Valid {
+		response.MatchCode = ticket.MatchCode.String
+	}
+	return response
+}
+
 func NewService(pool *pgxpool.Pool, profileSvc *profile.Service, midtransClient *midtrans.Client, hub *realtime.Hub, notifySvc *notification.Service, log *slog.Logger) *Service {
 	return &Service{fallback: db.New(pool), pool: pool, profileSvc: profileSvc, midtransClient: midtransClient, hub: hub, notifySvc: notifySvc, log: log}
 }
@@ -162,25 +187,25 @@ func (s *Service) IncreaseQuota(ctx context.Context, tenantID, sessionID, userID
 	return session, nil
 }
 
-func (s *Service) AddOfflineTicket(ctx context.Context, tenantID, sessionID, userID uuid.UUID, customerName string) (db.Ticket, error) {
+func (s *Service) AddOfflineTicket(ctx context.Context, tenantID, sessionID, userID uuid.UUID, customerName string) (TicketResponse, error) {
 	q := s.queries(ctx)
 	admin, err := s.requireAdmin(ctx, q, tenantID, userID)
 	if err != nil {
-		return db.Ticket{}, err
+		return TicketResponse{}, err
 	}
 	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, sessionID, admin); err != nil {
-		return db.Ticket{}, err
+		return TicketResponse{}, err
 	}
 	if customerName == "" {
-		return db.Ticket{}, httpx.BadRequest("nama_wajib_diisi", "Nama pelanggan wajib diisi", nil)
+		return TicketResponse{}, httpx.BadRequest("nama_wajib_diisi", "Nama pelanggan wajib diisi", nil)
 	}
 
 	num, err := q.ClaimNextTicketNumber(ctx, sessionID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return db.Ticket{}, httpx.Conflict("kuota_penuh", "Kuota antrian hari ini sudah penuh", nil)
+			return TicketResponse{}, httpx.Conflict("kuota_penuh", "Kuota antrian hari ini sudah penuh", nil)
 		}
-		return db.Ticket{}, httpx.Internal(fmt.Errorf("mengambil nomor tiket: %w", err))
+		return TicketResponse{}, httpx.Internal(fmt.Errorf("mengambil nomor tiket: %w", err))
 	}
 
 	ticket, err := q.CreateTicket(ctx, db.CreateTicketParams{
@@ -191,15 +216,15 @@ func (s *Service) AddOfflineTicket(ctx context.Context, tenantID, sessionID, use
 		MatchCode:    pgtype.Text{}, // offline tidak pakai kode
 	})
 	if err != nil {
-		return db.Ticket{}, httpx.Internal(fmt.Errorf("membuat tiket: %w", err))
+		return TicketResponse{}, httpx.Internal(fmt.Errorf("membuat tiket: %w", err))
 	}
 	if err := q.CreateTicketEvent(ctx, db.CreateTicketEventParams{
 		TenantID: tenantID, TicketID: ticket.ID, EventType: "created", ActorMembershipID: dbx.UUID(admin.ID),
 	}); err != nil {
-		return db.Ticket{}, httpx.Internal(fmt.Errorf("mencatat event dibuat: %w", err))
+		return TicketResponse{}, httpx.Internal(fmt.Errorf("mencatat event dibuat: %w", err))
 	}
 	s.broadcastSnapshot(ctx, q, sessionID)
-	return ticket, nil
+	return ticketResponse(ticket), nil
 }
 
 // --- Baca-baca ---
@@ -212,12 +237,16 @@ func (s *Service) ListQueueSessions(ctx context.Context, outletID uuid.UUID) ([]
 	return httpx.NonNil(sessions), nil
 }
 
-func (s *Service) ListTickets(ctx context.Context, sessionID uuid.UUID) ([]db.Ticket, error) {
+func (s *Service) ListTickets(ctx context.Context, sessionID uuid.UUID) ([]TicketResponse, error) {
 	tickets, err := s.queries(ctx).ListTicketsBySession(ctx, sessionID)
 	if err != nil {
 		return nil, httpx.Internal(fmt.Errorf("ambil daftar tiket: %w", err))
 	}
-	return httpx.NonNil(tickets), nil
+	responses := make([]TicketResponse, 0, len(tickets))
+	for _, ticket := range tickets {
+		responses = append(responses, ticketResponse(ticket))
+	}
+	return responses, nil
 }
 
 func (s *Service) ListKapsterStates(ctx context.Context, sessionID uuid.UUID) ([]db.KapsterSessionState, error) {
@@ -251,7 +280,7 @@ func (s *Service) claimTicket(ctx context.Context, q *db.Queries, tenantID, sess
 
 // KapsterReady adalah efek tombol "siap". Mengembalikan nil (tanpa error)
 // kalau antrian sedang kosong — itu kondisi normal, bukan kegagalan.
-func (s *Service) KapsterReady(ctx context.Context, tenantID, sessionID, userID uuid.UUID) (*db.Ticket, error) {
+func (s *Service) KapsterReady(ctx context.Context, tenantID, sessionID, userID uuid.UUID) (*TicketResponse, error) {
 	q := s.queries(ctx)
 	membership, err := s.requireKapster(ctx, q, tenantID, userID)
 	if err != nil {
@@ -289,7 +318,8 @@ func (s *Service) KapsterReady(ctx context.Context, tenantID, sessionID, userID 
 		return nil, err
 	}
 	s.broadcastSnapshot(ctx, q, sessionID)
-	return &ticket, nil
+	response := ticketResponse(ticket)
+	return &response, nil
 }
 
 func (s *Service) currentTicketID(state db.KapsterSessionState) (uuid.UUID, bool) {
@@ -331,7 +361,7 @@ func (s *Service) KapsterStart(ctx context.Context, tenantID, sessionID, userID 
 // KapsterSkip adalah efek tombol "ganti pelanggan": tiket yang di-skip
 // ditukar posisinya dengan tiket waiting berikutnya (mundur tepat 1
 // antrian, sesuai spesifikasi), lalu kapster langsung mengklaim tiket baru.
-func (s *Service) KapsterSkip(ctx context.Context, tenantID, sessionID, userID uuid.UUID) (*db.Ticket, error) {
+func (s *Service) KapsterSkip(ctx context.Context, tenantID, sessionID, userID uuid.UUID) (*TicketResponse, error) {
 	q := s.queries(ctx)
 	membership, err := s.requireKapster(ctx, q, tenantID, userID)
 	if err != nil {
@@ -397,7 +427,8 @@ func (s *Service) KapsterSkip(ctx context.Context, tenantID, sessionID, userID u
 		return nil, err
 	}
 	s.broadcastSnapshot(ctx, q, sessionID)
-	return &next, nil
+	response := ticketResponse(next)
+	return &response, nil
 }
 
 func (s *Service) KapsterComplete(ctx context.Context, tenantID, sessionID, userID uuid.UUID) error {
@@ -763,12 +794,16 @@ func (s *Service) ConfirmManualPayment(ctx context.Context, tenantID, ticketID, 
 	return nil
 }
 
-func (s *Service) ListAwaitingSettlement(ctx context.Context, sessionID uuid.UUID) ([]db.Ticket, error) {
+func (s *Service) ListAwaitingSettlement(ctx context.Context, sessionID uuid.UUID) ([]TicketResponse, error) {
 	tickets, err := s.queries(ctx).ListTicketsAwaitingSettlement(ctx, sessionID)
 	if err != nil {
 		return nil, httpx.Internal(fmt.Errorf("ambil daftar penyelesaian pembayaran: %w", err))
 	}
-	return httpx.NonNil(tickets), nil
+	responses := make([]TicketResponse, 0, len(tickets))
+	for _, ticket := range tickets {
+		responses = append(responses, ticketResponse(ticket))
+	}
+	return responses, nil
 }
 
 func (s *Service) ConfirmFinalPayment(ctx context.Context, tenantID, ticketID, adminUserID uuid.UUID, totalAmount int64) error {

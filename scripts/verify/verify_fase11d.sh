@@ -46,6 +46,11 @@ check_code "admin tidak boleh membuka sesi outlet yang tidak ditugaskan" "outlet
 SESSION_ID="$(curl -fsS -b cookiesB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/outlets/3ae1bd6e-fb87-4963-9ef4-d93e998e03c6/queue-sessions" \
   -H 'Content-Type: application/json' \
   -d "{\"session_date\":\"$SESSION_DATE\",\"max_quota\":5}" | jq -er '.id')"
+curl -fsS -b cookiesB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/queue-sessions/$SESSION_ID/tickets" \
+  -H 'Content-Type: application/json' -d '{"customer_name":"Tes DTO tiket"}' -o "$TMP"
+check_code "respons tambah tiket tidak mengirim kolom internal" "OK" "$(jq -r 'if has("customer_user_id") or has("tenant_id") or has("assigned_membership_id") then "BOCOR" else "OK" end' "$TMP")"
+curl -fsS -b cookiesB.txt "$API_BASE/v1/tenants/$TENANT_B/queue-sessions/$SESSION_ID/tickets" -o "$TMP"
+check_code "daftar tiket tidak mengirim kolom internal" "OK" "$(jq -r 'if any(.[]; has("customer_user_id") or has("tenant_id") or has("assigned_membership_id")) then "BOCOR" else "OK" end' "$TMP")"
 curl -sS -b cookiesAdminB.txt -X POST "$API_BASE/v1/tenants/$TENANT_B/queue-sessions/$SESSION_ID/increase-quota" \
   -H 'Content-Type: application/json' -d '{"by":1}' -o "$TMP"
 check_code "admin tidak boleh menambah kuota outlet yang tidak ditugaskan" "outlet_tidak_ditugaskan" "$(jq -r '.error.code // "OK"' "$TMP")"
