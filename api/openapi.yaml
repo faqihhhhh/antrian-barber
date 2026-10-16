@@ -305,6 +305,149 @@ paths:
                 type: string
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/outlets/{outletID}/queue-sessions:
+    get:
+      operationId: listQueueSessions
+      tags: [antrian]
+      summary: Daftar sesi antrian outlet
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/OutletID'
+      responses:
+        '200':
+          description: Sesi outlet, dari yang terbaru
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QueueSession'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/queue-sessions/{sessionID}/tickets:
+    get:
+      operationId: listQueueTickets
+      tags: [antrian]
+      summary: Daftar tiket dalam sesi
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/SessionID'
+      responses:
+        '200':
+          description: Tiket untuk layar operasional
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QueueTicket'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/queue-sessions/{sessionID}/kapster-states:
+    get:
+      operationId: listKapsterStates
+      tags: [antrian]
+      summary: Status kerja kapster dalam sesi
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/SessionID'
+      responses:
+        '200':
+          description: Status kerja tanpa kolom internal database
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KapsterState'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/queue-sessions/{sessionID}/ready:
+    post:
+      operationId: kapsterReady
+      tags: [kapster]
+      summary: Panggil tiket waiting berikutnya
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/SessionID'
+      responses:
+        '200':
+          description: Tiket yang dipanggil, atau pesan jika antrian kosong
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/QueueTicket'
+                  - $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/queue-sessions/{sessionID}/start:
+    post:
+      operationId: kapsterStart
+      tags: [kapster]
+      summary: Mulai melayani tiket yang dipanggil
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/SessionID'
+      responses:
+        '200':
+          description: Layanan dimulai
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/queue-sessions/{sessionID}/skip:
+    post:
+      operationId: kapsterSkip
+      tags: [kapster]
+      summary: Lewati pelanggan dan panggil tiket berikutnya
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/SessionID'
+      responses:
+        '200':
+          description: Tiket berikutnya atau pesan jika tidak ada pelanggan lain
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/QueueTicket'
+                  - $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/queue-sessions/{sessionID}/complete:
+    post:
+      operationId: kapsterComplete
+      tags: [kapster]
+      summary: Selesaikan layanan tiket aktif
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/SessionID'
+      responses:
+        '200':
+          description: Layanan selesai
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/outlets/{outletID}/book:
     post:
       operationId: bookOnline
@@ -560,6 +703,69 @@ components:
         updated_at:
           type: string
           format: date-time
+    QueueSession:
+      type: object
+      required: [id, outlet_id, session_date, max_quota, used_quota, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        outlet_id:
+          type: string
+          format: uuid
+        session_date:
+          type: string
+          format: date
+        max_quota:
+          type: integer
+        used_quota:
+          type: integer
+        status:
+          type: string
+          enum: [open, closed]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    QueueTicket:
+      type: object
+      required: [id, ticket_number, queue_position, channel, customer_name, match_code, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ticket_number:
+          type: integer
+        queue_position:
+          type: integer
+        channel:
+          type: string
+          enum: [offline, online]
+        customer_name:
+          type: string
+          description: Kosong untuk tiket tanpa nama.
+        match_code:
+          type: string
+          description: Kosong untuk tiket offline.
+        status:
+          type: string
+          enum: [pending_payment, waiting, called, in_progress, completed, canceled]
+    KapsterState:
+      type: object
+      required: [membership_id, status, current_ticket_id]
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [idle, ready, busy]
+        current_ticket_id:
+          type: string
+          format: uuid
+          nullable: true
     EstimateResult:
       type: object
       required: [tickets_ahead, active_kapsters, estimated_wait_minutes]

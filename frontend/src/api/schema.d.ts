@@ -256,6 +256,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/outlets/{outletID}/queue-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar sesi antrian outlet */
+        get: operations["listQueueSessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar tiket dalam sesi */
+        get: operations["listQueueTickets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/kapster-states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Status kerja kapster dalam sesi */
+        get: operations["listKapsterStates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Panggil tiket waiting berikutnya */
+        post: operations["kapsterReady"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mulai melayani tiket yang dipanggil */
+        post: operations["kapsterStart"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/skip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lewati pelanggan dan panggil tiket berikutnya */
+        post: operations["kapsterSkip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Selesaikan layanan tiket aktif */
+        post: operations["kapsterComplete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/outlets/{outletID}/book": {
         parameters: {
             query?: never;
@@ -418,6 +537,44 @@ export interface components {
             estimated_wait_minutes: number;
             /** Format: date-time */
             updated_at: string;
+        };
+        QueueSession: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            outlet_id: string;
+            /** Format: date */
+            session_date: string;
+            max_quota: number;
+            used_quota: number;
+            /** @enum {string} */
+            status: "open" | "closed";
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        QueueTicket: {
+            /** Format: uuid */
+            id: string;
+            ticket_number: number;
+            queue_position: number;
+            /** @enum {string} */
+            channel: "offline" | "online";
+            /** @description Kosong untuk tiket tanpa nama. */
+            customer_name: string;
+            /** @description Kosong untuk tiket offline. */
+            match_code: string;
+            /** @enum {string} */
+            status: "pending_payment" | "waiting" | "called" | "in_progress" | "completed" | "canceled";
+        };
+        KapsterState: {
+            /** Format: uuid */
+            membership_id: string;
+            /** @enum {string} */
+            status: "idle" | "ready" | "busy";
+            /** Format: uuid */
+            current_ticket_id: string | null;
         };
         EstimateResult: {
             /** Format: int64 */
@@ -937,6 +1094,174 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": string;
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listQueueSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                outletID: components["parameters"]["OutletID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sesi outlet, dari yang terbaru */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueSession"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listQueueTickets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tiket untuk layar operasional */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueTicket"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listKapsterStates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status kerja tanpa kolom internal database */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KapsterState"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    kapsterReady: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tiket yang dipanggil, atau pesan jika antrian kosong */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueTicket"] | components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    kapsterStart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Layanan dimulai */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    kapsterSkip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tiket berikutnya atau pesan jika tidak ada pelanggan lain */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueTicket"] | components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    kapsterComplete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Layanan selesai */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             default: components["responses"]["Error"];
