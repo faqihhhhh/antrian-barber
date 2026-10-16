@@ -141,17 +141,24 @@ func (q *Queries) SlugExists(ctx context.Context, slug string) (bool, error) {
 }
 
 const updateOutletSettings = `-- name: UpdateOutletSettings :one
-UPDATE outlets SET dp_price_rupiah = $2, default_duration_minutes = $3, updated_at = now() WHERE id = $1 RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug
+UPDATE outlets SET dp_price_rupiah = $3, default_duration_minutes = $4, updated_at = now()
+WHERE id = $1 AND tenant_id = $2 RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug
 `
 
 type UpdateOutletSettingsParams struct {
 	ID                     uuid.UUID `json:"id"`
+	TenantID               uuid.UUID `json:"tenant_id"`
 	DpPriceRupiah          int64     `json:"dp_price_rupiah"`
 	DefaultDurationMinutes int32     `json:"default_duration_minutes"`
 }
 
 func (q *Queries) UpdateOutletSettings(ctx context.Context, arg UpdateOutletSettingsParams) (Outlet, error) {
-	row := q.db.QueryRow(ctx, updateOutletSettings, arg.ID, arg.DpPriceRupiah, arg.DefaultDurationMinutes)
+	row := q.db.QueryRow(ctx, updateOutletSettings,
+		arg.ID,
+		arg.TenantID,
+		arg.DpPriceRupiah,
+		arg.DefaultDurationMinutes,
+	)
 	var i Outlet
 	err := row.Scan(
 		&i.ID,

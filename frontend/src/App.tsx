@@ -11,6 +11,7 @@ import Outlet from './pages/Outlet'
 import Tiket from './pages/Tiket'
 import TiketSaya from './pages/TiketSaya'
 import VerifikasiEmail from './pages/VerifikasiEmail'
+import Pemilik from './pages/Pemilik'
 
 function NotFound() {
   return (
@@ -46,6 +47,14 @@ export default function App() {
         element={
           <RequireLogin>
             <Admin />
+          </RequireLogin>
+        }
+      />
+      <Route
+        path="/pemilik"
+        element={
+          <RequireLogin>
+            <Pemilik />
           </RequireLogin>
         }
       />

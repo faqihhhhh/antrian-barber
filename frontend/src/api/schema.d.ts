@@ -212,6 +212,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/outlets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar outlet dan pengaturan yang hanya boleh dilihat owner */
+        get: operations["listOwnerOutlets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/outlets/{outletID}/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Ubah harga DP dan durasi layanan bawaan outlet */
+        patch: operations["updateOwnerOutletSettings"];
+        trace?: never;
+    };
     "/v1/public/outlets/{slug}": {
         parameters: {
             query?: never;
@@ -810,6 +844,24 @@ export interface components {
             /** @description Nama zona waktu IANA, misalnya `Asia/Jakarta`. */
             timezone: string;
         };
+        OwnerOutlet: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slug: string;
+            timezone: string;
+            address: string;
+            /** Format: int64 */
+            dp_price_rupiah: number;
+            /** Format: int32 */
+            default_duration_minutes: number;
+        };
+        UpdateOutletSettingsRequest: {
+            /** Format: int64 */
+            dp_price_rupiah: number;
+            /** Format: int32 */
+            default_duration_minutes: number;
+        };
         MembershipInfo: {
             /** Format: uuid */
             membership_id: string;
@@ -1136,6 +1188,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeContext"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listOwnerOutlets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar outlet tenant */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerOutlet"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    updateOwnerOutletSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                outletID: components["parameters"]["OutletID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOutletSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description Pengaturan outlet terbaru */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerOutlet"];
                 };
             };
             default: components["responses"]["Error"];

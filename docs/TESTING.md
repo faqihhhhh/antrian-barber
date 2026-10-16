@@ -30,10 +30,11 @@ Akun tes dibuat dengan `DEV_AUTO_VERIFY=true`. Jangan memakai kata sandi nyata.
 
 ## Skrip verifikasi
 
-Skrip integrasi yang sudah disimpan di `scripts/verify/`: `verify_fase11c1.sh` dan
-`verify_fase11d.sh`. Skrip 11d memeriksa matriks owner, admin, kapster, pelanggan, dan orang luar;
-11c1 menguji pembayaran lewat Midtrans tiruan dan memastikan RLS menolak perubahan langsung oleh
-pelanggan. Pola semuanya sama:
+Skrip integrasi yang sudah disimpan di `scripts/verify/` mencakup `verify_fase11c1.sh`,
+`verify_fase11d.sh`, `verify_fase12b_expired_sessions.sh`, dan
+`verify_fase12c1_owner_outlet_settings.sh`. Skrip 11d memeriksa matriks owner, admin, kapster,
+pelanggan, dan orang luar; 11c1 menguji pembayaran lewat Midtrans tiruan; 12b menguji penutupan
+sesi lewat tanggal; 12c1 memeriksa respons outlet dan izin owner. Pola semuanya sama:
 
 ```bash
 check() {  # nama, diharapkan, didapat
@@ -76,6 +77,11 @@ belum login -> masuk -> kembali ke tanggal pilihan -> pesan -> layar bayar -> "S
 konfirmasi admin lewat `curl` -> status berubah sendiri -> `ready`, `start`, `complete` lewat kapster ->
 form penilaian -> cek `GET /v1/tenants/$T/reviews`. Realtime: tambah tiket offline ke sesi hari ini dan
 lihat angka antrian naik di halaman outlet tanpa reload.
+
+Untuk layar owner: masuk dengan akun owner tenant B, buka Beranda lalu **Atur outlet**. Pastikan
+nama outlet, harga DP, durasi bawaan, dan tautan publik tampil. Ubah harga DP dan durasi, simpan,
+lalu muat ulang untuk memastikan nilai tetap tersimpan. Buka tautan outlet dan pastikan halaman
+publiknya masih bisa dibuka.
 
 ## Sebelum commit
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -15,6 +16,24 @@ import (
 	"kapsflow/internal/pgerr"
 	"kapsflow/internal/rls"
 )
+
+type OutletSettings struct {
+	ID                     uuid.UUID `json:"id"`
+	Name                   string    `json:"name"`
+	Slug                   string    `json:"slug"`
+	Timezone               string    `json:"timezone"`
+	Address                string    `json:"address"`
+	DPPriceRupiah          int64     `json:"dp_price_rupiah"`
+	DefaultDurationMinutes int32     `json:"default_duration_minutes"`
+}
+
+func outletSettings(outlet db.Outlet) OutletSettings {
+	return OutletSettings{
+		ID: outlet.ID, Name: outlet.Name, Slug: outlet.Slug, Timezone: outlet.Timezone,
+		Address: outlet.Address.String, DPPriceRupiah: outlet.DpPriceRupiah,
+		DefaultDurationMinutes: outlet.DefaultDurationMinutes,
+	}
+}
 
 type Service struct {
 	fallback *db.Queries // dipakai kalau tidak ada transaksi RLS (seharusnya tidak terjadi kalau middleware terpasang benar)
@@ -116,27 +135,46 @@ func (s *Service) CreateOutlet(ctx context.Context, tenantID uuid.UUID, name, ti
 	return outlet, nil
 }
 
-func (s *Service) ListOutlets(ctx context.Context, tenantID uuid.UUID) ([]db.Outlet, error) {
-	outlets, err := s.queries(ctx).ListOutletsByTenant(ctx, tenantID)
+func (s *Service) ListOutlets(ctx context.Context, tenantID uuid.UUID) ([]OutletSettings, error) {
+	user, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return nil, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	q := s.queries(ctx)
+	if err := authorization.RequireTenantRole(ctx, q, tenantID, user.ID, "owner"); err != nil {
+		return nil, err
+	}
+	outlets, err := q.ListOutletsByTenant(ctx, tenantID)
 	if err != nil {
 		return nil, httpx.Internal(fmt.Errorf("ambil daftar outlet: %w", err))
 	}
-	return httpx.NonNil(outlets), nil
+	result := make([]OutletSettings, 0, len(outlets))
+	for _, outlet := range outlets {
+		result = append(result, outletSettings(outlet))
+	}
+	return result, nil
 }
 
-func (s *Service) UpdateOutletSettings(ctx context.Context, tenantID, outletID uuid.UUID, dpPriceRupiah int64, defaultDurationMinutes int32) (db.Outlet, error) {
+func (s *Service) UpdateOutletSettings(ctx context.Context, tenantID, outletID uuid.UUID, dpPriceRupiah int64, defaultDurationMinutes int32) (OutletSettings, error) {
 	user, ok := identity.UserFromContext(ctx)
 	if !ok {
-		return db.Outlet{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+		return OutletSettings{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
 	}
-	if err := authorization.RequireTenantRole(ctx, s.queries(ctx), tenantID, user.ID, "owner"); err != nil {
-		return db.Outlet{}, err
+	q := s.queries(ctx)
+	if err := authorization.RequireTenantRole(ctx, q, tenantID, user.ID, "owner"); err != nil {
+		return OutletSettings{}, err
 	}
-	outlet, err := s.queries(ctx).UpdateOutletSettings(ctx, db.UpdateOutletSettingsParams{
-		ID: outletID, DpPriceRupiah: dpPriceRupiah, DefaultDurationMinutes: defaultDurationMinutes,
+	if dpPriceRupiah < 0 || defaultDurationMinutes < 1 {
+		return OutletSettings{}, httpx.BadRequest("pengaturan_tidak_valid", "Harga DP tidak boleh negatif dan durasi harus lebih dari nol", nil)
+	}
+	outlet, err := q.UpdateOutletSettings(ctx, db.UpdateOutletSettingsParams{
+		ID: outletID, TenantID: tenantID, DpPriceRupiah: dpPriceRupiah, DefaultDurationMinutes: defaultDurationMinutes,
 	})
 	if err != nil {
-		return db.Outlet{}, httpx.Internal(fmt.Errorf("memperbarui pengaturan outlet: %w", err))
+		if err == pgx.ErrNoRows {
+			return OutletSettings{}, httpx.NotFound("outlet_tidak_ditemukan", "Outlet tidak ditemukan di bisnis ini", err)
+		}
+		return OutletSettings{}, httpx.Internal(fmt.Errorf("memperbarui pengaturan outlet: %w", err))
 	}
-	return outlet, nil
+	return outletSettings(outlet), nil
 }

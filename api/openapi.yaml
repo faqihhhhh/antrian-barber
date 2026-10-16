@@ -261,6 +261,51 @@ paths:
                 $ref: '#/components/schemas/MeContext'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/outlets:
+    get:
+      operationId: listOwnerOutlets
+      tags: [tenant]
+      summary: Daftar outlet dan pengaturan yang hanya boleh dilihat owner
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: Daftar outlet tenant
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OwnerOutlet'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/outlets/{outletID}/settings:
+    patch:
+      operationId: updateOwnerOutletSettings
+      tags: [tenant]
+      summary: Ubah harga DP dan durasi layanan bawaan outlet
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/OutletID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOutletSettingsRequest'
+      responses:
+        '200':
+          description: Pengaturan outlet terbaru
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnerOutlet'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/public/outlets/{slug}:
     get:
       operationId: getPublicOutlet
@@ -1232,6 +1277,39 @@ components:
         timezone:
           type: string
           description: Nama zona waktu IANA, misalnya `Asia/Jakarta`.
+    OwnerOutlet:
+      type: object
+      required: [id, name, slug, timezone, address, dp_price_rupiah, default_duration_minutes]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        timezone:
+          type: string
+        address:
+          type: string
+        dp_price_rupiah:
+          type: integer
+          format: int64
+        default_duration_minutes:
+          type: integer
+          format: int32
+    UpdateOutletSettingsRequest:
+      type: object
+      required: [dp_price_rupiah, default_duration_minutes]
+      properties:
+        dp_price_rupiah:
+          type: integer
+          format: int64
+          minimum: 0
+        default_duration_minutes:
+          type: integer
+          format: int32
+          minimum: 1
     MembershipInfo:
       type: object
       required: [membership_id, tenant_id, tenant_name, roles, outlets, subscription_status, current_period_end]
