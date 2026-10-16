@@ -82,6 +82,11 @@ export default function Beranda() {
           <article key={m.membership_id} className="rounded-2xl border border-stone-200 bg-white p-4">
             <h2 className="font-semibold">{m.tenant_name}</h2>
             <p className="mt-1 text-sm text-stone-600">{m.roles.map((r) => ROLE_LABEL[r] ?? r).join(' • ')}</p>
+            {m.roles.includes('kapster') && (
+              <Link to="/kapster" className="mt-3 inline-flex rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white">
+                Buka meja kapster
+              </Link>
+            )}
             <p className="mt-2 text-sm">
               Langganan: <strong>{STATUS_LABEL[m.subscription_status] ?? m.subscription_status}</strong>
               {m.current_period_end &&
