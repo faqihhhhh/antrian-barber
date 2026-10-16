@@ -69,6 +69,19 @@ func (s *Service) InviteStaff(ctx context.Context, tenantID uuid.UUID, in Invite
 	if len(in.OutletIDs) == 0 {
 		return db.Membership{}, httpx.BadRequest("outlet_wajib_diisi", "Pilih minimal satu outlet tempat staf bertugas", nil)
 	}
+	outlets, err := q.ListOutletsByTenant(ctx, tenantID)
+	if err != nil {
+		return db.Membership{}, httpx.Internal(fmt.Errorf("memeriksa outlet staf: %w", err))
+	}
+	allowedOutlets := make(map[uuid.UUID]struct{}, len(outlets))
+	for _, outlet := range outlets {
+		allowedOutlets[outlet.ID] = struct{}{}
+	}
+	for _, outletID := range in.OutletIDs {
+		if _, ok := allowedOutlets[outletID]; !ok {
+			return db.Membership{}, httpx.BadRequest("outlet_tidak_valid", "Pilih outlet yang dimiliki bisnis ini", nil)
+		}
+	}
 	if len(in.Password) < 8 {
 		return db.Membership{}, httpx.BadRequest("password_terlalu_pendek", "Password minimal 8 karakter", nil)
 	}
