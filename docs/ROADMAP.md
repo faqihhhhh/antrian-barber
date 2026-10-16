@@ -20,7 +20,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 
 ## Berikutnya (urutan wajib)
 
-1. **12a** layar kapster (kontrak API dan pemantauan sesi/tiket sudah tersedia; aksi kapster dan uji browser masih perlu). **12b** layar admin (konfirmasi DP, tiket offline, buka/tutup sesi, kuota).
+1. **12a** layar kapster (pemantauan sesi/tiket dan aksi siap, mulai, lewati, selesai tersedia; uji browser masih perlu). **12b** layar admin (konfirmasi DP, tiket offline, buka/tutup sesi, kuota).
    **12c** layar owner (outlet, staf, harga DP, pembayaran, tautan dan QR outlet, langganan, statistik, ulasan).
    **12d** layar pemilik SaaS (tenant, MRR, ARR, churn).
 2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama.

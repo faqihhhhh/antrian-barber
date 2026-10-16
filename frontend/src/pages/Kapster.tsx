@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
 import { Alert, Spinner } from '../components/ui'
@@ -135,6 +135,7 @@ function SessionPanel({
 }
 
 function QueuePanel({ membership, session }: { membership: Membership; session: QueueSession }) {
+  const queryClient = useQueryClient()
   const tickets = useQuery({
     queryKey: ['kapster-tickets', membership.tenant_id, session.id],
     queryFn: async (): Promise<QueueTicket[]> => {
@@ -156,6 +157,38 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
       return data
     },
     refetchInterval: POLL_INTERVAL,
+  })
+  const action = useMutation({
+    mutationFn: async (name: 'ready' | 'start' | 'skip' | 'complete') => {
+      const params = { params: { path: { tenantID: membership.tenant_id, sessionID: session.id } } }
+      switch (name) {
+        case 'ready': {
+          const { error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/ready', params)
+          if (!response.ok) throw new ApiError(error)
+          return
+        }
+        case 'start': {
+          const { error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/start', params)
+          if (!response.ok) throw new ApiError(error)
+          return
+        }
+        case 'skip': {
+          const { error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/skip', params)
+          if (!response.ok) throw new ApiError(error)
+          return
+        }
+        case 'complete': {
+          const { error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/complete', params)
+          if (!response.ok) throw new ApiError(error)
+        }
+      }
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['kapster-tickets', membership.tenant_id, session.id] }),
+        queryClient.invalidateQueries({ queryKey: ['kapster-states', membership.tenant_id, session.id] }),
+      ])
+    },
   })
 
   if (tickets.isPending || kapsterStates.isPending) {
@@ -181,11 +214,68 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
             {currentTicket.match_code && <p className="mt-1 text-sm text-stone-300">Kode cocok: {currentTicket.match_code}</p>}
           </>
         ) : (
-          <p className="mt-3 text-lg font-semibold">Belum ada pelanggan aktif</p>
+          <p className="mt-3 text-lg font-semibold">
+            {myState?.status === 'busy' ? 'Menyinkronkan tiket aktif…' : 'Belum ada pelanggan aktif'}
+          </p>
         )}
         <p className="mt-4 border-t border-stone-700 pt-3 text-sm text-stone-300">
           Status sesi: {session.status === 'open' ? 'Dibuka' : 'Ditutup'}
         </p>
+      </section>
+
+      <section aria-label="Aksi kapster" className="space-y-3">
+        {!currentTicket && myState?.status !== 'busy' && (
+          <button
+            type="button"
+            disabled={session.status !== 'open' || action.isPending}
+            onClick={() => action.mutate('ready')}
+            className="w-full rounded-xl bg-stone-900 px-4 py-4 text-base font-semibold text-white transition hover:bg-stone-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:opacity-60"
+          >
+            {action.isPending && action.variables === 'ready' ? 'Memanggil…' : 'Panggil pelanggan berikutnya'}
+          </button>
+        )}
+        {currentTicket?.status === 'called' && (
+          <button
+            type="button"
+            disabled={session.status !== 'open' || action.isPending}
+            onClick={() => action.mutate('start')}
+            className="w-full rounded-xl bg-stone-900 px-4 py-4 text-base font-semibold text-white transition hover:bg-stone-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:opacity-60"
+          >
+            {action.isPending && action.variables === 'start' ? 'Memulai…' : 'Mulai layanan'}
+          </button>
+        )}
+        {currentTicket?.status === 'called' && (
+          <button
+            type="button"
+            disabled={session.status !== 'open' || action.isPending}
+            onClick={() => action.mutate('skip')}
+            className="w-full rounded-xl border border-stone-300 bg-white px-3 py-4 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:opacity-60"
+          >
+            {action.isPending && action.variables === 'skip' ? 'Melewati…' : 'Lewati pelanggan'}
+          </button>
+        )}
+        {currentTicket?.status === 'in_progress' && (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              disabled={session.status !== 'open' || action.isPending}
+              onClick={() => action.mutate('complete')}
+              className="rounded-xl bg-stone-900 px-3 py-4 text-sm font-semibold text-white transition hover:bg-stone-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:opacity-60"
+            >
+              {action.isPending && action.variables === 'complete' ? 'Menyelesaikan…' : 'Selesaikan'}
+            </button>
+            <button
+              type="button"
+              disabled={session.status !== 'open' || action.isPending}
+              onClick={() => action.mutate('skip')}
+              className="rounded-xl border border-stone-300 bg-white px-3 py-4 text-sm font-semibold text-stone-900 transition hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 disabled:opacity-60"
+            >
+              {action.isPending && action.variables === 'skip' ? 'Melewati…' : 'Lewati pelanggan'}
+            </button>
+          </div>
+        )}
+        {action.isError && <Alert>{messageOf(action.error)}</Alert>}
+        {session.status !== 'open' && <Alert tone="info">Sesi ini sudah ditutup. Aksi kapster tidak tersedia.</Alert>}
       </section>
 
       <section aria-label="Antrian menunggu" className="rounded-3xl border border-stone-200 bg-white p-5">
