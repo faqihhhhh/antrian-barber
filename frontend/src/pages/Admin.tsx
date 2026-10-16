@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
-import { Alert, Button, Spinner } from '../components/ui'
+import { Alert, Button, Field, Spinner } from '../components/ui'
 import type { components } from '../api/schema'
 import { formatLongDate, formatRupiah } from '../lib/format'
 
@@ -12,6 +12,14 @@ type QueueSession = components['schemas']['QueueSession']
 type PendingPayment = components['schemas']['PendingManualPayment']
 
 const POLL_INTERVAL = 5_000
+const TICKET_STATUS_LABEL: Record<string, string> = {
+  pending_payment: 'Menunggu DP',
+  waiting: 'Menunggu giliran',
+  called: 'Dipanggil',
+  in_progress: 'Sedang dilayani',
+  completed: 'Selesai',
+  canceled: 'Dibatalkan',
+}
 
 export default function Admin() {
   const me = useMe()
@@ -112,7 +120,98 @@ function SessionPanel({
         </select>
       </label>
       <PaymentPanel membership={selected.membership} session={currentSession} />
+      <OfflineTicketPanel membership={selected.membership} session={currentSession} />
     </>
+  )
+}
+
+function OfflineTicketPanel({ membership, session }: { membership: Membership; session: QueueSession }) {
+  const [customerName, setCustomerName] = useState('')
+  const queryClient = useQueryClient()
+  const tickets = useQuery({
+    queryKey: ['admin-tickets', membership.tenant_id, session.id],
+    queryFn: async (): Promise<components['schemas']['QueueTicket'][]> => {
+      const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/tickets', {
+        params: { path: { tenantID: membership.tenant_id, sessionID: session.id } },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    refetchInterval: POLL_INTERVAL,
+  })
+  const addTicket = useMutation({
+    mutationFn: async (name: string) => {
+      const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/tickets', {
+        params: { path: { tenantID: membership.tenant_id, sessionID: session.id } },
+        body: { customer_name: name },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: async () => {
+      setCustomerName('')
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['admin-tickets', membership.tenant_id, session.id] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-sessions', membership.tenant_id] }),
+      ])
+    },
+  })
+  const quotaFull = session.used_quota >= session.max_quota
+  const recentTickets = [...(tickets.data ?? [])].reverse().slice(0, 5)
+
+  return (
+    <section aria-label="Tiket pelanggan datang langsung" className="space-y-3 border-t border-stone-200 pt-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold">Pelanggan datang langsung</h2>
+        <span className="text-sm text-stone-600">Sisa kuota {Math.max(0, session.max_quota - session.used_quota)}</span>
+      </div>
+      {session.status !== 'open' && <Alert tone="info">Sesi ditutup. Buka sesi untuk menambah tiket.</Alert>}
+      {quotaFull && session.status === 'open' && <Alert tone="info">Kuota sesi penuh. Tambah kuota sebelum membuat tiket lagi.</Alert>}
+      <form
+        className="space-y-3 rounded-2xl border border-stone-200 bg-white p-4"
+        onSubmit={(event) => {
+          event.preventDefault()
+          const name = customerName.trim()
+          if (name) addTicket.mutate(name)
+        }}
+      >
+        <Field
+          label="Nama pelanggan"
+          name="offline-customer-name"
+          autoComplete="off"
+          maxLength={60}
+          value={customerName}
+          onChange={(event) => setCustomerName(event.target.value)}
+          placeholder="Contoh: Budi"
+        />
+        {addTicket.isError && <Alert>{messageOf(addTicket.error)}</Alert>}
+        {addTicket.isSuccess && <Alert tone="info">Tiket #{addTicket.data.ticket_number} berhasil ditambahkan.</Alert>}
+        <Button
+          type="submit"
+          loading={addTicket.isPending}
+          disabled={!customerName.trim() || quotaFull || session.status !== 'open'}
+        >
+          Tambahkan ke antrean
+        </Button>
+      </form>
+
+      {tickets.isPending ? (
+        <p className="py-3 text-center text-sm text-stone-500" role="status">Memuat tiket sesi…</p>
+      ) : tickets.isError ? (
+        <Alert>{messageOf(tickets.error)}</Alert>
+      ) : recentTickets.length > 0 ? (
+        <ul className="divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white px-4">
+          {recentTickets.map((ticket) => (
+            <li key={ticket.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+              <span><strong>#{ticket.ticket_number}</strong> · {ticket.customer_name || 'Pelanggan'}</span>
+              <span className="shrink-0 text-stone-500">{TICKET_STATUS_LABEL[ticket.status] ?? ticket.status}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-stone-500">Belum ada tiket di sesi ini.</p>
+      )}
+    </section>
   )
 }
 

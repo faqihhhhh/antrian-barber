@@ -283,7 +283,8 @@ export interface paths {
         /** Daftar tiket dalam sesi */
         get: operations["listQueueTickets"];
         put?: never;
-        post?: never;
+        /** Tambahkan tiket pelanggan yang datang langsung */
+        post: operations["addOfflineQueueTicket"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1191,6 +1192,36 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueueTicket"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    addOfflineQueueTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    customer_name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Tiket berhasil ditambahkan */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueTicket"];
                 };
             };
             default: components["responses"]["Error"];

@@ -347,6 +347,35 @@ paths:
                   $ref: '#/components/schemas/QueueTicket'
         default:
           $ref: '#/components/responses/Error'
+    post:
+      operationId: addOfflineQueueTicket
+      tags: [admin]
+      summary: Tambahkan tiket pelanggan yang datang langsung
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/SessionID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [customer_name]
+              properties:
+                customer_name:
+                  type: string
+                  minLength: 1
+      responses:
+        '201':
+          description: Tiket berhasil ditambahkan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueTicket'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/queue-sessions/{sessionID}/pending-manual-payments:
     get:
       operationId: listPendingManualPayments
