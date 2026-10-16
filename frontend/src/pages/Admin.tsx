@@ -5,7 +5,7 @@ import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
 import { Alert, Button, Field, Spinner } from '../components/ui'
 import type { components } from '../api/schema'
-import { formatLongDate, formatRupiah } from '../lib/format'
+import { formatDateTime, formatLongDate, formatRupiah } from '../lib/format'
 
 type Membership = components['schemas']['MembershipInfo']
 type QueueSession = components['schemas']['QueueSession']
@@ -423,7 +423,7 @@ function PaymentPanel({ membership, session }: { membership: Membership; session
             <div><dt className="text-stone-500">Kode cocok</dt><dd className="font-semibold">{payment.match_code}</dd></div>
             <div><dt className="text-stone-500">Kode unik</dt><dd className="font-semibold">{payment.unique_code ?? '—'}</dd></div>
           </dl>
-          <p className="text-xs text-stone-500">Batas bayar {new Date(payment.expires_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
+          <p className="text-xs text-stone-500">Batas bayar {formatDateTime(payment.expires_at)}</p>
           <Button
             type="button"
             loading={confirm.isPending && confirm.variables === payment.ticket_id}

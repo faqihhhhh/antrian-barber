@@ -17,8 +17,22 @@ export function formatLongDate(date: string): string {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
+    year: 'numeric',
     timeZone: 'UTC',
   })
+}
+
+export function formatMonthYear(date: string): string {
+  return dateOnly(date).toLocaleDateString('id-ID', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
+export function formatDateTime(dateTime: string): string {
+  const date = new Date(dateTime)
+  return `${date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}, ${date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`
 }
 
 export function weekdayShort(date: string): string {

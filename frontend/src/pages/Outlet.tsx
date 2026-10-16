@@ -7,7 +7,7 @@ import QueueNow from '../components/QueueNow'
 import { Alert, Button, Field, LinkButton, Spinner } from '../components/ui'
 import { MY_TICKETS_KEY } from '../hooks/useMyTickets'
 import { useQueueStream } from '../hooks/useQueueStream'
-import { dayOfMonth, formatLongDate, formatRupiah, weekdayShort } from '../lib/format'
+import { dayOfMonth, formatLongDate, formatMonthYear, formatRupiah, weekdayShort } from '../lib/format'
 import { saveLastOutlet, saveName, savedName } from '../lib/storage'
 
 type OutletData = NonNullable<Awaited<ReturnType<typeof fetchOutlet>>>
@@ -156,6 +156,7 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
             >
               <span className="block text-xs">{d.date === outlet.local_today ? 'Hari ini' : weekdayShort(d.date)}</span>
               <span className="block text-xl font-bold tabular-nums">{dayOfMonth(d.date)}</span>
+              <span className="block text-[10px]">{formatMonthYear(d.date)}</span>
               <span className="block text-xs">{note}</span>
             </button>
           )
