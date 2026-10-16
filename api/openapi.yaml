@@ -349,6 +349,24 @@ paths:
                 $ref: '#/components/schemas/StaffMember'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/stats/overview:
+    get:
+      operationId: getTenantStatsOverview
+      tags: [statistik]
+      summary: Ringkasan statistik tenant untuk 30 hari terakhir
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: Ringkasan antrian dan pendapatan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsOverview'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/profile:
     get:
       operationId: getOwnerPaymentProfile
@@ -1445,6 +1463,38 @@ components:
           type: boolean
         onboarding_completed:
           type: boolean
+    StatsTotals:
+      type: object
+      required: [tickets_total, tickets_online, tickets_offline, tickets_completed, tickets_canceled, tickets_settled, revenue_rupiah, dp_unsettled_rupiah, avg_ticket_rupiah, completion_pct]
+      properties:
+        tickets_total: { type: integer, format: int64 }
+        tickets_online: { type: integer, format: int64 }
+        tickets_offline: { type: integer, format: int64 }
+        tickets_completed: { type: integer, format: int64 }
+        tickets_canceled: { type: integer, format: int64 }
+        tickets_settled: { type: integer, format: int64 }
+        revenue_rupiah: { type: integer, format: int64 }
+        dp_unsettled_rupiah: { type: integer, format: int64 }
+        avg_ticket_rupiah: { type: integer, format: int64 }
+        completion_pct: { type: number, format: double }
+    StatsOverview:
+      type: object
+      required: [from, to, totals, previous, change_pct, daily, by_outlet, timing, peak_hours]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        totals: { $ref: '#/components/schemas/StatsTotals' }
+        previous: { $ref: '#/components/schemas/StatsTotals' }
+        change_pct:
+          type: object
+          required: [customers, revenue]
+          properties:
+            customers: { type: number, format: double, nullable: true }
+            revenue: { type: number, format: double, nullable: true }
+        daily: { type: array, items: { type: object, additionalProperties: true } }
+        by_outlet: { type: array, items: { type: object, additionalProperties: true } }
+        timing: { type: object, additionalProperties: true }
+        peak_hours: { type: array, items: { type: object, additionalProperties: true } }
     MembershipInfo:
       type: object
       required: [membership_id, tenant_id, tenant_name, roles, outlets, subscription_status, current_period_end]

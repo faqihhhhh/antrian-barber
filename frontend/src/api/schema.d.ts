@@ -264,6 +264,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/stats/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ringkasan statistik tenant untuk 30 hari terakhir */
+        get: operations["getTenantStatsOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/profile": {
         parameters: {
             query?: never;
@@ -922,6 +939,54 @@ export interface components {
             manual_qris_configured: boolean;
             onboarding_completed: boolean;
         };
+        StatsTotals: {
+            /** Format: int64 */
+            tickets_total: number;
+            /** Format: int64 */
+            tickets_online: number;
+            /** Format: int64 */
+            tickets_offline: number;
+            /** Format: int64 */
+            tickets_completed: number;
+            /** Format: int64 */
+            tickets_canceled: number;
+            /** Format: int64 */
+            tickets_settled: number;
+            /** Format: int64 */
+            revenue_rupiah: number;
+            /** Format: int64 */
+            dp_unsettled_rupiah: number;
+            /** Format: int64 */
+            avg_ticket_rupiah: number;
+            /** Format: double */
+            completion_pct: number;
+        };
+        StatsOverview: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            totals: components["schemas"]["StatsTotals"];
+            previous: components["schemas"]["StatsTotals"];
+            change_pct: {
+                /** Format: double */
+                customers: number | null;
+                /** Format: double */
+                revenue: number | null;
+            };
+            daily: {
+                [key: string]: unknown;
+            }[];
+            by_outlet: {
+                [key: string]: unknown;
+            }[];
+            timing: {
+                [key: string]: unknown;
+            };
+            peak_hours: {
+                [key: string]: unknown;
+            }[];
+        };
         MembershipInfo: {
             /** Format: uuid */
             membership_id: string;
@@ -1349,6 +1414,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffMember"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getTenantStatsOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ringkasan antrian dan pendapatan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsOverview"];
                 };
             };
             default: components["responses"]["Error"];

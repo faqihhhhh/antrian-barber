@@ -33,6 +33,7 @@ export default function Pemilik() {
         <nav className="flex flex-col items-end gap-2 pt-1 text-sm font-semibold underline">
           <Link to="/pemilik/pembayaran">Pembayaran DP</Link>
           <Link to="/pemilik/staf">Kelola staf</Link>
+          <Link to="/pemilik/statistik">Statistik</Link>
           <Link to="/">Beranda</Link>
         </nav>
       </header>

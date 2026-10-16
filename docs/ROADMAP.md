@@ -29,6 +29,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 12c-2 | Layar owner untuk melihat staf dan mengundang admin/kapster dengan penugasan outlet |
 | 12c-3 | Layar owner untuk memasang, mengganti, atau menghapus QRIS manual dan melihat status Midtrans |
 | 12c-4 | Aksi salin tautan outlet publik dan buka halaman outlet dari layar owner |
+| 12c-5 | Layar owner untuk ringkasan statistik tenant 30 hari terakhir |
 
 ## Berikutnya (urutan wajib)
 

@@ -98,6 +98,10 @@ Untuk tautan outlet owner: di **Pengaturan outlet**, tekan **Salin tautan** dan 
 konfirmasi tampil serta URL dapat ditempel di tab baru. Tekan **Buka halaman** dan pastikan halaman
 publik outlet terbuka di tab baru.
 
+Untuk statistik owner: dari **Pengaturan outlet**, buka **Statistik**. Pastikan periode 30 hari,
+total tiket, tiket selesai, pendapatan DP, DP belum lunas, rata-rata DP, dan tingkat penyelesaian tampil.
+Jika memiliki beberapa tenant owner, ganti pilihan bisnis dan pastikan angka ikut berganti.
+
 ## Sebelum commit
 
 `go build -C backend ./...`, skrip verifikasi fase terkait (0 gagal), `npm run build`, `npm run lint`,
