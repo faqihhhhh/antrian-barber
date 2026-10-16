@@ -168,12 +168,53 @@ func (s *Service) GetStatus(ctx context.Context, tenantID uuid.UUID) (Subscripti
 	}, nil
 }
 
-func (s *Service) ListInvoices(ctx context.Context, tenantID uuid.UUID) ([]db.Invoice, error) {
+func (s *Service) GetOwnerStatus(ctx context.Context, tenantID uuid.UUID) (SubscriptionInfo, error) {
+	user, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return SubscriptionInfo{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	if err := authorization.RequireTenantRole(ctx, s.queries(ctx), tenantID, user.ID, "owner"); err != nil {
+		return SubscriptionInfo{}, err
+	}
+	return s.GetStatus(ctx, tenantID)
+}
+
+type OwnerInvoice struct {
+	ID           uuid.UUID  `json:"id"`
+	AmountRupiah int64      `json:"amount_rupiah"`
+	UniqueCode   int16      `json:"unique_code"`
+	Status       string     `json:"status"`
+	ExpiresAt    *time.Time `json:"expires_at"`
+	PaidAt       *time.Time `json:"paid_at"`
+	CreatedAt    time.Time  `json:"created_at"`
+}
+
+func (s *Service) ListInvoices(ctx context.Context, tenantID uuid.UUID) ([]OwnerInvoice, error) {
+	user, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return nil, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	if err := authorization.RequireTenantRole(ctx, s.queries(ctx), tenantID, user.ID, "owner"); err != nil {
+		return nil, err
+	}
 	invoices, err := s.queries(ctx).ListInvoicesByTenant(ctx, tenantID)
 	if err != nil {
 		return nil, httpx.Internal(fmt.Errorf("ambil daftar invoice: %w", err))
 	}
-	return httpx.NonNil(invoices), nil
+	result := make([]OwnerInvoice, 0, len(invoices))
+	for _, invoice := range invoices {
+		item := OwnerInvoice{ID: invoice.ID, AmountRupiah: invoice.AmountRupiah, UniqueCode: invoice.UniqueCode, Status: invoice.Status, CreatedAt: invoice.CreatedAt.Time}
+		if invoice.ExpiresAt.Valid {
+			value := invoice.ExpiresAt.Time
+			item.ExpiresAt = &value
+		}
+		if invoice.PaidAt.Valid {
+			value := invoice.PaidAt.Time
+			item.PaidAt = &value
+		}
+		result = append(result, item)
+	}
+	return result, nil
 }
 
 func (s *Service) ListPendingInvoices(ctx context.Context) ([]db.Invoice, error) {

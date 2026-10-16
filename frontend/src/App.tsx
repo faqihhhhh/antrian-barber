@@ -16,6 +16,7 @@ import PemilikStaf from './pages/PemilikStaf'
 import PemilikPembayaran from './pages/PemilikPembayaran'
 import PemilikStatistik from './pages/PemilikStatistik'
 import PemilikUlasan from './pages/PemilikUlasan'
+import PemilikLangganan from './pages/PemilikLangganan'
 
 function NotFound() {
   return (
@@ -91,6 +92,14 @@ export default function App() {
         element={
           <RequireLogin>
             <PemilikUlasan />
+          </RequireLogin>
+        }
+      />
+      <Route
+        path="/pemilik/langganan"
+        element={
+          <RequireLogin>
+            <PemilikLangganan />
           </RequireLogin>
         }
       />

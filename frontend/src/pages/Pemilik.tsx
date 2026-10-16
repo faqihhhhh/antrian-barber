@@ -35,6 +35,7 @@ export default function Pemilik() {
           <Link to="/pemilik/staf">Kelola staf</Link>
           <Link to="/pemilik/statistik">Statistik</Link>
           <Link to="/pemilik/ulasan">Ulasan pelanggan</Link>
+          <Link to="/pemilik/langganan">Langganan</Link>
           <Link to="/">Beranda</Link>
         </nav>
       </header>

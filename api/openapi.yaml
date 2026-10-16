@@ -411,6 +411,42 @@ paths:
                 items: { $ref: '#/components/schemas/OwnerReviewSummary' }
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/subscription:
+    get:
+      operationId: getOwnerSubscription
+      tags: [langganan]
+      summary: Status langganan tenant untuk owner
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: Status paket dan periode langganan
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OwnerSubscription' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/invoices:
+    get:
+      operationId: listOwnerInvoices
+      tags: [langganan]
+      summary: Riwayat tagihan tenant untuk owner
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: Daftar ringkas tagihan
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/OwnerInvoice' }
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/profile:
     get:
       operationId: getOwnerPaymentProfile
@@ -1558,6 +1594,24 @@ components:
         kapster_email: { type: string, format: email }
         review_count: { type: integer, format: int64 }
         avg_rating: { type: number, format: double }
+    OwnerSubscription:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [belum_berlangganan, aktif, masa_tenggang, baca_saja] }
+        plan_code: { type: string }
+        current_period_end: { type: string, format: date-time, nullable: true }
+    OwnerInvoice:
+      type: object
+      required: [id, amount_rupiah, unique_code, status, expires_at, paid_at, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        amount_rupiah: { type: integer, format: int64 }
+        unique_code: { type: integer, format: int32 }
+        status: { type: string, enum: [pending, paid, expired, canceled] }
+        expires_at: { type: string, format: date-time, nullable: true }
+        paid_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
     MembershipInfo:
       type: object
       required: [membership_id, tenant_id, tenant_name, roles, outlets, subscription_status, current_period_end]

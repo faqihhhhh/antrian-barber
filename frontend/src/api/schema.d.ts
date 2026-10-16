@@ -315,6 +315,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Status langganan tenant untuk owner */
+        get: operations["getOwnerSubscription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Riwayat tagihan tenant untuk owner */
+        get: operations["listOwnerInvoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/profile": {
         parameters: {
             query?: never;
@@ -1045,6 +1079,29 @@ export interface components {
             /** Format: double */
             avg_rating: number;
         };
+        OwnerSubscription: {
+            /** @enum {string} */
+            status: "belum_berlangganan" | "aktif" | "masa_tenggang" | "baca_saja";
+            plan_code?: string;
+            /** Format: date-time */
+            current_period_end?: string | null;
+        };
+        OwnerInvoice: {
+            /** Format: uuid */
+            id: string;
+            /** Format: int64 */
+            amount_rupiah: number;
+            /** Format: int32 */
+            unique_code: number;
+            /** @enum {string} */
+            status: "pending" | "paid" | "expired" | "canceled";
+            /** Format: date-time */
+            expires_at: string | null;
+            /** Format: date-time */
+            paid_at: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
         MembershipInfo: {
             /** Format: uuid */
             membership_id: string;
@@ -1544,6 +1601,52 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnerReviewSummary"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getOwnerSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status paket dan periode langganan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerSubscription"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listOwnerInvoices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar ringkas tagihan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerInvoice"][];
                 };
             };
             default: components["responses"]["Error"];

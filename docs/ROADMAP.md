@@ -31,6 +31,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 12c-4 | Aksi salin tautan outlet publik dan buka halaman outlet dari layar owner |
 | 12c-5 | Layar owner untuk ringkasan statistik tenant 30 hari terakhir |
 | 12c-6 | Layar owner untuk ringkasan rating kapster dan daftar ulasan terbaru |
+| 12c-7 | Layar owner untuk status langganan dan riwayat tagihan dengan DTO aman |
 
 ## Berikutnya (urutan wajib)
 

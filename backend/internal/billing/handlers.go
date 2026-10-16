@@ -59,7 +59,7 @@ func (h *Handlers) GetSubscription(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, r, h.log, httpx.BadRequest("tenant_id_tidak_valid", "ID tenant tidak valid", err))
 		return
 	}
-	info, err := h.svc.GetStatus(r.Context(), tenantID)
+	info, err := h.svc.GetOwnerStatus(r.Context(), tenantID)
 	if err != nil {
 		httpx.Error(w, r, h.log, err)
 		return
