@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"kapsflow/internal/authorization"
 	db "kapsflow/internal/db"
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/identity"
@@ -49,6 +50,14 @@ type InviteInput struct {
 // transaksi RLS yang sama — kalau salah satu gagal, semuanya batal,
 // termasuk baris user yang baru dibuat.
 func (s *Service) InviteStaff(ctx context.Context, tenantID uuid.UUID, in InviteInput) (db.Membership, error) {
+	caller, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return db.Membership{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	q := s.queries(ctx)
+	if err := authorization.RequireTenantRole(ctx, q, tenantID, caller.ID, "owner"); err != nil {
+		return db.Membership{}, err
+	}
 	if len(in.Roles) == 0 {
 		return db.Membership{}, httpx.BadRequest("peran_wajib_diisi", "Pilih minimal satu peran: admin dan/atau kapster", nil)
 	}
@@ -63,8 +72,6 @@ func (s *Service) InviteStaff(ctx context.Context, tenantID uuid.UUID, in Invite
 	if len(in.Password) < 8 {
 		return db.Membership{}, httpx.BadRequest("password_terlalu_pendek", "Password minimal 8 karakter", nil)
 	}
-
-	q := s.queries(ctx)
 
 	if _, err := q.GetUserByEmail(ctx, in.Email); err == nil {
 		return db.Membership{}, httpx.Conflict("email_sudah_terdaftar", "Email ini sudah dipakai akun Kapsflow lain", nil)

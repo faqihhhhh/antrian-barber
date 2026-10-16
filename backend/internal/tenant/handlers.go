@@ -112,6 +112,11 @@ type updateOutletSettingsRequest struct {
 }
 
 func (h *Handlers) UpdateOutletSettings(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenantID"))
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("tenant_id_tidak_valid", "ID tenant tidak valid", err))
+		return
+	}
 	outletID, err := uuid.Parse(chi.URLParam(r, "outletID"))
 	if err != nil {
 		httpx.Error(w, r, h.log, httpx.BadRequest("outlet_id_tidak_valid", "ID outlet tidak valid", err))
@@ -122,7 +127,7 @@ func (h *Handlers) UpdateOutletSettings(w http.ResponseWriter, r *http.Request) 
 		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
 		return
 	}
-	outlet, err := h.svc.UpdateOutletSettings(r.Context(), outletID, req.DPPriceRupiah, req.DefaultDurationMinutes)
+	outlet, err := h.svc.UpdateOutletSettings(r.Context(), tenantID, outletID, req.DPPriceRupiah, req.DefaultDurationMinutes)
 	if err != nil {
 		httpx.Error(w, r, h.log, err)
 		return

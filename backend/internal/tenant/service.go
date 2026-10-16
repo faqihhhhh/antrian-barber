@@ -8,10 +8,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"kapsflow/internal/authorization"
 	db "kapsflow/internal/db"
 	"kapsflow/internal/httpx"
-	"kapsflow/internal/rls"
+	"kapsflow/internal/identity"
 	"kapsflow/internal/pgerr"
+	"kapsflow/internal/rls"
 )
 
 type Service struct {
@@ -85,7 +87,14 @@ func (s *Service) uniqueSlug(ctx context.Context, q *db.Queries, name string) (s
 }
 
 func (s *Service) CreateOutlet(ctx context.Context, tenantID uuid.UUID, name, timezone, address string) (db.Outlet, error) {
+	user, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return db.Outlet{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
 	q := s.queries(ctx)
+	if err := authorization.RequireTenantRole(ctx, q, tenantID, user.ID, "owner"); err != nil {
+		return db.Outlet{}, err
+	}
 
 	slug, err := s.uniqueSlug(ctx, q, name)
 	if err != nil {
@@ -115,7 +124,14 @@ func (s *Service) ListOutlets(ctx context.Context, tenantID uuid.UUID) ([]db.Out
 	return httpx.NonNil(outlets), nil
 }
 
-func (s *Service) UpdateOutletSettings(ctx context.Context, outletID uuid.UUID, dpPriceRupiah int64, defaultDurationMinutes int32) (db.Outlet, error) {
+func (s *Service) UpdateOutletSettings(ctx context.Context, tenantID, outletID uuid.UUID, dpPriceRupiah int64, defaultDurationMinutes int32) (db.Outlet, error) {
+	user, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return db.Outlet{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	if err := authorization.RequireTenantRole(ctx, s.queries(ctx), tenantID, user.ID, "owner"); err != nil {
+		return db.Outlet{}, err
+	}
 	outlet, err := s.queries(ctx).UpdateOutletSettings(ctx, db.UpdateOutletSettingsParams{
 		ID: outletID, DpPriceRupiah: dpPriceRupiah, DefaultDurationMinutes: defaultDurationMinutes,
 	})

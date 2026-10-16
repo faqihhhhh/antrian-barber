@@ -12,12 +12,13 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"kapsflow/internal/authorization"
 	db "kapsflow/internal/db"
 	"kapsflow/internal/dbx"
 	"kapsflow/internal/httpx"
+	"kapsflow/internal/identity"
 	"kapsflow/internal/rls"
 	"log/slog"
-	"kapsflow/internal/identity"
 )
 
 const (
@@ -73,6 +74,13 @@ func (s *Service) ListPlans(ctx context.Context) ([]db.Plan, error) {
 // tapi mungkin), coba lagi dengan kode acak lain sampai 10 kali.
 func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode string) (db.Invoice, error) {
 	q := s.queries(ctx)
+	user, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return db.Invoice{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	if err := authorization.RequireTenantRole(ctx, q, tenantID, user.ID, "owner"); err != nil {
+		return db.Invoice{}, err
+	}
 
 	plan, err := q.GetPlanByCode(ctx, planCode)
 	if err != nil {
