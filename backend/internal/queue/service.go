@@ -51,6 +51,30 @@ type TicketResponse struct {
 	Status        string    `json:"status"`
 }
 
+// QueueSessionResponse hanya memuat data sesi yang dipakai layar operasional.
+type QueueSessionResponse struct {
+	ID          uuid.UUID          `json:"id"`
+	OutletID    uuid.UUID          `json:"outlet_id"`
+	SessionDate string             `json:"session_date"`
+	MaxQuota    int32              `json:"max_quota"`
+	UsedQuota   int32              `json:"used_quota"`
+	Status      string             `json:"status"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func queueSessionResponse(session db.QueueSession) QueueSessionResponse {
+	date := ""
+	if session.SessionDate.Valid {
+		date = session.SessionDate.Time.Format("2006-01-02")
+	}
+	return QueueSessionResponse{
+		ID: session.ID, OutletID: session.OutletID, SessionDate: date,
+		MaxQuota: session.MaxQuota, UsedQuota: session.UsedQuota, Status: session.Status,
+		CreatedAt: session.CreatedAt, UpdatedAt: session.UpdatedAt,
+	}
+}
+
 func ticketResponse(ticket db.Ticket) TicketResponse {
 	response := TicketResponse{
 		ID: ticket.ID, TicketNumber: ticket.TicketNumber, QueuePosition: ticket.QueuePosition,
@@ -141,17 +165,17 @@ func (s *Service) requireSessionOutletAssignment(ctx context.Context, q *db.Quer
 
 // --- Admin: sesi antrian & tiket offline ---
 
-func (s *Service) OpenQueueSession(ctx context.Context, tenantID, outletID, userID uuid.UUID, sessionDate time.Time, maxQuota int32) (db.QueueSession, error) {
+func (s *Service) OpenQueueSession(ctx context.Context, tenantID, outletID, userID uuid.UUID, sessionDate time.Time, maxQuota int32) (QueueSessionResponse, error) {
 	q := s.queries(ctx)
 	membership, err := s.requireAdmin(ctx, q, tenantID, userID)
 	if err != nil {
-		return db.QueueSession{}, err
+		return QueueSessionResponse{}, err
 	}
 	if err := s.requireOutletAssignment(ctx, q, tenantID, outletID, membership); err != nil {
-		return db.QueueSession{}, err
+		return QueueSessionResponse{}, err
 	}
 	if maxQuota <= 0 {
-		return db.QueueSession{}, httpx.BadRequest("kuota_tidak_valid", "Kuota maksimal harus lebih dari 0", nil)
+		return QueueSessionResponse{}, httpx.BadRequest("kuota_tidak_valid", "Kuota maksimal harus lebih dari 0", nil)
 	}
 	session, err := q.CreateQueueSession(ctx, db.CreateQueueSessionParams{
 		TenantID: tenantID, OutletID: outletID,
@@ -160,31 +184,31 @@ func (s *Service) OpenQueueSession(ctx context.Context, tenantID, outletID, user
 	})
 	if err != nil {
 		if pgerr.IsUniqueViolation(err) {
-			return db.QueueSession{}, httpx.Conflict("sesi_sudah_ada", "Sudah ada sesi antrian untuk outlet dan tanggal ini", nil)
+			return QueueSessionResponse{}, httpx.Conflict("sesi_sudah_ada", "Sudah ada sesi antrian untuk outlet dan tanggal ini", nil)
 		}
-		return db.QueueSession{}, httpx.Internal(fmt.Errorf("membuat sesi antrian: %w", err))
+		return QueueSessionResponse{}, httpx.Internal(fmt.Errorf("membuat sesi antrian: %w", err))
 	}
-	return session, nil
+	return queueSessionResponse(session), nil
 }
 
-func (s *Service) IncreaseQuota(ctx context.Context, tenantID, sessionID, userID uuid.UUID, by int32) (db.QueueSession, error) {
+func (s *Service) IncreaseQuota(ctx context.Context, tenantID, sessionID, userID uuid.UUID, by int32) (QueueSessionResponse, error) {
 	q := s.queries(ctx)
 	membership, err := s.requireAdmin(ctx, q, tenantID, userID)
 	if err != nil {
-		return db.QueueSession{}, err
+		return QueueSessionResponse{}, err
 	}
 	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, sessionID, membership); err != nil {
-		return db.QueueSession{}, err
+		return QueueSessionResponse{}, err
 	}
 	if by <= 0 {
-		return db.QueueSession{}, httpx.BadRequest("jumlah_tidak_valid", "Jumlah tambahan kuota harus lebih dari 0", nil)
+		return QueueSessionResponse{}, httpx.BadRequest("jumlah_tidak_valid", "Jumlah tambahan kuota harus lebih dari 0", nil)
 	}
 	// MaxQuota di sini berarti JUMLAH TAMBAHAN, bukan total baru — lihat SQL-nya.
 	session, err := q.IncreaseQueueQuota(ctx, db.IncreaseQueueQuotaParams{ID: sessionID, MaxQuota: by})
 	if err != nil {
-		return db.QueueSession{}, httpx.Internal(fmt.Errorf("menambah kuota: %w", err))
+		return QueueSessionResponse{}, httpx.Internal(fmt.Errorf("menambah kuota: %w", err))
 	}
-	return session, nil
+	return queueSessionResponse(session), nil
 }
 
 func (s *Service) AddOfflineTicket(ctx context.Context, tenantID, sessionID, userID uuid.UUID, customerName string) (TicketResponse, error) {
@@ -229,12 +253,16 @@ func (s *Service) AddOfflineTicket(ctx context.Context, tenantID, sessionID, use
 
 // --- Baca-baca ---
 
-func (s *Service) ListQueueSessions(ctx context.Context, outletID uuid.UUID) ([]db.QueueSession, error) {
+func (s *Service) ListQueueSessions(ctx context.Context, outletID uuid.UUID) ([]QueueSessionResponse, error) {
 	sessions, err := s.queries(ctx).ListQueueSessionsByOutlet(ctx, outletID)
 	if err != nil {
 		return nil, httpx.Internal(fmt.Errorf("ambil daftar sesi: %w", err))
 	}
-	return httpx.NonNil(sessions), nil
+	responses := make([]QueueSessionResponse, 0, len(sessions))
+	for _, session := range sessions {
+		responses = append(responses, queueSessionResponse(session))
+	}
+	return responses, nil
 }
 
 func (s *Service) ListTickets(ctx context.Context, sessionID uuid.UUID) ([]TicketResponse, error) {
