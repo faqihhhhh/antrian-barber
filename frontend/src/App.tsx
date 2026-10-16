@@ -6,6 +6,7 @@ import Daftar from './pages/Daftar'
 import LupaPassword from './pages/LupaPassword'
 import Masuk from './pages/Masuk'
 import Kapster from './pages/Kapster'
+import Admin from './pages/Admin'
 import Outlet from './pages/Outlet'
 import Tiket from './pages/Tiket'
 import TiketSaya from './pages/TiketSaya'
@@ -38,6 +39,14 @@ export default function App() {
         element={
           <RequireLogin>
             <TiketSaya />
+          </RequireLogin>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <RequireLogin>
+            <Admin />
           </RequireLogin>
         }
       />

@@ -368,6 +368,30 @@ paths:
                   $ref: '#/components/schemas/PendingManualPayment'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/tickets/{ticketID}/confirm-manual-payment:
+    post:
+      operationId: confirmManualPayment
+      tags: [admin]
+      summary: Konfirmasi DP QRIS manual dan masukkan tiket ke antrian
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - name: ticketID
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Pembayaran dikonfirmasi
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/queue-sessions/{sessionID}/kapster-states:
     get:
       operationId: listKapsterStates

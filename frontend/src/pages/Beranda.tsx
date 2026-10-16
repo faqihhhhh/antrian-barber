@@ -87,6 +87,11 @@ export default function Beranda() {
                 Buka meja kapster
               </Link>
             )}
+            {(m.roles.includes('admin') || m.roles.includes('owner')) && (
+              <Link to="/admin" className="mt-3 inline-flex rounded-xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-900">
+                Buka meja admin
+              </Link>
+            )}
             <p className="mt-2 text-sm">
               Langganan: <strong>{STATUS_LABEL[m.subscription_status] ?? m.subscription_status}</strong>
               {m.current_period_end &&
