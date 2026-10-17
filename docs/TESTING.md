@@ -118,6 +118,12 @@ tampil. Invoice lama menampilkan keterangan periode belum tercatat karena datany
 Pastikan owner tidak bisa membuat tagihan saat periode aktif masih lebih dari 7 hari dan hanya ada
 satu invoice pending untuk satu bisnis.
 
+Untuk pemilik SaaS: masuk memakai akun platform admin (`cookies.txt`), buka Beranda, lalu tekan
+**Buka ringkasan platform** (atau buka `/pemilik-saas`). Pastikan MRR, ARR, jumlah tenant menurut
+status langganan, tingkat konversi dan churn, tagihan tertunda, aktivitas 30 hari, serta tren bulanan
+12 bulan tampil. Masuk dengan akun owner tenant biasa (`cookiesB.txt`) dan buka `/pemilik-saas`;
+layar harus menolak akses dan API `GET /v1/admin/stats` harus membalas 403.
+
 ## Sebelum commit
 
 `go build -C backend ./...`, skrip verifikasi fase terkait (0 gagal), `npm run build`, `npm run lint`,

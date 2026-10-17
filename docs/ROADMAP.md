@@ -34,12 +34,13 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 12c-7 | Layar owner untuk status langganan dan riwayat tagihan dengan DTO aman |
 | 12c-8 | Hitung periode langganan dari waktu database dan catat rentang periode pada invoice |
 | 12c-9 | Batasi tagihan pending satu per bisnis dan buka perpanjangan dalam jendela 7 hari |
+| 12d-1 | Layar pemilik SaaS: ringkasan tenant, MRR/ARR, churn, tagihan, aktivitas, dan tren 12 bulan |
 
 ## Berikutnya (urutan wajib)
 
 1. **12b** layar admin (konfirmasi DP, tiket offline, buka/tutup sesi, kuota).
    **12c** layar owner (outlet, staf, harga DP, pembayaran, tautan dan QR outlet, langganan, statistik, ulasan).
-   **12d** layar pemilik SaaS (tenant, MRR, ARR, churn).
+   ~~**12d** layar pemilik SaaS (tenant, MRR, ARR, churn).~~ Selesai pada 12d-1.
 2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama.
 3. **14** pengerasan produksi: rate limit login dan pemesanan, header keamanan, backup database dengan uji
    restore, Sentry, `DEV_AUTO_VERIFY` mati, domain pengirim Resend terverifikasi.

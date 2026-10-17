@@ -11,6 +11,22 @@ info:
 servers:
   - url: /
 paths:
+  /v1/admin/stats:
+    get:
+      operationId: getPlatformStats
+      tags: [platform]
+      summary: Ringkasan tenant dan pendapatan untuk pemilik SaaS
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Statistik agregat platform
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlatformStats'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/push/public-key:
     get:
       operationId: getPushPublicKey
@@ -1066,6 +1082,70 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   schemas:
+    PlatformStats:
+      type: object
+      required: [tenants, revenue, billing, activity_30d, monthly]
+      properties:
+        tenants:
+          $ref: '#/components/schemas/PlatformTenants'
+        revenue:
+          $ref: '#/components/schemas/PlatformRevenue'
+        billing:
+          $ref: '#/components/schemas/PlatformBilling'
+        activity_30d:
+          $ref: '#/components/schemas/PlatformActivity'
+        monthly:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlatformMonthPoint'
+    PlatformTenants:
+      type: object
+      required: [total, never_subscribed, active, grace, read_only, churned_30d, ever_paid, midtrans_configured, onboarding_completed, outlets, staff, users]
+      properties:
+        total: { type: integer, format: int64 }
+        never_subscribed: { type: integer, format: int64 }
+        active: { type: integer, format: int64 }
+        grace: { type: integer, format: int64 }
+        read_only: { type: integer, format: int64 }
+        churned_30d: { type: integer, format: int64 }
+        churn_rate_30d_pct: { type: number, format: double, nullable: true }
+        ever_paid: { type: integer, format: int64 }
+        conversion_pct: { type: number, format: double, nullable: true }
+        midtrans_configured: { type: integer, format: int64 }
+        onboarding_completed: { type: integer, format: int64 }
+        outlets: { type: integer, format: int64 }
+        staff: { type: integer, format: int64 }
+        users: { type: integer, format: int64 }
+    PlatformRevenue:
+      type: object
+      required: [mrr_rupiah, arr_rupiah, arpa_rupiah]
+      properties:
+        mrr_rupiah: { type: integer, format: int64 }
+        arr_rupiah: { type: integer, format: int64 }
+        arpa_rupiah: { type: integer, format: int64 }
+    PlatformBilling:
+      type: object
+      required: [pending_invoices, pending_amount_rupiah, expiring_7d, expiring_7d_rupiah]
+      properties:
+        pending_invoices: { type: integer, format: int64 }
+        pending_amount_rupiah: { type: integer, format: int64 }
+        expiring_7d: { type: integer, format: int64 }
+        expiring_7d_rupiah: { type: integer, format: int64 }
+    PlatformActivity:
+      type: object
+      required: [active_outlets, tickets_completed, gmv_rupiah]
+      properties:
+        active_outlets: { type: integer, format: int64 }
+        tickets_completed: { type: integer, format: int64 }
+        gmv_rupiah: { type: integer, format: int64 }
+    PlatformMonthPoint:
+      type: object
+      required: [month, tenants_created, invoices_paid, revenue_rupiah]
+      properties:
+        month: { type: string, pattern: '^\\d{4}-\\d{2}$' }
+        tenants_created: { type: integer, format: int64 }
+        invoices_paid: { type: integer, format: int64 }
+        revenue_rupiah: { type: integer, format: int64 }
     ErrorResponse:
       type: object
       required: [error]

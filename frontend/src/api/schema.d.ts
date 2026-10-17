@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/v1/admin/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ringkasan tenant dan pendapatan untuk pemilik SaaS */
+        get: operations["getPlatformStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/push/public-key": {
         parameters: {
             query?: never;
@@ -761,6 +778,78 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        PlatformStats: {
+            tenants: components["schemas"]["PlatformTenants"];
+            revenue: components["schemas"]["PlatformRevenue"];
+            billing: components["schemas"]["PlatformBilling"];
+            activity_30d: components["schemas"]["PlatformActivity"];
+            monthly: components["schemas"]["PlatformMonthPoint"][];
+        };
+        PlatformTenants: {
+            /** Format: int64 */
+            total: number;
+            /** Format: int64 */
+            never_subscribed: number;
+            /** Format: int64 */
+            active: number;
+            /** Format: int64 */
+            grace: number;
+            /** Format: int64 */
+            read_only: number;
+            /** Format: int64 */
+            churned_30d: number;
+            /** Format: double */
+            churn_rate_30d_pct?: number | null;
+            /** Format: int64 */
+            ever_paid: number;
+            /** Format: double */
+            conversion_pct?: number | null;
+            /** Format: int64 */
+            midtrans_configured: number;
+            /** Format: int64 */
+            onboarding_completed: number;
+            /** Format: int64 */
+            outlets: number;
+            /** Format: int64 */
+            staff: number;
+            /** Format: int64 */
+            users: number;
+        };
+        PlatformRevenue: {
+            /** Format: int64 */
+            mrr_rupiah: number;
+            /** Format: int64 */
+            arr_rupiah: number;
+            /** Format: int64 */
+            arpa_rupiah: number;
+        };
+        PlatformBilling: {
+            /** Format: int64 */
+            pending_invoices: number;
+            /** Format: int64 */
+            pending_amount_rupiah: number;
+            /** Format: int64 */
+            expiring_7d: number;
+            /** Format: int64 */
+            expiring_7d_rupiah: number;
+        };
+        PlatformActivity: {
+            /** Format: int64 */
+            active_outlets: number;
+            /** Format: int64 */
+            tickets_completed: number;
+            /** Format: int64 */
+            gmv_rupiah: number;
+        };
+        PlatformMonthPoint: {
+            month: string;
+            /** Format: int64 */
+            tenants_created: number;
+            /** Format: int64 */
+            invoices_paid: number;
+            /** Format: int64 */
+            revenue_rupiah: number;
+        };
         ErrorResponse: {
             error: {
                 /** @description Kode stabil untuk logika di frontend, misalnya `kredensial_salah`. */
@@ -1180,6 +1269,27 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getPlatformStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Statistik agregat platform */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformStats"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
     getPushPublicKey: {
         parameters: {
             query?: never;

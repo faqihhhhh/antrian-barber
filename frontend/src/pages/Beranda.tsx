@@ -52,9 +52,10 @@ export default function Beranda() {
         <h1 className="mt-1 text-xl font-bold">Halo</h1>
         <p className="text-sm text-stone-600">{data.user.email}</p>
         {data.is_platform_admin && (
-          <span className="mt-2 inline-block rounded-full bg-stone-900 px-3 py-1 text-xs font-semibold text-white">
-            Pemilik SaaS
-          </span>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="inline-block rounded-full bg-stone-900 px-3 py-1 text-xs font-semibold text-white">Pemilik SaaS</span>
+            <Link to="/pemilik-saas" className="text-sm font-semibold underline">Buka ringkasan platform</Link>
+          </div>
         )}
       </header>
 
