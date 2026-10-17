@@ -78,6 +78,12 @@ Pola: `page.route('**/v1/**', ...)` untuk API tiruan, `addInitScript` untuk meng
 dengan versi yang bisa dipicu (`window.__emit(snapshot)`), jendela 390x844, tangkapan layar, dan
 daftar pemeriksaan teks dan elemen. Server pratinjau: `npx vite preview --port 4173`.
 
+## Rate limit booking
+
+Tes `go test -C backend ./...` memastikan lima permintaan booking per alamat IP masih mencapai handler,
+sedangkan permintaan keenam dalam satu menit menerima HTTP 429, kode `terlalu_banyak_pemesanan`, dan
+header `Retry-After`. Permintaan uji memakai body tidak valid agar tidak membuat data booking.
+
 ## Checklist browser (backend asli)
 
 Dua terminal: `make dev` dan `npm run dev`. Buka `http://localhost:5173/b/<slug>`.

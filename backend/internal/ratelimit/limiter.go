@@ -80,6 +80,10 @@ func clientIP(remoteAddr string) string {
 }
 
 func (l *Limiter) Middleware(log *slog.Logger) func(http.Handler) http.Handler {
+	return l.MiddlewareWithError(log, "terlalu_banyak_percobaan", "Terlalu banyak percobaan masuk. Coba lagi setelah beberapa saat.")
+}
+
+func (l *Limiter) MiddlewareWithError(log *slog.Logger, code, message string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			allowed, retryAfter := l.allowAt(clientIP(r.RemoteAddr), time.Now())
@@ -90,8 +94,8 @@ func (l *Limiter) Middleware(log *slog.Logger) func(http.Handler) http.Handler {
 				}
 				w.Header().Set("Retry-After", strconv.Itoa(seconds))
 				httpx.Error(w, r, log, httpx.TooManyRequests(
-					"terlalu_banyak_percobaan",
-					"Terlalu banyak percobaan masuk. Coba lagi setelah beberapa saat.",
+					code,
+					message,
 				))
 				return
 			}

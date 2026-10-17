@@ -42,15 +42,17 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 13-3-3 | Pemilik membuat outlet pertama setelah langganan aktif; endpoint outlet memakai DTO aman dan kontrak OpenAPI |
 | 13-3-4 | Onboarding owner mengarahkan tenant tanpa langganan ke tagihan dan menghubungkan outlet ke pembayaran DP serta meja admin |
 | 13-3-5 | Skrip verifikasi API nyata membuka sesi, membuat booking pelanggan, mensimulasikan konfirmasi DP, memastikan tiket masuk antrean, lalu membersihkan data uji |
+| 13-3-6 | Pemilik memeriksa alur onboarding dan booking di browser: pengaturan outlet, pembayaran/admin, buka sesi, booking pelanggan, dan konfirmasi tiket uji (semua PASS) |
 | 14-1 | API menambahkan header keamanan `nosniff`, anti-frame, kebijakan referrer, dan pembatasan fitur browser; dilindungi tes unit |
 | 14-2a | Login dibatasi 10 percobaan per alamat IP per menit; pelanggaran membalas 429 dan `Retry-After`, penghitung dibatasi di memori |
+| 14-2b | Booking online dibatasi 5 permintaan per alamat IP per menit; permintaan berlebih membalas 429 dan `Retry-After` |
 
 ## Berikutnya (urutan wajib)
 
 1. **12b** layar admin (konfirmasi DP, tiket offline, buka/tutup sesi, kuota).
    **12c** layar owner (outlet, staf, harga DP, pembayaran, tautan dan QR outlet, langganan, statistik, ulasan).
    ~~**12d** layar pemilik SaaS (tenant, MRR, ARR, churn).~~ Selesai pada 12d-1.
-2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama. Langkah 13-1 sampai 13-3-5 selesai; berikutnya verifikasi layar browser untuk alur daftar owner sampai tiket pertama.
+2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama. Langkah 13-1 sampai 13-3-6 selesai.
 3. **14** pengerasan produksi: rate limit login dan pemesanan, header keamanan, backup database dengan uji
    restore, Sentry, `DEV_AUTO_VERIFY` mati, domain pengirim Resend terverifikasi.
 4. **15** deploy: satu VPS, Docker, Caddy (HTTPS), CI sederhana, migrasi otomatis.

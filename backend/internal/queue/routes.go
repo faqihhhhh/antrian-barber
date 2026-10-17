@@ -3,17 +3,21 @@ package queue
 import (
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"kapsflow/internal/ratelimit"
 )
 
 func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger, pool *pgxpool.Pool, requireActive func(http.Handler) http.Handler) {
 	h := NewHandlers(svc, log)
+	bookingLimiter := ratelimit.New(5, time.Minute)
 
 	r.With(requireActive).Post("/{tenantID}/outlets/{outletID}/queue-sessions", h.CreateQueueSession)
 	r.Get("/{tenantID}/outlets/{outletID}/queue-sessions", h.ListQueueSessions)
-	r.With(requireActive).Post("/{tenantID}/outlets/{outletID}/book", h.BookOnline)
+	r.With(requireActive, bookingLimiter.MiddlewareWithError(log, "terlalu_banyak_pemesanan", "Terlalu banyak pemesanan. Coba lagi setelah satu menit.")).Post("/{tenantID}/outlets/{outletID}/book", h.BookOnline)
 
 	r.With(requireActive).Post("/{tenantID}/queue-sessions/{sessionID}/increase-quota", h.IncreaseQuota)
 	r.With(requireActive).Post("/{tenantID}/queue-sessions/{sessionID}/close", h.CloseQueueSession)
