@@ -34,6 +34,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 12c-7 | Layar owner untuk status langganan dan riwayat tagihan dengan DTO aman |
 | 12c-8 | Hitung periode langganan dari waktu database dan catat rentang periode pada invoice |
 | 12c-9 | Batasi tagihan pending satu per bisnis dan buka perpanjangan dalam jendela 7 hari |
+| 12c-10 | Navigasi layar pengaturan owner dirapikan untuk ponsel; tautan pengaturan dapat digeser mendatar dan sudah diperiksa manual |
 | 12d-1 | Layar pemilik SaaS: ringkasan tenant, MRR/ARR, churn, tagihan, aktivitas, dan tren 12 bulan |
 | 13-1 | Website profil statis Astro dengan landing page responsif dan CTA menuju aplikasi |
 | 13-2 | Draf halaman syarat penggunaan dan kebijakan privasi berdasarkan alur data aplikasi; detail operator dan retensi ditandai untuk dilengkapi sebelum publikasi |

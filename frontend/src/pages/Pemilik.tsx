@@ -30,15 +30,23 @@ export default function Pemilik() {
           <p className="text-sm font-semibold tracking-wide text-stone-500">KAPSFLOW</p>
           <h1 className="mt-1 text-2xl font-bold">Pengaturan outlet</h1>
         </div>
-        <nav className="flex flex-col items-end gap-2 pt-1 text-sm font-semibold underline">
-          <Link to="/pemilik/pembayaran">Pembayaran DP</Link>
-          <Link to="/pemilik/staf">Kelola staf</Link>
-          <Link to="/pemilik/statistik">Statistik</Link>
-          <Link to="/pemilik/ulasan">Ulasan pelanggan</Link>
-          <Link to="/pemilik/langganan">Langganan</Link>
-          <Link to="/">Beranda</Link>
-        </nav>
+        <Link
+          to="/"
+          className="shrink-0 rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-stone-900"
+        >
+          Beranda
+        </Link>
       </header>
+      <nav
+        aria-label="Navigasi pengaturan bisnis"
+        className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 text-sm font-semibold"
+      >
+        <Link className="shrink-0 rounded-full border border-stone-300 bg-white px-3 py-2 text-stone-700 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-stone-900" to="/pemilik/pembayaran">Pembayaran DP</Link>
+        <Link className="shrink-0 rounded-full border border-stone-300 bg-white px-3 py-2 text-stone-700 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-stone-900" to="/pemilik/staf">Kelola staf</Link>
+        <Link className="shrink-0 rounded-full border border-stone-300 bg-white px-3 py-2 text-stone-700 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-stone-900" to="/pemilik/statistik">Statistik</Link>
+        <Link className="shrink-0 rounded-full border border-stone-300 bg-white px-3 py-2 text-stone-700 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-stone-900" to="/pemilik/ulasan">Ulasan pelanggan</Link>
+        <Link className="shrink-0 rounded-full border border-stone-300 bg-white px-3 py-2 text-stone-700 hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-stone-900" to="/pemilik/langganan">Langganan</Link>
+      </nav>
 
       {memberships.length === 0 ? (
         <Alert tone="info">Akun ini belum menjadi owner bisnis.</Alert>

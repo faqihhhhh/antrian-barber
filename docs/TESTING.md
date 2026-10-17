@@ -117,6 +117,10 @@ Untuk tautan outlet owner: di **Pengaturan outlet**, tekan **Salin tautan** dan 
 konfirmasi tampil serta URL dapat ditempel di tab baru. Tekan **Buka halaman** dan pastikan halaman
 publik outlet terbuka di tab baru.
 
+Untuk navigasi owner di ponsel: buka **Pengaturan outlet** pada lebar sekitar 390 px. Pastikan judul
+dan tombol **Beranda** terlihat, geser navigasi pengaturan mendatar, buka kelima tautan, dan pastikan
+halaman tidak ikut melebar ke samping.
+
 Untuk statistik owner: dari **Pengaturan outlet**, buka **Statistik**. Pastikan periode 30 hari,
 total tiket, tiket selesai, pendapatan DP, DP belum lunas, rata-rata DP, dan tingkat penyelesaian tampil.
 Jika memiliki beberapa tenant owner, ganti pilihan bisnis dan pastikan angka ikut berganti.
