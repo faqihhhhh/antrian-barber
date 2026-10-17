@@ -115,10 +115,16 @@ berkas `.env` backend tidak dikirim sebagai build context.
 ## Compose produksi
 
 Periksa sintaks tanpa menyalakan layanan dengan `docker compose --env-file .env.production.example -f docker-compose.prod.yml config -q`.
-Konfigurasi harus valid. Pastikan database tidak memiliki port publik dan port API hanya terikat ke
-`127.0.0.1` agar nanti hanya reverse proxy di VPS yang menerima trafik dari luar. Sebelum API bisa
-berjalan, migrasikan database dengan akun `DATABASE_URL` lalu atur password role `kapsflow_app`
-agar cocok dengan `APP_DATABASE_URL`; aplikasi runtime tidak memakai akun superuser.
+Konfigurasi harus valid. Pastikan database tidak memiliki port publik, API hanya memakai jaringan
+internal Compose, dan hanya Caddy membuka port 80/443. Sebelum API bisa berjalan, migrasikan database
+dengan akun `DATABASE_URL` lalu atur password role `kapsflow_app` agar cocok dengan `APP_DATABASE_URL`;
+aplikasi runtime tidak memakai akun superuser.
+
+Caddyfile memakai `APP_DOMAIN` untuk frontend/API dan `WEBSITE_DOMAIN` untuk website statis.
+Frontend/website harus sudah dibangun ke `frontend/dist` dan `website/dist`. Bangun website dengan
+`PUBLIC_APP_URL=https://app.example.com npm run build` dari `~/kapsflow/website` (sesuaikan domain),
+lalu pastikan hasil `website/dist/index.html` tidak memuat `localhost:5173`. Saat domain DNS sudah
+mengarah ke VPS dan port 80/443 terbuka, Caddy akan mengurus sertifikat HTTPS otomatis.
 
 ## Checklist browser (backend asli)
 

@@ -37,8 +37,8 @@ services:
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:?isi VAPID_PRIVATE_KEY}
       VAPID_SUBJECT: ${VAPID_SUBJECT:?isi VAPID_SUBJECT}
       SENTRY_DSN: ${SENTRY_DSN:-}
-    ports:
-      - "127.0.0.1:8080:8080"
+    expose:
+      - "8080"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
       interval: 15s
@@ -46,5 +46,27 @@ services:
       retries: 5
       start_period: 10s
 
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?isi domain aplikasi}
+      WEBSITE_DOMAIN: ${WEBSITE_DOMAIN:?isi domain website}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend/dist:/srv/frontend:ro
+      - ./website/dist:/srv/website:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:

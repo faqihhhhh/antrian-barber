@@ -16,9 +16,10 @@ Buka `http://localhost:4321`. Secara bawaan tombol masuk dan daftar mengarah ke 
 Build situs statis:
 
 ```bash
-npm run build
+PUBLIC_APP_URL=https://app.example.com npm run build
 npm run preview
 ```
 
+Ganti `app.example.com` dengan domain yang dipakai pada `APP_DOMAIN` di `.env.production`.
 Hasil build ada di `website/dist/`. Halaman `/syarat` dan `/privasi` saat ini adalah draf; lengkapi
 identitas operator, kontak, penyedia produksi, lokasi data, dan jadwal retensi sebelum dipublikasikan.

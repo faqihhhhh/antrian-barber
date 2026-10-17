@@ -1,0 +1,23 @@
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	handle /v1/* {
+		reverse_proxy api:8080
+	}
+
+	handle /healthz {
+		reverse_proxy api:8080
+	}
+
+	handle {
+		root * /srv/frontend
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+{$WEBSITE_DOMAIN} {
+	encode zstd gzip
+	root * /srv/website
+	file_server
+}
