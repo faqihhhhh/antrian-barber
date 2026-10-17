@@ -106,6 +106,12 @@ startup ketika `DEV_AUTO_VERIFY=false`. Nilai `APP_ENV` yang tidak dikenal juga 
 Tes `go test -C backend ./internal/identity` memastikan mode email console tidak mencatat alamat
 penerima atau isi email yang mungkin memuat token verifikasi dan reset sandi.
 
+## Image Docker backend
+
+Dari `~/kapsflow`, jalankan `docker build -f backend/Dockerfile -t kapsflow-api:local backend`.
+Build harus sukses. Dockerfile menghasilkan binary statis dan menjalankannya sebagai user non-root;
+berkas `.env` backend tidak dikirim sebagai build context.
+
 ## Checklist browser (backend asli)
 
 Dua terminal: `make dev` dan `npm run dev`. Buka `http://localhost:5173/b/<slug>`.
