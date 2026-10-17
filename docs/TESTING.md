@@ -161,5 +161,5 @@ dokumen tersebut sebelum semua butir pelengkapan pada masing-masing halaman dise
 
 ## Sebelum commit
 
-`go build -C backend ./...`, skrip verifikasi fase terkait (0 gagal), `npm run build`, `npm run lint`,
+`go test -C backend ./...`, `go build -C backend ./...`, skrip verifikasi fase terkait (0 gagal), `npm run build`, `npm run lint`,
 lalu checklist browser untuk perubahan layar.

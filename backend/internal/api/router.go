@@ -43,6 +43,7 @@ func New(
 	) http.Handler {
 	r := chi.NewRouter()
 
+	r.Use(securityHeaders)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(httpx.Recoverer(log))

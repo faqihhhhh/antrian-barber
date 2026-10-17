@@ -42,6 +42,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 13-3-3 | Pemilik membuat outlet pertama setelah langganan aktif; endpoint outlet memakai DTO aman dan kontrak OpenAPI |
 | 13-3-4 | Onboarding owner mengarahkan tenant tanpa langganan ke tagihan dan menghubungkan outlet ke pembayaran DP serta meja admin |
 | 13-3-5 | Skrip verifikasi API nyata membuka sesi, membuat booking pelanggan, mensimulasikan konfirmasi DP, memastikan tiket masuk antrean, lalu membersihkan data uji |
+| 14-1 | API menambahkan header keamanan `nosniff`, anti-frame, kebijakan referrer, dan pembatasan fitur browser; dilindungi tes unit |
 
 ## Berikutnya (urutan wajib)
 
@@ -63,7 +64,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 - Skrip verifikasi masih di `/tmp`. Pindahkan ke `scripts/verify/`.
 - Dedupe pengingat perpanjangan belum terbukti oleh tes.
 - Hub realtime di memori hanya benar untuk satu instance API.
-- Belum ada tes unit Go. Aturan penting hanya dijaga skrip integrasi.
+- Cakupan tes unit Go masih terbatas. Sebagian besar aturan penting hanya dijaga skrip integrasi.
 
 ## Ide yang ditunda
 
