@@ -12,8 +12,9 @@ import (
 )
 
 type Querier interface {
-	ActivateSubscriptionPeriod(ctx context.Context, arg ActivateSubscriptionPeriodParams) error
+	ActivateSubscriptionPeriodFromPayment(ctx context.Context, arg ActivateSubscriptionPeriodFromPaymentParams) (ActivateSubscriptionPeriodFromPaymentRow, error)
 	AddMembershipOutlet(ctx context.Context, arg AddMembershipOutletParams) error
+	CanCreateRenewalInvoice(ctx context.Context, tenantID uuid.UUID) (pgtype.Bool, error)
 	CancelPendingTicket(ctx context.Context, pTicketID uuid.UUID) (bool, error)
 	ClaimNextTicketNumber(ctx context.Context, id uuid.UUID) (int32, error)
 	ClaimNextWaitingTicket(ctx context.Context, queueSessionID uuid.UUID) (Ticket, error)
@@ -46,6 +47,7 @@ type Querier interface {
 	DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error
 	DeleteSession(ctx context.Context, tokenHash string) error
 	ExpireStaleInvoices(ctx context.Context) (int64, error)
+	ExpireTenantInvoices(ctx context.Context, tenantID uuid.UUID) (int64, error)
 	GetAverageCallIntervalMinutes(ctx context.Context, outletID uuid.UUID) (float64, error)
 	GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, error)
 	GetKapsterSessionState(ctx context.Context, arg GetKapsterSessionStateParams) (KapsterSessionState, error)
@@ -53,6 +55,7 @@ type Querier interface {
 	GetMembershipForUserAndTenant(ctx context.Context, arg GetMembershipForUserAndTenantParams) (Membership, error)
 	GetOutletByID(ctx context.Context, id uuid.UUID) (Outlet, error)
 	GetOutletBySlug(ctx context.Context, slug string) (Outlet, error)
+	GetPendingInvoiceByTenant(ctx context.Context, tenantID uuid.UUID) (Invoice, error)
 	GetPlanByCode(ctx context.Context, code string) (Plan, error)
 	GetPlanByID(ctx context.Context, id uuid.UUID) (Plan, error)
 	GetQueueSessionByID(ctx context.Context, id uuid.UUID) (QueueSession, error)
@@ -99,7 +102,7 @@ type Querier interface {
 	ListTicketsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	ListUpcomingWaitingTickets(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	MarkEmailVerificationTokenUsed(ctx context.Context, id uuid.UUID) error
-	MarkInvoicePaid(ctx context.Context, arg MarkInvoicePaidParams) error
+	MarkInvoicePaid(ctx context.Context, arg MarkInvoicePaidParams) (MarkInvoicePaidRow, error)
 	MarkOnboardingSkippedMidtrans(ctx context.Context, tenantID uuid.UUID) error
 	MarkPasswordResetTokenUsed(ctx context.Context, id uuid.UUID) error
 	MarkTicketCalled(ctx context.Context, arg MarkTicketCalledParams) error
@@ -117,6 +120,7 @@ type Querier interface {
 	PlatformSignupsByMonth(ctx context.Context, since pgtype.Timestamptz) ([]PlatformSignupsByMonthRow, error)
 	PlatformTenantStatusCounts(ctx context.Context) (PlatformTenantStatusCountsRow, error)
 	PlatformTotals(ctx context.Context) (PlatformTotalsRow, error)
+	RecordInvoiceSubscriptionPeriod(ctx context.Context, arg RecordInvoiceSubscriptionPeriodParams) (int64, error)
 	RecordSubscriptionReminder(ctx context.Context, arg RecordSubscriptionReminderParams) error
 	RequeueTicket(ctx context.Context, id uuid.UUID) error
 	SetManualQRIS(ctx context.Context, arg SetManualQRISParams) error

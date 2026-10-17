@@ -33,12 +33,15 @@ Akun tes dibuat dengan `DEV_AUTO_VERIFY=true`. Jangan memakai kata sandi nyata.
 Skrip integrasi yang sudah disimpan di `scripts/verify/` mencakup `verify_fase11c1.sh`,
 `verify_fase11d.sh`, `verify_fase12b_expired_sessions.sh`, dan
 `verify_fase12c1_owner_outlet_settings.sh`, `verify_fase12c2_owner_staff_access.sh`, dan
-`verify_fase12c3_owner_payment_profile.sh`, dan `verify_fase12c7_owner_subscription.sh`. Skrip 11d
+`verify_fase12c3_owner_payment_profile.sh`, `verify_fase12c7_owner_subscription.sh`, dan
+`verify_fase12c8_subscription_period.sh`. Skrip 11d
 memeriksa matriks owner, admin, kapster, pelanggan, dan orang luar; 11c1 menguji pembayaran lewat
 Midtrans tiruan; 12b menguji penutupan sesi lewat tanggal; 12c1 memeriksa respons outlet; 12c2
 memastikan daftar staf hanya bisa dibaca owner; 12c3 memeriksa status pembayaran dan izin QRIS owner.
 Skrip 12c7 memastikan hanya owner yang membaca status dan riwayat tagihan serta kolom internal tidak
 terkirim ke klien.
+Skrip 12c8 membuat tenant dan invoice sementara, mengonfirmasi invoice lewat API, lalu memastikan
+rentang periode sama dengan hasil query database dan membersihkan tenant uji.
 Pola semuanya sama:
 
 ```bash
@@ -110,6 +113,10 @@ terbaru tampil, komentar kosong diberi keterangan, serta tombol halaman berikutn
 
 Untuk langganan owner: buka **Langganan**. Pastikan status, tanggal akhir periode, dan riwayat tagihan
 tampil. Tagihan dibayar manual dan dikonfirmasi pemilik Kapsflow; layar ini hanya menampilkan status.
+Untuk invoice yang dikonfirmasi setelah migrasi periode audit, pastikan rentang periode yang diberikan
+tampil. Invoice lama menampilkan keterangan periode belum tercatat karena datanya tidak bisa dipastikan.
+Pastikan owner tidak bisa membuat tagihan saat periode aktif masih lebih dari 7 hari dan hanya ada
+satu invoice pending untuk satu bisnis.
 
 ## Sebelum commit
 

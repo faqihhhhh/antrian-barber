@@ -332,6 +332,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buat tagihan langganan owner pada waktu perpanjangan yang diizinkan */
+        post: operations["createOwnerSubscriptionInvoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/invoices": {
         parameters: {
             query?: never;
@@ -1086,6 +1103,9 @@ export interface components {
             /** Format: date-time */
             current_period_end?: string | null;
         };
+        SubscribeRequest: {
+            plan_code: string;
+        };
         OwnerInvoice: {
             /** Format: uuid */
             id: string;
@@ -1099,6 +1119,10 @@ export interface components {
             expires_at: string | null;
             /** Format: date-time */
             paid_at: string | null;
+            /** Format: date-time */
+            period_start: string | null;
+            /** Format: date-time */
+            period_end: string | null;
             /** Format: date-time */
             created_at: string;
         };
@@ -1624,6 +1648,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnerSubscription"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    createOwnerSubscriptionInvoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscribeRequest"];
+            };
+        };
+        responses: {
+            /** @description Tagihan langganan dibuat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerInvoice"];
                 };
             };
             default: components["responses"]["Error"];

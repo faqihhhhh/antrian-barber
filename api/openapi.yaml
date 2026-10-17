@@ -428,6 +428,28 @@ paths:
               schema: { $ref: '#/components/schemas/OwnerSubscription' }
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/subscribe:
+    post:
+      operationId: createOwnerSubscriptionInvoice
+      tags: [langganan]
+      summary: Buat tagihan langganan owner pada waktu perpanjangan yang diizinkan
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubscribeRequest' }
+      responses:
+        '201':
+          description: Tagihan langganan dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OwnerInvoice' }
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/invoices:
     get:
       operationId: listOwnerInvoices
@@ -1601,9 +1623,14 @@ components:
         status: { type: string, enum: [belum_berlangganan, aktif, masa_tenggang, baca_saja] }
         plan_code: { type: string }
         current_period_end: { type: string, format: date-time, nullable: true }
+    SubscribeRequest:
+      type: object
+      required: [plan_code]
+      properties:
+        plan_code: { type: string }
     OwnerInvoice:
       type: object
-      required: [id, amount_rupiah, unique_code, status, expires_at, paid_at, created_at]
+      required: [id, amount_rupiah, unique_code, status, expires_at, paid_at, period_start, period_end, created_at]
       properties:
         id: { type: string, format: uuid }
         amount_rupiah: { type: integer, format: int64 }
@@ -1611,6 +1638,8 @@ components:
         status: { type: string, enum: [pending, paid, expired, canceled] }
         expires_at: { type: string, format: date-time, nullable: true }
         paid_at: { type: string, format: date-time, nullable: true }
+        period_start: { type: string, format: date-time, nullable: true }
+        period_end: { type: string, format: date-time, nullable: true }
         created_at: { type: string, format: date-time }
     MembershipInfo:
       type: object

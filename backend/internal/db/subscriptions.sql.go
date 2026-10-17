@@ -12,18 +12,53 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const activateSubscriptionPeriod = `-- name: ActivateSubscriptionPeriod :exec
-UPDATE subscriptions SET current_period_end = $2, updated_at = now() WHERE tenant_id = $1
+const activateSubscriptionPeriodFromPayment = `-- name: ActivateSubscriptionPeriodFromPayment :one
+WITH period AS (
+    SELECT s.tenant_id,
+           GREATEST(COALESCE(s.current_period_end, $1::timestamptz), $1::timestamptz)::timestamptz AS period_start,
+           CASE WHEN $2::text = 'yearly' THEN interval '1 year' ELSE interval '1 month' END AS duration
+    FROM subscriptions AS s
+    WHERE s.tenant_id = $3
+    FOR UPDATE
+), updated AS (
+    UPDATE subscriptions AS s
+    SET current_period_end = period.period_start + period.duration,
+        updated_at = now()
+    FROM period
+    WHERE s.tenant_id = period.tenant_id
+    RETURNING period.period_start, s.current_period_end AS period_end
+)
+SELECT period_start, period_end FROM updated
 `
 
-type ActivateSubscriptionPeriodParams struct {
-	TenantID         uuid.UUID          `json:"tenant_id"`
-	CurrentPeriodEnd pgtype.Timestamptz `json:"current_period_end"`
+type ActivateSubscriptionPeriodFromPaymentParams struct {
+	PaidAt          pgtype.Timestamptz `json:"paid_at"`
+	BillingInterval string             `json:"billing_interval"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
 }
 
-func (q *Queries) ActivateSubscriptionPeriod(ctx context.Context, arg ActivateSubscriptionPeriodParams) error {
-	_, err := q.db.Exec(ctx, activateSubscriptionPeriod, arg.TenantID, arg.CurrentPeriodEnd)
-	return err
+type ActivateSubscriptionPeriodFromPaymentRow struct {
+	PeriodStart pgtype.Timestamptz `json:"period_start"`
+	PeriodEnd   pgtype.Timestamptz `json:"period_end"`
+}
+
+func (q *Queries) ActivateSubscriptionPeriodFromPayment(ctx context.Context, arg ActivateSubscriptionPeriodFromPaymentParams) (ActivateSubscriptionPeriodFromPaymentRow, error) {
+	row := q.db.QueryRow(ctx, activateSubscriptionPeriodFromPayment, arg.PaidAt, arg.BillingInterval, arg.TenantID)
+	var i ActivateSubscriptionPeriodFromPaymentRow
+	err := row.Scan(&i.PeriodStart, &i.PeriodEnd)
+	return i, err
+}
+
+const canCreateRenewalInvoice = `-- name: CanCreateRenewalInvoice :one
+SELECT current_period_end IS NULL OR current_period_end <= now() + interval '7 days' AS eligible
+FROM subscriptions WHERE tenant_id = $1
+`
+
+func (q *Queries) CanCreateRenewalInvoice(ctx context.Context, tenantID uuid.UUID) (pgtype.Bool, error) {
+	row := q.db.QueryRow(ctx, canCreateRenewalInvoice, tenantID)
+	var eligible pgtype.Bool
+	err := row.Scan(&eligible)
+	return eligible, err
 }
 
 const getSubscriptionByTenant = `-- name: GetSubscriptionByTenant :one

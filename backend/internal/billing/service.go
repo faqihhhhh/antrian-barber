@@ -22,8 +22,7 @@ import (
 )
 
 const (
-	GracePeriod   = 3 * 24 * time.Hour
-	invoiceWindow = 24 * time.Hour
+	GracePeriod = 3 * 24 * time.Hour
 )
 
 type SubscriptionStatus string
@@ -72,26 +71,40 @@ func (s *Service) ListPlans(ctx context.Context) ([]db.Plan, error) {
 // Subscribe membuat/memperbarui baris subscription lalu invoice baru dengan
 // nominal unik. Kalau nominal bentrok dengan invoice pending lain (jarang,
 // tapi mungkin), coba lagi dengan kode acak lain sampai 10 kali.
-func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode string) (db.Invoice, error) {
+func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode string) (OwnerInvoice, error) {
 	q := s.queries(ctx)
 	user, ok := identity.UserFromContext(ctx)
 	if !ok {
-		return db.Invoice{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+		return OwnerInvoice{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
 	}
 	if err := authorization.RequireTenantRole(ctx, q, tenantID, user.ID, "owner"); err != nil {
-		return db.Invoice{}, err
+		return OwnerInvoice{}, err
 	}
 
 	plan, err := q.GetPlanByCode(ctx, planCode)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return db.Invoice{}, httpx.BadRequest("paket_tidak_ditemukan", "Paket langganan tidak ditemukan", nil)
+			return OwnerInvoice{}, httpx.BadRequest("paket_tidak_ditemukan", "Paket langganan tidak ditemukan", nil)
 		}
-		return db.Invoice{}, httpx.Internal(fmt.Errorf("ambil plan: %w", err))
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("ambil plan: %w", err))
+	}
+	if _, err := q.ExpireTenantInvoices(ctx, tenantID); err != nil {
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("kedaluwarsakan invoice lama: %w", err))
+	}
+	if _, err := q.GetPendingInvoiceByTenant(ctx, tenantID); err == nil {
+		return OwnerInvoice{}, httpx.Conflict("tagihan_masih_pending", "Masih ada tagihan yang belum diproses untuk bisnis ini", nil)
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("cek tagihan aktif: %w", err))
+	}
+	eligible, err := q.CanCreateRenewalInvoice(ctx, tenantID)
+	if err == nil && eligible.Valid && !eligible.Bool {
+		return OwnerInvoice{}, httpx.Conflict("langganan_masih_aktif", "Tagihan perpanjangan baru bisa dibuat dalam 7 hari sebelum periode berakhir", nil)
+	} else if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("cek waktu perpanjangan: %w", err))
 	}
 
 	if _, err := q.UpsertSubscription(ctx, db.UpsertSubscriptionParams{TenantID: tenantID, PlanID: plan.ID}); err != nil {
-		return db.Invoice{}, httpx.Internal(fmt.Errorf("upsert subscription: %w", err))
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("upsert subscription: %w", err))
 	}
 
 	const maxAttempts = 10
@@ -104,17 +117,21 @@ func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode st
 			PlanID:       plan.ID,
 			AmountRupiah: amount,
 			UniqueCode:   code,
-			ExpiresAt:    dbx.TS(time.Now().Add(invoiceWindow)),
 		})
 		if err == nil {
-			return invoice, nil
+			return ownerInvoiceFromDB(invoice), nil
 		}
 		if errors.Is(err, pgx.ErrNoRows) {
+			if _, pendingErr := q.GetPendingInvoiceByTenant(ctx, tenantID); pendingErr == nil {
+				return OwnerInvoice{}, httpx.Conflict("tagihan_masih_pending", "Masih ada tagihan yang belum diproses untuk bisnis ini", nil)
+			} else if !errors.Is(pendingErr, pgx.ErrNoRows) {
+				return OwnerInvoice{}, httpx.Internal(fmt.Errorf("cek tagihan aktif setelah konflik: %w", pendingErr))
+			}
 			continue // nominal bentrok; ON CONFLICT DO NOTHING tidak membatalkan transaksi
 		}
-		return db.Invoice{}, httpx.Internal(fmt.Errorf("membuat invoice: %w", err))
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("membuat invoice: %w", err))
 	}
-	return db.Invoice{}, httpx.Internal(fmt.Errorf("gagal menemukan nominal unik setelah %d percobaan", maxAttempts))
+	return OwnerInvoice{}, httpx.Internal(fmt.Errorf("gagal menemukan nominal unik setelah %d percobaan", maxAttempts))
 }
 
 func isUniqueViolation(err error) bool {
@@ -186,7 +203,33 @@ type OwnerInvoice struct {
 	Status       string     `json:"status"`
 	ExpiresAt    *time.Time `json:"expires_at"`
 	PaidAt       *time.Time `json:"paid_at"`
+	PeriodStart  *time.Time `json:"period_start"`
+	PeriodEnd    *time.Time `json:"period_end"`
 	CreatedAt    time.Time  `json:"created_at"`
+}
+
+func ownerInvoiceFromDB(invoice db.Invoice) OwnerInvoice {
+	item := OwnerInvoice{
+		ID: invoice.ID, AmountRupiah: invoice.AmountRupiah, UniqueCode: invoice.UniqueCode,
+		Status: invoice.Status, CreatedAt: invoice.CreatedAt.Time,
+	}
+	if invoice.ExpiresAt.Valid {
+		value := invoice.ExpiresAt.Time
+		item.ExpiresAt = &value
+	}
+	if invoice.PaidAt.Valid {
+		value := invoice.PaidAt.Time
+		item.PaidAt = &value
+	}
+	if invoice.PeriodStart.Valid {
+		value := invoice.PeriodStart.Time
+		item.PeriodStart = &value
+	}
+	if invoice.PeriodEnd.Valid {
+		value := invoice.PeriodEnd.Time
+		item.PeriodEnd = &value
+	}
+	return item
 }
 
 func (s *Service) ListInvoices(ctx context.Context, tenantID uuid.UUID) ([]OwnerInvoice, error) {
@@ -203,16 +246,7 @@ func (s *Service) ListInvoices(ctx context.Context, tenantID uuid.UUID) ([]Owner
 	}
 	result := make([]OwnerInvoice, 0, len(invoices))
 	for _, invoice := range invoices {
-		item := OwnerInvoice{ID: invoice.ID, AmountRupiah: invoice.AmountRupiah, UniqueCode: invoice.UniqueCode, Status: invoice.Status, CreatedAt: invoice.CreatedAt.Time}
-		if invoice.ExpiresAt.Valid {
-			value := invoice.ExpiresAt.Time
-			item.ExpiresAt = &value
-		}
-		if invoice.PaidAt.Valid {
-			value := invoice.PaidAt.Time
-			item.PaidAt = &value
-		}
-		result = append(result, item)
+		result = append(result, ownerInvoiceFromDB(invoice))
 	}
 	return result, nil
 }
@@ -256,27 +290,27 @@ func (s *Service) ConfirmInvoicePayment(ctx context.Context, invoiceID, adminUse
 	if err != nil {
 		return httpx.Internal(fmt.Errorf("ambil plan: %w", err))
 	}
-	sub, err := q.GetSubscriptionByTenant(ctx, inv.TenantID)
+	paid, err := q.MarkInvoicePaid(ctx, db.MarkInvoicePaidParams{ID: invoiceID, ConfirmedBy: dbx.UUID(adminUserID)})
 	if err != nil {
-		return httpx.Internal(fmt.Errorf("ambil subscription: %w", err))
-	}
-
-	base := time.Now()
-	if sub.CurrentPeriodEnd.Valid && sub.CurrentPeriodEnd.Time.After(base) {
-		base = sub.CurrentPeriodEnd.Time
-	}
-	var newPeriodEnd time.Time
-	if plan.BillingInterval == "yearly" {
-		newPeriodEnd = base.AddDate(1, 0, 0)
-	} else {
-		newPeriodEnd = base.AddDate(0, 1, 0)
-	}
-
-	if err := q.MarkInvoicePaid(ctx, db.MarkInvoicePaidParams{ID: invoiceID, ConfirmedBy: dbx.UUID(adminUserID)}); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return httpx.Conflict("invoice_sudah_diproses", "Invoice ini sudah dibayar atau dibatalkan", nil)
+		}
 		return httpx.Internal(fmt.Errorf("menandai invoice lunas: %w", err))
 	}
-	if err := q.ActivateSubscriptionPeriod(ctx, db.ActivateSubscriptionPeriodParams{TenantID: inv.TenantID, CurrentPeriodEnd: dbx.TS(newPeriodEnd)}); err != nil {
+	period, err := q.ActivateSubscriptionPeriodFromPayment(ctx, db.ActivateSubscriptionPeriodFromPaymentParams{
+		TenantID: paid.TenantID, PaidAt: paid.PaidAt, BillingInterval: plan.BillingInterval,
+	})
+	if err != nil {
 		return httpx.Internal(fmt.Errorf("memperbarui periode langganan: %w", err))
+	}
+	updated, err := q.RecordInvoiceSubscriptionPeriod(ctx, db.RecordInvoiceSubscriptionPeriodParams{
+		ID: invoiceID, PeriodStart: period.PeriodStart, PeriodEnd: period.PeriodEnd,
+	})
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("mencatat periode invoice: %w", err))
+	}
+	if updated != 1 {
+		return httpx.Internal(fmt.Errorf("mencatat periode invoice: jumlah baris berubah %d", updated))
 	}
 	return nil
 }

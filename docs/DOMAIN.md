@@ -39,6 +39,12 @@ dijaga middleware `requireActive`. Pelanggan tidak dihukum oleh status langganan
 pemesanan online baru ditutup (`accepting_bookings=false`, alasan `langganan_tidak_aktif`).
 Tagihan langganan dibayar manual ke platform dan dikonfirmasi pemilik SaaS
 (`POST /invoices/{invoiceID}/confirm`). Nominal tagihan unik supaya bisa dicocokkan.
+Owner hanya bisa membuat satu tagihan pending per bisnis. Tagihan perpanjangan baru boleh dibuat
+dalam 7 hari sebelum akhir periode aktif. Tagihan berlaku 24 jam, dihitung memakai waktu database.
+Tagihan yang sudah dikonfirmasi menyimpan rentang periode yang ditambahkan untuk audit.
+Saat konfirmasi, periode mulai dari waktu pembayaran database atau akhir periode aktif (mana yang
+lebih akhir), lalu ditambah satu bulan atau satu tahun. Rentang yang diberikan dicatat di invoice
+agar riwayat perpanjangan bisa diaudit.
 Pengingat perpanjangan dikirim sekali per periode (`subscription_reminders`).
 
 ## Pemesanan online (`BookOnline`)

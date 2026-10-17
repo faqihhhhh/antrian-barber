@@ -30,6 +30,8 @@ type Invoice struct {
 	ConfirmedBy  pgtype.UUID        `json:"confirmed_by"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	PeriodStart  pgtype.Timestamptz `json:"period_start"`
+	PeriodEnd    pgtype.Timestamptz `json:"period_end"`
 }
 
 type KapsterSessionState struct {

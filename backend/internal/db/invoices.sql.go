@@ -14,17 +14,16 @@ import (
 
 const createInvoice = `-- name: CreateInvoice :one
 INSERT INTO invoices (tenant_id, plan_id, amount_rupiah, unique_code, expires_at)
-VALUES ($1, $2, $3, $4, $5)
+VALUES ($1, $2, $3, $4, now() + interval '24 hours')
 ON CONFLICT DO NOTHING
-RETURNING id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at
+RETURNING id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end
 `
 
 type CreateInvoiceParams struct {
-	TenantID     uuid.UUID          `json:"tenant_id"`
-	PlanID       uuid.UUID          `json:"plan_id"`
-	AmountRupiah int64              `json:"amount_rupiah"`
-	UniqueCode   int16              `json:"unique_code"`
-	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+	TenantID     uuid.UUID `json:"tenant_id"`
+	PlanID       uuid.UUID `json:"plan_id"`
+	AmountRupiah int64     `json:"amount_rupiah"`
+	UniqueCode   int16     `json:"unique_code"`
 }
 
 func (q *Queries) CreateInvoice(ctx context.Context, arg CreateInvoiceParams) (Invoice, error) {
@@ -33,7 +32,6 @@ func (q *Queries) CreateInvoice(ctx context.Context, arg CreateInvoiceParams) (I
 		arg.PlanID,
 		arg.AmountRupiah,
 		arg.UniqueCode,
-		arg.ExpiresAt,
 	)
 	var i Invoice
 	err := row.Scan(
@@ -48,6 +46,8 @@ func (q *Queries) CreateInvoice(ctx context.Context, arg CreateInvoiceParams) (I
 		&i.ConfirmedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.PeriodStart,
+		&i.PeriodEnd,
 	)
 	return i, err
 }
@@ -65,8 +65,21 @@ func (q *Queries) ExpireStaleInvoices(ctx context.Context) (int64, error) {
 	return result.RowsAffected(), nil
 }
 
+const expireTenantInvoices = `-- name: ExpireTenantInvoices :execrows
+UPDATE invoices SET status = 'expired', updated_at = now()
+WHERE tenant_id = $1 AND status = 'pending' AND expires_at < now()
+`
+
+func (q *Queries) ExpireTenantInvoices(ctx context.Context, tenantID uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, expireTenantInvoices, tenantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getInvoiceByID = `-- name: GetInvoiceByID :one
-SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at FROM invoices WHERE id = $1
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end FROM invoices WHERE id = $1
 `
 
 func (q *Queries) GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, error) {
@@ -84,12 +97,39 @@ func (q *Queries) GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, er
 		&i.ConfirmedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.PeriodStart,
+		&i.PeriodEnd,
+	)
+	return i, err
+}
+
+const getPendingInvoiceByTenant = `-- name: GetPendingInvoiceByTenant :one
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end FROM invoices WHERE tenant_id = $1 AND status = 'pending'
+`
+
+func (q *Queries) GetPendingInvoiceByTenant(ctx context.Context, tenantID uuid.UUID) (Invoice, error) {
+	row := q.db.QueryRow(ctx, getPendingInvoiceByTenant, tenantID)
+	var i Invoice
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.PlanID,
+		&i.AmountRupiah,
+		&i.UniqueCode,
+		&i.Status,
+		&i.ExpiresAt,
+		&i.PaidAt,
+		&i.ConfirmedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.PeriodStart,
+		&i.PeriodEnd,
 	)
 	return i, err
 }
 
 const listInvoicesByTenant = `-- name: ListInvoicesByTenant :many
-SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at FROM invoices WHERE tenant_id = $1 ORDER BY created_at DESC
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end FROM invoices WHERE tenant_id = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) ([]Invoice, error) {
@@ -113,6 +153,8 @@ func (q *Queries) ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) 
 			&i.ConfirmedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.PeriodStart,
+			&i.PeriodEnd,
 		); err != nil {
 			return nil, err
 		}
@@ -125,7 +167,7 @@ func (q *Queries) ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) 
 }
 
 const listPendingInvoices = `-- name: ListPendingInvoices :many
-SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at FROM invoices
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end FROM invoices
 WHERE status = 'pending' OR (status = 'expired' AND expires_at > now() - interval '14 days')
 ORDER BY created_at
 `
@@ -151,6 +193,8 @@ func (q *Queries) ListPendingInvoices(ctx context.Context) ([]Invoice, error) {
 			&i.ConfirmedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.PeriodStart,
+			&i.PeriodEnd,
 		); err != nil {
 			return nil, err
 		}
@@ -162,8 +206,10 @@ func (q *Queries) ListPendingInvoices(ctx context.Context) ([]Invoice, error) {
 	return items, nil
 }
 
-const markInvoicePaid = `-- name: MarkInvoicePaid :exec
-UPDATE invoices SET status = 'paid', paid_at = now(), confirmed_by = $2, updated_at = now() WHERE id = $1
+const markInvoicePaid = `-- name: MarkInvoicePaid :one
+UPDATE invoices SET status = 'paid', paid_at = now(), confirmed_by = $2, updated_at = now()
+WHERE id = $1 AND status IN ('pending', 'expired')
+RETURNING tenant_id, plan_id, paid_at
 `
 
 type MarkInvoicePaidParams struct {
@@ -171,7 +217,34 @@ type MarkInvoicePaidParams struct {
 	ConfirmedBy pgtype.UUID `json:"confirmed_by"`
 }
 
-func (q *Queries) MarkInvoicePaid(ctx context.Context, arg MarkInvoicePaidParams) error {
-	_, err := q.db.Exec(ctx, markInvoicePaid, arg.ID, arg.ConfirmedBy)
-	return err
+type MarkInvoicePaidRow struct {
+	TenantID uuid.UUID          `json:"tenant_id"`
+	PlanID   uuid.UUID          `json:"plan_id"`
+	PaidAt   pgtype.Timestamptz `json:"paid_at"`
+}
+
+func (q *Queries) MarkInvoicePaid(ctx context.Context, arg MarkInvoicePaidParams) (MarkInvoicePaidRow, error) {
+	row := q.db.QueryRow(ctx, markInvoicePaid, arg.ID, arg.ConfirmedBy)
+	var i MarkInvoicePaidRow
+	err := row.Scan(&i.TenantID, &i.PlanID, &i.PaidAt)
+	return i, err
+}
+
+const recordInvoiceSubscriptionPeriod = `-- name: RecordInvoiceSubscriptionPeriod :execrows
+UPDATE invoices SET period_start = $2, period_end = $3, updated_at = now()
+WHERE id = $1 AND status = 'paid'
+`
+
+type RecordInvoiceSubscriptionPeriodParams struct {
+	ID          uuid.UUID          `json:"id"`
+	PeriodStart pgtype.Timestamptz `json:"period_start"`
+	PeriodEnd   pgtype.Timestamptz `json:"period_end"`
+}
+
+func (q *Queries) RecordInvoiceSubscriptionPeriod(ctx context.Context, arg RecordInvoiceSubscriptionPeriodParams) (int64, error) {
+	result, err := q.db.Exec(ctx, recordInvoiceSubscriptionPeriod, arg.ID, arg.PeriodStart, arg.PeriodEnd)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
