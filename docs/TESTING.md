@@ -112,6 +112,14 @@ Dari `~/kapsflow`, jalankan `docker build -f backend/Dockerfile -t kapsflow-api:
 Build harus sukses. Dockerfile menghasilkan binary statis dan menjalankannya sebagai user non-root;
 berkas `.env` backend tidak dikirim sebagai build context.
 
+## Compose produksi
+
+Periksa sintaks tanpa menyalakan layanan dengan `docker compose --env-file .env.production.example -f docker-compose.prod.yml config -q`.
+Konfigurasi harus valid. Pastikan database tidak memiliki port publik dan port API hanya terikat ke
+`127.0.0.1` agar nanti hanya reverse proxy di VPS yang menerima trafik dari luar. Sebelum API bisa
+berjalan, migrasikan database dengan akun `DATABASE_URL` lalu atur password role `kapsflow_app`
+agar cocok dengan `APP_DATABASE_URL`; aplikasi runtime tidak memakai akun superuser.
+
 ## Checklist browser (backend asli)
 
 Dua terminal: `make dev` dan `npm run dev`. Buka `http://localhost:5173/b/<slug>`.

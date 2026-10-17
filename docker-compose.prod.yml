@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?isi POSTGRES_USER di file env produksi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?isi POSTGRES_PASSWORD di file env produksi}
+      POSTGRES_DB: ${POSTGRES_DB:?isi POSTGRES_DB di file env produksi}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      PORT: "8080"
+      APP_DATABASE_URL: ${APP_DATABASE_URL:?isi APP_DATABASE_URL dengan role kapsflow_app}
+      APP_BASE_URL: ${APP_BASE_URL:?isi URL aplikasi frontend}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?isi URL publik API}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?isi kunci enkripsi 32 byte}
+      DEV_AUTO_VERIFY: "false"
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:?isi alamat pengirim dari domain terverifikasi}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:?isi VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:?isi VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:?isi VAPID_SUBJECT}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  pgdata:
