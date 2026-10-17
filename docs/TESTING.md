@@ -91,6 +91,12 @@ memulihkannya ke database sementara, membandingkan jumlah tabel publik dengan da
 dan menghapus database sementara otomatis. Arsip backup tetap tersimpan lokal dan tidak masuk Git.
 Jangan menghapus satu-satunya backup setelah skrip lulus; salin backup penting ke media terpisah.
 
+## Sentry
+
+`go test -C backend ./...` memastikan konfigurasi `SENTRY_DSN` boleh kosong atau berisi DSN, dan
+error HTTP 5xx serta panic dikirim ke transport Sentry tiruan. Untuk mengaktifkan proyek Sentry,
+isi `SENTRY_DSN` pada environment API; jangan menaruh DSN produksi ke Git.
+
 ## Checklist browser (backend asli)
 
 Dua terminal: `make dev` dan `npm run dev`. Buka `http://localhost:5173/b/<slug>`.

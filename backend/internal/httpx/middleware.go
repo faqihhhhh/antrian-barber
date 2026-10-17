@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
@@ -36,6 +37,15 @@ func Recoverer(log *slog.Logger) func(http.Handler) http.Handler {
 			defer func() {
 				if rec := recover(); rec != nil {
 					log.Error("panic tertangkap", "path", r.URL.Path, "panic", rec)
+					hub := sentry.GetHubFromContext(r.Context())
+					if hub == nil {
+						hub = sentry.CurrentHub()
+					}
+					hub.WithScope(func(scope *sentry.Scope) {
+						scope.SetTag("http.path", r.URL.Path)
+						scope.SetTag("http.method", r.Method)
+						hub.RecoverWithContext(r.Context(), rec)
+					})
 					JSON(w, http.StatusInternalServerError, map[string]any{
 						"error": map[string]string{
 							"code":    "internal_error",

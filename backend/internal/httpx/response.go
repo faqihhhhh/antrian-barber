@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+
+	"github.com/getsentry/sentry-go"
 )
 
 // JSON menulis data sebagai respons JSON dengan status kode tertentu.
@@ -31,6 +33,15 @@ func Error(w http.ResponseWriter, r *http.Request, log *slog.Logger, err error) 
 			"code", appErr.Code,
 			"err", appErr.Error(),
 		)
+		hub := sentry.GetHubFromContext(r.Context())
+		if hub == nil {
+			hub = sentry.CurrentHub()
+		}
+		hub.WithScope(func(scope *sentry.Scope) {
+			scope.SetTag("http.path", r.URL.Path)
+			scope.SetTag("http.method", r.Method)
+			hub.CaptureException(appErr)
+		})
 	}
 
 	JSON(w, appErr.Status, map[string]any{

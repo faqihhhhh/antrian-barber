@@ -48,6 +48,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 14-2a | Login dibatasi 10 percobaan per alamat IP per menit; pelanggaran membalas 429 dan `Retry-After`, penghitung dibatasi di memori |
 | 14-2b | Booking online dibatasi 5 permintaan per alamat IP per menit; permintaan berlebih membalas 429 dan `Retry-After` |
 | 14-3 | Backup database format custom dan uji pemulihan ke database sementara; tabel publik sumber dan hasil restore sama-sama 27 |
+| 14-4 | SDK Sentry opsional mengirim panic dan error HTTP 5xx dengan tag path dan method; aktif jika `SENTRY_DSN` diisi |
 
 ## Berikutnya (urutan wajib)
 
@@ -56,7 +57,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
    ~~**12d** layar pemilik SaaS (tenant, MRR, ARR, churn).~~ Selesai pada 12d-1.
 2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama. Langkah 13-1 sampai 13-3-6 selesai.
 3. **14** pengerasan produksi: rate limit login dan pemesanan, header keamanan, dan backup dengan uji
-   restore selesai; berikutnya Sentry, `DEV_AUTO_VERIFY` mati, domain pengirim Resend terverifikasi.
+   restore dan integrasi Sentry selesai; berikutnya pastikan `DEV_AUTO_VERIFY` mati serta domain pengirim Resend terverifikasi.
 4. **15** deploy: satu VPS, Docker, Caddy (HTTPS), CI sederhana, migrasi otomatis.
 5. **16** uji coba dengan 1 sampai 2 barber sungguhan, perbaikan, lalu buka pendaftaran.
 

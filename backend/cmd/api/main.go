@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"kapsflow/internal/api"
@@ -45,6 +46,13 @@ func run(log *slog.Logger) error {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
+	}
+	if cfg.SentryDSN != "" {
+		if err := sentry.Init(sentry.ClientOptions{Dsn: cfg.SentryDSN}); err != nil {
+			return err
+		}
+		defer sentry.Flush(2 * time.Second)
+		log.Info("pemantauan error Sentry aktif")
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
