@@ -50,6 +50,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 14-3 | Backup database format custom dan uji pemulihan ke database sementara; tabel publik sumber dan hasil restore sama-sama 27 |
 | 14-4 | SDK Sentry opsional mengirim panic dan error HTTP 5xx dengan tag path dan method; aktif jika `SENTRY_DSN` diisi |
 | 14-5a | Konfigurasi menolak startup pada `APP_ENV=production` jika `DEV_AUTO_VERIFY=true`; hanya menerima environment development/test/production |
+| 14-5b | Mode email console tidak lagi mencatat alamat penerima atau isi email yang bisa memuat token verifikasi/reset |
 
 ## Berikutnya (urutan wajib)
 
@@ -58,7 +59,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
    ~~**12d** layar pemilik SaaS (tenant, MRR, ARR, churn).~~ Selesai pada 12d-1.
 2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama. Langkah 13-1 sampai 13-3-6 selesai.
 3. **14** pengerasan produksi: rate limit login dan pemesanan, header keamanan, dan backup dengan uji
-   restore, integrasi Sentry, dan guard `DEV_AUTO_VERIFY` selesai; berikutnya verifikasi domain pengirim Resend.
+   restore, integrasi Sentry, guard `DEV_AUTO_VERIFY`, dan perlindungan log email selesai; berikutnya verifikasi domain pengirim Resend.
 4. **15** deploy: satu VPS, Docker, Caddy (HTTPS), CI sederhana, migrasi otomatis.
 5. **16** uji coba dengan 1 sampai 2 barber sungguhan, perbaikan, lalu buka pendaftaran.
 

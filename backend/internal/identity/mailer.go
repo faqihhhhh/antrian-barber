@@ -24,9 +24,8 @@ type consoleMailer struct {
 	log *slog.Logger
 }
 
-func (m *consoleMailer) Send(_ context.Context, to, subject, htmlBody string) error {
-	m.log.Info("EMAIL (mode console, tidak benar-benar terkirim)",
-		"to", to, "subject", subject, "html", htmlBody)
+func (m *consoleMailer) Send(_ context.Context, _ string, subject, _ string) error {
+	m.log.Info("EMAIL (mode console, tidak benar-benar terkirim)", "subject", subject)
 	return nil
 }
 

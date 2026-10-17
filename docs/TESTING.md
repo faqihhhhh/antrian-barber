@@ -103,6 +103,9 @@ isi `SENTRY_DSN` pada environment API; jangan menaruh DSN produksi ke Git.
 `DEV_AUTO_VERIFY=true`, kombinasi itu ditolak saat `APP_ENV=production`, dan production tetap bisa
 startup ketika `DEV_AUTO_VERIFY=false`. Nilai `APP_ENV` yang tidak dikenal juga ditolak.
 
+Tes `go test -C backend ./internal/identity` memastikan mode email console tidak mencatat alamat
+penerima atau isi email yang mungkin memuat token verifikasi dan reset sandi.
+
 ## Checklist browser (backend asli)
 
 Dua terminal: `make dev` dan `npm run dev`. Buka `http://localhost:5173/b/<slug>`.
