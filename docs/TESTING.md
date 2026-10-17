@@ -41,7 +41,8 @@ memastikan daftar staf hanya bisa dibaca owner; 12c3 memeriksa status pembayaran
 Skrip 12c7 memastikan hanya owner yang membaca status dan riwayat tagihan serta kolom internal tidak
 terkirim ke klien.
 Skrip 12c8 membuat tenant dan invoice sementara, mengonfirmasi invoice lewat API, lalu memastikan
-rentang periode sama dengan hasil query database dan membersihkan tenant uji.
+rentang periode sama dengan hasil query database dan membersihkan tenant uji. Skrip 13c1 membuat
+tenant sementara lewat endpoint, memeriksa respons DTO dan membership owner, lalu membersihkan data uji.
 Pola semuanya sama:
 
 ```bash
@@ -123,6 +124,12 @@ Untuk pemilik SaaS: masuk memakai akun platform admin (`cookies.txt`), buka Bera
 status langganan, tingkat konversi dan churn, tagihan tertunda, aktivitas 30 hari, serta tren bulanan
 12 bulan tampil. Masuk dengan akun owner tenant biasa (`cookiesB.txt`) dan buka `/pemilik-saas`;
 layar harus menolak akses dan API `GET /v1/admin/stats` harus membalas 403.
+
+Untuk onboarding owner: masuk dengan akun tanpa keanggotaan bisnis, buka Beranda lalu pilih
+**Saya pemilik barbershop atau salon** (atau buka `/mulai-bisnis`). Pastikan form nama bisnis tampil,
+kolom membatasi 100 karakter, tombol nonaktif saat nama kosong, dan ada keterangan bahwa outlet baru
+bisa dibuat setelah langganan aktif. Skrip `verify_fase13c1_create_tenant.sh` menguji pembuatan bisnis,
+membership owner, validasi nama, dan DTO aman tanpa menyisakan tenant uji.
 
 Untuk website profil, dari `~/kapsflow/website` jalankan `npm run dev`, lalu buka
 `http://localhost:4321`. Periksa tampilan desktop dan lebar ponsel: menu, judul, ilustrasi antrean,

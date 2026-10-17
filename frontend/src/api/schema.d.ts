@@ -229,6 +229,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buat bisnis baru dan jadikan akun saat ini sebagai owner */
+        post: operations["createTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/outlets": {
         parameters: {
             query?: never;
@@ -1086,6 +1103,14 @@ export interface components {
             /** Format: int32 */
             default_duration_minutes: number;
         };
+        CreateTenantRequest: {
+            name: string;
+        };
+        TenantInfo: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
         UpdateOutletSettingsRequest: {
             /** Format: int64 */
             dp_price_rupiah: number;
@@ -1562,6 +1587,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeContext"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    createTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTenantRequest"];
+            };
+        };
+        responses: {
+            /** @description Bisnis baru */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantInfo"];
                 };
             };
             default: components["responses"]["Error"];

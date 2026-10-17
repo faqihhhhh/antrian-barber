@@ -34,17 +34,12 @@ func (h *Handlers) CreateTenant(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
 		return
 	}
-	if req.Name == "" {
-		httpx.Error(w, r, h.log, httpx.BadRequest("nama_wajib_diisi", "Nama bisnis wajib diisi", nil))
-		return
-	}
-
-	t, err := h.svc.CreateTenant(r.Context(), user.ID, req.Name)
+	tenant, err := h.svc.CreateTenant(r.Context(), user.ID, req.Name)
 	if err != nil {
 		httpx.Error(w, r, h.log, err)
 		return
 	}
-	httpx.JSON(w, http.StatusCreated, t)
+	httpx.JSON(w, http.StatusCreated, tenant)
 }
 
 func (h *Handlers) ListTenants(w http.ResponseWriter, r *http.Request) {

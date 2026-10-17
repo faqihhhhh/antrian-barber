@@ -277,6 +277,28 @@ paths:
                 $ref: '#/components/schemas/MeContext'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/:
+    post:
+      operationId: createTenant
+      tags: [tenant]
+      summary: Buat bisnis baru dan jadikan akun saat ini sebagai owner
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTenantRequest'
+      responses:
+        '201':
+          description: Bisnis baru
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantInfo'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/outlets:
     get:
       operationId: listOwnerOutlets
@@ -1577,6 +1599,23 @@ components:
         default_duration_minutes:
           type: integer
           format: int32
+    CreateTenantRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+    TenantInfo:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
     UpdateOutletSettingsRequest:
       type: object
       required: [dp_price_rupiah, default_duration_minutes]

@@ -3,6 +3,7 @@ package tenant
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -25,6 +26,12 @@ type OutletSettings struct {
 	Address                string    `json:"address"`
 	DPPriceRupiah          int64     `json:"dp_price_rupiah"`
 	DefaultDurationMinutes int32     `json:"default_duration_minutes"`
+}
+
+// TenantInfo adalah respons aman untuk bisnis yang baru dibuat.
+type TenantInfo struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
 }
 
 func outletSettings(outlet db.Outlet) OutletSettings {
@@ -53,12 +60,16 @@ func (s *Service) queries(ctx context.Context) *db.Queries {
 // CreateTenant membuat bisnis baru sekaligus menjadikan pemanggil sebagai
 // owner-nya. Dua INSERT ini berjalan dalam satu transaksi RLS yang sama
 // (dari rls.Middleware), jadi kalau salah satu gagal, keduanya batal.
-func (s *Service) CreateTenant(ctx context.Context, userID uuid.UUID, name string) (db.Tenant, error) {
+func (s *Service) CreateTenant(ctx context.Context, userID uuid.UUID, name string) (TenantInfo, error) {
 	q := s.queries(ctx)
+	name = strings.TrimSpace(name)
+	if name == "" || len([]rune(name)) > 100 {
+		return TenantInfo{}, httpx.BadRequest("nama_bisnis_tidak_valid", "Nama bisnis wajib diisi dan maksimal 100 karakter", nil)
+	}
 
 	tenantID := uuid.New()
 	if err := q.CreateTenant(ctx, db.CreateTenantParams{ID: tenantID, Name: name}); err != nil {
-		return db.Tenant{}, httpx.Internal(fmt.Errorf("membuat tenant: %w", err))
+		return TenantInfo{}, httpx.Internal(fmt.Errorf("membuat tenant: %w", err))
 	}
 
 	_, err := q.CreateMembership(ctx, db.CreateMembershipParams{
@@ -67,14 +78,10 @@ func (s *Service) CreateTenant(ctx context.Context, userID uuid.UUID, name strin
 		Roles:    []string{"owner"},
 	})
 	if err != nil {
-		return db.Tenant{}, httpx.Internal(fmt.Errorf("membuat membership owner: %w", err))
+		return TenantInfo{}, httpx.Internal(fmt.Errorf("membuat membership owner: %w", err))
 	}
 
-	t, err := q.GetTenantByID(ctx, tenantID)
-	if err != nil {
-		return db.Tenant{}, httpx.Internal(fmt.Errorf("ambil tenant setelah dibuat: %w", err))
-	}
-	return t, nil
+	return TenantInfo{ID: tenantID, Name: name}, nil
 }
 
 func (s *Service) ListTenants(ctx context.Context) ([]db.Tenant, error) {

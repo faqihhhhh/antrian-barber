@@ -74,9 +74,13 @@ export default function Beranda() {
         )}
 
         {data.memberships.length === 0 && (
-          <Alert tone="info">
-            Akun ini belum terhubung ke bisnis mana pun. Untuk memesan antrian, buka tautan atau scan QR dari outlet.
-          </Alert>
+          <div className="space-y-3">
+            <Alert tone="info">Akun ini belum terhubung ke bisnis mana pun. Untuk memesan antrean, buka tautan atau scan QR dari outlet.</Alert>
+            <Link to="/mulai-bisnis" className="block rounded-2xl border border-stone-200 bg-white p-4 font-semibold transition hover:bg-stone-100">
+              Saya pemilik barbershop atau salon
+              <span className="block text-sm font-normal text-stone-600">Buat bisnis pertama di Kapsflow</span>
+            </Link>
+          </div>
         )}
 
         {data.memberships.map((m) => (

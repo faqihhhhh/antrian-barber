@@ -18,6 +18,7 @@ import PemilikStatistik from './pages/PemilikStatistik'
 import PemilikUlasan from './pages/PemilikUlasan'
 import PemilikLangganan from './pages/PemilikLangganan'
 import PemilikSaaS from './pages/PemilikSaaS'
+import PemilikMulai from './pages/PemilikMulai'
 
 function NotFound() {
   return (
@@ -109,6 +110,14 @@ export default function App() {
         element={
           <RequireLogin>
             <PemilikSaaS />
+          </RequireLogin>
+        }
+      />
+      <Route
+        path="/mulai-bisnis"
+        element={
+          <RequireLogin>
+            <PemilikMulai />
           </RequireLogin>
         }
       />
