@@ -38,6 +38,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 13-1 | Website profil statis Astro dengan landing page responsif dan CTA menuju aplikasi |
 | 13-2 | Draf halaman syarat penggunaan dan kebijakan privasi berdasarkan alur data aplikasi; detail operator dan retensi ditandai untuk dilengkapi sebelum publikasi |
 | 13-3-1 | Onboarding owner membuat bisnis pertama dengan respons API DTO aman dan validasi nama |
+| 13-3-2 | Pemilik dapat memilih paket dan membuat tagihan langganan dari layar Langganan |
 
 ## Berikutnya (urutan wajib)
 

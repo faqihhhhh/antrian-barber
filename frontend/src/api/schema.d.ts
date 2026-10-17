@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/v1/plans/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar paket langganan aktif */
+        get: operations["listPlans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/stats": {
         parameters: {
             query?: never;
@@ -1217,6 +1234,14 @@ export interface components {
             /** Format: date-time */
             current_period_end?: string | null;
         };
+        PublicPlan: {
+            code: string;
+            name: string;
+            /** Format: int64 */
+            price_rupiah: number;
+            /** @enum {string} */
+            billing_interval: "monthly" | "yearly";
+        };
         SubscribeRequest: {
             plan_code: string;
         };
@@ -1294,6 +1319,27 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paket langganan yang tersedia */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPlan"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
     getPlatformStats: {
         parameters: {
             query?: never;

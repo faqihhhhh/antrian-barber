@@ -11,6 +11,21 @@ info:
 servers:
   - url: /
 paths:
+  /v1/plans/:
+    get:
+      operationId: listPlans
+      tags: [langganan]
+      summary: Daftar paket langganan aktif
+      responses:
+        '200':
+          description: Paket langganan yang tersedia
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PublicPlan' }
+        default:
+          $ref: '#/components/responses/Error'
   /v1/admin/stats:
     get:
       operationId: getPlatformStats
@@ -1742,6 +1757,14 @@ components:
         status: { type: string, enum: [belum_berlangganan, aktif, masa_tenggang, baca_saja] }
         plan_code: { type: string }
         current_period_end: { type: string, format: date-time, nullable: true }
+    PublicPlan:
+      type: object
+      required: [code, name, price_rupiah, billing_interval]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        price_rupiah: { type: integer, format: int64 }
+        billing_interval: { type: string, enum: [monthly, yearly] }
     SubscribeRequest:
       type: object
       required: [plan_code]

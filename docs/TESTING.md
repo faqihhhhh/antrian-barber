@@ -131,6 +131,11 @@ kolom membatasi 100 karakter, tombol nonaktif saat nama kosong, dan ada keterang
 bisa dibuat setelah langganan aktif. Skrip `verify_fase13c1_create_tenant.sh` menguji pembuatan bisnis,
 membership owner, validasi nama, dan DTO aman tanpa menyisakan tenant uji.
 
+Untuk alur tagihan owner: buka **Langganan**, pilih paket, lalu buat tagihan saat bisnis belum aktif
+atau periode aktif tinggal 7 hari. Pastikan nominal dan masa berlaku 24 jam muncul di riwayat, invoice
+pending kedua ditolak, dan layar mengarahkan owner menghubungi pemilik Kapsflow untuk detail pembayaran.
+Jangan mengirim pembayaran sungguhan selama rekening/QR pembayaran platform belum tersedia.
+
 Untuk website profil, dari `~/kapsflow/website` jalankan `npm run dev`, lalu buka
 `http://localhost:4321`. Periksa tampilan desktop dan lebar ponsel: menu, judul, ilustrasi antrean,
 bagian cara kerja, dan CTA harus terbaca tanpa gulir horizontal. Pastikan **Masuk**, **Buat akun**,

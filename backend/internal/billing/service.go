@@ -58,14 +58,25 @@ func (s *Service) queries(ctx context.Context) *db.Queries {
 	return s.fallback
 }
 
+type PublicPlan struct {
+	Code            string `json:"code"`
+	Name            string `json:"name"`
+	PriceRupiah     int64  `json:"price_rupiah"`
+	BillingInterval string `json:"billing_interval"`
+}
+
 // ListPlans publik (halaman harga), tidak lewat RLS karena tabel plans
-// memang tidak dibatasi per tenant.
-func (s *Service) ListPlans(ctx context.Context) ([]db.Plan, error) {
+// memang tidak dibatasi per tenant. Respons hanya memuat data untuk pelanggan.
+func (s *Service) ListPlans(ctx context.Context) ([]PublicPlan, error) {
 	plans, err := s.fallback.ListActivePlans(ctx)
 	if err != nil {
 		return nil, httpx.Internal(fmt.Errorf("ambil daftar plan: %w", err))
 	}
-	return httpx.NonNil(plans), nil
+	result := make([]PublicPlan, 0, len(plans))
+	for _, plan := range plans {
+		result = append(result, PublicPlan{Code: plan.Code, Name: plan.Name, PriceRupiah: plan.PriceRupiah, BillingInterval: plan.BillingInterval})
+	}
+	return result, nil
 }
 
 // Subscribe membuat/memperbarui baris subscription lalu invoice baru dengan
