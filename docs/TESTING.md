@@ -140,6 +140,11 @@ Pada onboarding owner, pastikan tenant berstatus **Belum berlangganan** atau **B
 **Buka langganan** sebelum form outlet. Untuk tenant aktif/masa tenggang yang sudah punya outlet, pastikan
 ada tautan **Atur pembayaran DP** dan **Buka meja admin** untuk melanjutkan penyiapan.
 
+Verifikasi alur backend owner sampai tiket pertama dengan `bash scripts/verify/verify_fase13c2_first_booking.sh`.
+Skrip memakai sesi cookie owner dan pelanggan yang sudah ada, membuka sesi bertanggal acak, membuat booking
+DP manual, mengonfirmasi pembayaran sebagai simulasi lokal, memastikan tiket berstatus `waiting` pada akun
+pelanggan, lalu menghapus sesi uji beserta tiket terkait. Tidak ada transfer uang.
+
 Untuk alur tagihan owner: buka **Langganan**, pilih paket, lalu buat tagihan saat bisnis belum aktif
 atau periode aktif tinggal 7 hari. Pastikan nominal dan masa berlaku 24 jam muncul di riwayat, invoice
 pending kedua ditolak, dan layar mengarahkan owner menghubungi pemilik Kapsflow untuk detail pembayaran.
