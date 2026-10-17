@@ -45,6 +45,10 @@ func Conflict(code, message string, err error) *AppError {
 	return &AppError{Status: http.StatusConflict, Code: code, Message: message, Err: err}
 }
 
+func TooManyRequests(code, message string) *AppError {
+	return &AppError{Status: http.StatusTooManyRequests, Code: code, Message: message}
+}
+
 func ServiceUnavailable(code, message string, err error) *AppError {
 	return &AppError{Status: http.StatusServiceUnavailable, Code: code, Message: message, Err: err}
 }

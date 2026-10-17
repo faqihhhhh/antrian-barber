@@ -3,17 +3,21 @@ package identity
 import (
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+
+	"kapsflow/internal/ratelimit"
 )
 
 func Routes(svc *Service, log *slog.Logger) http.Handler {
 	h := NewHandlers(svc, log)
 	r := chi.NewRouter()
+	loginLimiter := ratelimit.New(10, time.Minute)
 
 	r.Post("/register", h.Register)
 	r.Get("/verify-email", h.VerifyEmail)
-	r.Post("/login", h.Login)
+	r.With(loginLimiter.Middleware(log)).Post("/login", h.Login)
 	r.Post("/logout", h.Logout)
 	r.Post("/forgot-password", h.ForgotPassword)
 	r.Get("/reset-password", h.ResetPasswordPage)

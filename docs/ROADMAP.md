@@ -43,6 +43,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 13-3-4 | Onboarding owner mengarahkan tenant tanpa langganan ke tagihan dan menghubungkan outlet ke pembayaran DP serta meja admin |
 | 13-3-5 | Skrip verifikasi API nyata membuka sesi, membuat booking pelanggan, mensimulasikan konfirmasi DP, memastikan tiket masuk antrean, lalu membersihkan data uji |
 | 14-1 | API menambahkan header keamanan `nosniff`, anti-frame, kebijakan referrer, dan pembatasan fitur browser; dilindungi tes unit |
+| 14-2a | Login dibatasi 10 percobaan per alamat IP per menit; pelanggaran membalas 429 dan `Retry-After`, penghitung dibatasi di memori |
 
 ## Berikutnya (urutan wajib)
 
