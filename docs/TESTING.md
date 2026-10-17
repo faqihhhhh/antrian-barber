@@ -112,6 +112,10 @@ Dari `~/kapsflow`, jalankan `docker build -f backend/Dockerfile -t kapsflow-api:
 Build harus sukses. Dockerfile menghasilkan binary statis dan menjalankannya sebagai user non-root;
 berkas `.env` backend tidak dikirim sebagai build context.
 
+Workflow `.github/workflows/ci.yml` menjalankan tes/build Go, build/lint frontend, build website,
+validasi Compose/Caddy, serta build image API pada setiap push ke `main` dan pull request.
+Workflow hanya memeriksa; tidak melakukan deploy.
+
 ## Compose produksi
 
 Periksa sintaks tanpa menyalakan layanan dengan `docker compose --env-file .env.production.example -f docker-compose.prod.yml config -q`.

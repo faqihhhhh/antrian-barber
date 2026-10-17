@@ -54,6 +54,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 15-1 | Image Docker backend multi-stage, binary statis, dan runtime non-root |
 | 15-2 | Compose produksi untuk API dan PostgreSQL; database hanya di jaringan internal dan API bind ke localhost untuk reverse proxy |
 | 15-3 | Caddy otomatis HTTPS untuk frontend dan API satu origin serta website profil di domain terpisah |
+| 15-4 | CI GitHub Actions memeriksa Go, frontend, website, konfigurasi Compose, Caddyfile, dan build image |
 
 ## Berikutnya (urutan wajib)
 
@@ -63,7 +64,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama. Langkah 13-1 sampai 13-3-6 selesai.
 3. **14** pengerasan produksi: rate limit login dan pemesanan, header keamanan, dan backup dengan uji
    restore, integrasi Sentry, guard `DEV_AUTO_VERIFY`, dan perlindungan log email selesai; berikutnya verifikasi domain pengirim Resend.
-4. **15** deploy: image backend, Compose produksi, dan Caddy tersedia; berikutnya CI sederhana dan migrasi otomatis.
+4. **15** deploy: image backend, Compose produksi, Caddy, dan CI tersedia; berikutnya otomatisasi migrasi sebelum API dimulai.
 5. **16** uji coba dengan 1 sampai 2 barber sungguhan, perbaikan, lalu buka pendaftaran.
 
 ## Risiko dan utang yang diketahui
@@ -72,7 +73,6 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
   Jalur diuji dengan Midtrans tiruan. Putuskan sebelum Fase 14: selesaikan lewat dukungan Midtrans, atau
   meluncur dulu hanya dengan QRIS manual.
 - Resend belum punya domain terverifikasi: email ke selain pemilik akun gagal. Wajib sebelum deploy.
-- Skrip verifikasi masih di `/tmp`. Pindahkan ke `scripts/verify/`.
 - Dedupe pengingat perpanjangan belum terbukti oleh tes.
 - Hub realtime di memori hanya benar untuk satu instance API.
 - Cakupan tes unit Go masih terbatas. Sebagian besar aturan penting hanya dijaga skrip integrasi.
