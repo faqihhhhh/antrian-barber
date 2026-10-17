@@ -39,13 +39,14 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 13-2 | Draf halaman syarat penggunaan dan kebijakan privasi berdasarkan alur data aplikasi; detail operator dan retensi ditandai untuk dilengkapi sebelum publikasi |
 | 13-3-1 | Onboarding owner membuat bisnis pertama dengan respons API DTO aman dan validasi nama |
 | 13-3-2 | Pemilik dapat memilih paket dan membuat tagihan langganan dari layar Langganan |
+| 13-3-3 | Pemilik membuat outlet pertama setelah langganan aktif; endpoint outlet memakai DTO aman dan kontrak OpenAPI |
 
 ## Berikutnya (urutan wajib)
 
 1. **12b** layar admin (konfirmasi DP, tiket offline, buka/tutup sesi, kuota).
    **12c** layar owner (outlet, staf, harga DP, pembayaran, tautan dan QR outlet, langganan, statistik, ulasan).
    ~~**12d** layar pemilik SaaS (tenant, MRR, ARR, churn).~~ Selesai pada 12d-1.
-2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama. Langkah 13-1 dan 13-2 selesai; berikutnya onboarding owner sampai tiket pertama.
+2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama. Langkah 13-1 sampai 13-3-3 selesai; berikutnya lengkapi DP/pembayaran outlet dan pembukaan sesi sampai tiket pertama.
 3. **14** pengerasan produksi: rate limit login dan pemesanan, header keamanan, backup database dengan uji
    restore, Sentry, `DEV_AUTO_VERIFY` mati, domain pengirim Resend terverifikasi.
 4. **15** deploy: satu VPS, Docker, Caddy (HTTPS), CI sederhana, migrasi otomatis.

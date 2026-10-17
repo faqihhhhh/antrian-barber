@@ -315,6 +315,29 @@ paths:
         default:
           $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/outlets:
+    post:
+      operationId: createOwnerOutlet
+      tags: [tenant]
+      summary: Buat outlet untuk tenant yang langganannya aktif
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOutletRequest'
+      responses:
+        '201':
+          description: Outlet berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnerOutlet'
+        default:
+          $ref: '#/components/responses/Error'
     get:
       operationId: listOwnerOutlets
       tags: [tenant]
@@ -1622,6 +1645,18 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+    CreateOutletRequest:
+      type: object
+      required: [name, timezone]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        timezone:
+          type: string
+          description: Nama zona waktu IANA, misalnya Asia/Jakarta.
+        address:
+          type: string
     TenantInfo:
       type: object
       required: [id, name]

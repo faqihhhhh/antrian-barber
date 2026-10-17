@@ -273,7 +273,8 @@ export interface paths {
         /** Daftar outlet dan pengaturan yang hanya boleh dilihat owner */
         get: operations["listOwnerOutlets"];
         put?: never;
-        post?: never;
+        /** Buat outlet untuk tenant yang langganannya aktif */
+        post: operations["createOwnerOutlet"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1123,6 +1124,12 @@ export interface components {
         CreateTenantRequest: {
             name: string;
         };
+        CreateOutletRequest: {
+            name: string;
+            /** @description Nama zona waktu IANA, misalnya Asia/Jakarta. */
+            timezone: string;
+            address?: string;
+        };
         TenantInfo: {
             /** Format: uuid */
             id: string;
@@ -1681,6 +1688,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnerOutlet"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    createOwnerOutlet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOutletRequest"];
+            };
+        };
+        responses: {
+            /** @description Outlet berhasil dibuat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerOutlet"];
                 };
             };
             default: components["responses"]["Error"];

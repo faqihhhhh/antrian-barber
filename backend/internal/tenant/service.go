@@ -112,19 +112,19 @@ func (s *Service) uniqueSlug(ctx context.Context, q *db.Queries, name string) (s
 	return "", httpx.Conflict("slug_bentrok", "Gagal membuat alamat outlet, coba lagi", nil)
 }
 
-func (s *Service) CreateOutlet(ctx context.Context, tenantID uuid.UUID, name, timezone, address string) (db.Outlet, error) {
+func (s *Service) CreateOutlet(ctx context.Context, tenantID uuid.UUID, name, timezone, address string) (OutletSettings, error) {
 	user, ok := identity.UserFromContext(ctx)
 	if !ok {
-		return db.Outlet{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+		return OutletSettings{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
 	}
 	q := s.queries(ctx)
 	if err := authorization.RequireTenantRole(ctx, q, tenantID, user.ID, "owner"); err != nil {
-		return db.Outlet{}, err
+		return OutletSettings{}, err
 	}
 
 	slug, err := s.uniqueSlug(ctx, q, name)
 	if err != nil {
-		return db.Outlet{}, err
+		return OutletSettings{}, err
 	}
 	outlet, err := q.CreateOutlet(ctx, db.CreateOutletParams{
 		TenantID: tenantID,
@@ -135,11 +135,11 @@ func (s *Service) CreateOutlet(ctx context.Context, tenantID uuid.UUID, name, ti
 	})
 	if err != nil {
 		if pgerr.IsUniqueViolationOn(err, "idx_outlets_slug") {
-			return db.Outlet{}, httpx.Conflict("slug_bentrok", "Alamat outlet bentrok, coba lagi", nil)
+			return OutletSettings{}, httpx.Conflict("slug_bentrok", "Alamat outlet bentrok, coba lagi", nil)
 		}
-		return db.Outlet{}, httpx.Internal(fmt.Errorf("membuat outlet: %w", err))
+		return OutletSettings{}, httpx.Internal(fmt.Errorf("membuat outlet: %w", err))
 	}
-	return outlet, nil
+	return outletSettings(outlet), nil
 }
 
 func (s *Service) ListOutlets(ctx context.Context, tenantID uuid.UUID) ([]OutletSettings, error) {

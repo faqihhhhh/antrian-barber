@@ -78,7 +78,7 @@ function OutletList({ membership }: { membership: Membership }) {
 
   if (outlets.isPending) return <p className="py-6 text-center text-sm text-stone-500" role="status">Memuat outlet…</p>
   if (outlets.isError) return <Alert>{messageOf(outlets.error)}</Alert>
-  if (outlets.data.length === 0) return <Alert tone="info">Bisnis ini belum memiliki outlet.</Alert>
+  if (outlets.data.length === 0) return <CreateOutlet tenantID={membership.tenant_id} />
 
   return (
     <section className="space-y-4">
@@ -89,6 +89,58 @@ function OutletList({ membership }: { membership: Membership }) {
           outlet={outlet}
         />
       ))}
+    </section>
+  )
+}
+
+function CreateOutlet({ tenantID }: { tenantID: string }) {
+  const [name, setName] = useState('')
+  const [timezone, setTimezone] = useState('Asia/Jakarta')
+  const [address, setAddress] = useState('')
+  const queryClient = useQueryClient()
+  const create = useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/outlets', {
+        params: { path: { tenantID } },
+        body: { name: name.trim(), timezone, address: address.trim() },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['owner-outlets', tenantID] }),
+        queryClient.invalidateQueries({ queryKey: ['me'] }),
+      ])
+    },
+  })
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    create.mutate()
+  }
+
+  return (
+    <section className="space-y-4 rounded-3xl border border-stone-200 bg-white p-5">
+      <div>
+        <h2 className="text-lg font-bold">Buat outlet pertama</h2>
+        <p className="mt-1 text-sm leading-6 text-stone-600">Tentukan nama dan zona waktu outlet. Setelah dibuat, atur DP dan metode pembayaran sebelum pelanggan memesan.</p>
+      </div>
+      <form className="space-y-4" onSubmit={submit}>
+        <Field label="Nama outlet" name="outletName" autoComplete="organization" required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} />
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-stone-700">Zona waktu outlet</span>
+          <select aria-label="Zona waktu outlet" className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-base" value={timezone} onChange={(event) => setTimezone(event.target.value)}>
+            <option value="Asia/Jakarta">WIB — Asia/Jakarta</option>
+            <option value="Asia/Makassar">WITA — Asia/Makassar</option>
+            <option value="Asia/Jayapura">WIT — Asia/Jayapura</option>
+          </select>
+        </label>
+        <Field label="Alamat outlet (opsional)" name="outletAddress" autoComplete="street-address" value={address} onChange={(event) => setAddress(event.target.value)} />
+        {create.isError && <Alert>{messageOf(create.error)}</Alert>}
+        {create.isSuccess && <Alert tone="success">Outlet berhasil dibuat. Lanjutkan dengan mengatur DP dan pembayaran.</Alert>}
+        <Button type="submit" loading={create.isPending} disabled={!name.trim()}>Buat outlet</Button>
+      </form>
     </section>
   )
 }

@@ -131,6 +131,11 @@ kolom membatasi 100 karakter, tombol nonaktif saat nama kosong, dan ada keterang
 bisa dibuat setelah langganan aktif. Skrip `verify_fase13c1_create_tenant.sh` menguji pembuatan bisnis,
 membership owner, validasi nama, dan DTO aman tanpa menyisakan tenant uji.
 
+Untuk membuat outlet pertama: aktifkan langganan tenant melalui alur tagihan dan konfirmasi pemilik SaaS,
+lalu dari **Atur outlet** pastikan form outlet muncul. Isi nama, pilih zona waktu WIB/WITA/WIT, isi alamat
+opsional, lalu buat outlet. Pastikan outlet masuk ke daftar dan pengaturan harga DP serta durasi layanan
+tampil; akun tanpa langganan aktif harus menerima penolakan dari API.
+
 Untuk alur tagihan owner: buka **Langganan**, pilih paket, lalu buat tagihan saat bisnis belum aktif
 atau periode aktif tinggal 7 hari. Pastikan nominal dan masa berlaku 24 jam muncul di riwayat, invoice
 pending kedua ditolak, dan layar mengarahkan owner menghubungi pemilik Kapsflow untuk detail pembayaran.
