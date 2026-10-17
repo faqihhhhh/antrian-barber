@@ -2,7 +2,7 @@
 include .env
 export
 
-.PHONY: db-up db-down dev migrate-up migrate-down migrate-status migrate-new
+.PHONY: db-up db-down dev migrate-up migrate-down migrate-status migrate-new backup-verify
 
 db-up:
 > docker compose up -d
@@ -25,6 +25,9 @@ migrate-status:
 # pemakaian: make migrate-new name=buat_tabel_users
 migrate-new:
 > cd backend && goose -dir db/migrations create $(name) sql
+
+backup-verify:
+> bash scripts/backup/backup_and_test_restore.sh
 
 sqlc-generate:
 > cd backend && sqlc generate

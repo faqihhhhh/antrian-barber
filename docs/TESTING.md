@@ -84,6 +84,13 @@ Tes `go test -C backend ./...` memastikan lima permintaan booking per alamat IP 
 sedangkan permintaan keenam dalam satu menit menerima HTTP 429, kode `terlalu_banyak_pemesanan`, dan
 header `Retry-After`. Permintaan uji memakai body tidak valid agar tidak membuat data booking.
 
+## Backup dan uji pemulihan database
+
+Jalankan `make db-up`, lalu `make backup-verify`. Skrip membuat dump format custom di `backups/`,
+memulihkannya ke database sementara, membandingkan jumlah tabel publik dengan database sumber,
+dan menghapus database sementara otomatis. Arsip backup tetap tersimpan lokal dan tidak masuk Git.
+Jangan menghapus satu-satunya backup setelah skrip lulus; salin backup penting ke media terpisah.
+
 ## Checklist browser (backend asli)
 
 Dua terminal: `make dev` dan `npm run dev`. Buka `http://localhost:5173/b/<slug>`.
