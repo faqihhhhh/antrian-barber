@@ -78,10 +78,26 @@ function OutletList({ membership }: { membership: Membership }) {
 
   if (outlets.isPending) return <p className="py-6 text-center text-sm text-stone-500" role="status">Memuat outlet…</p>
   if (outlets.isError) return <Alert>{messageOf(outlets.error)}</Alert>
+  if (membership.subscription_status === 'belum_berlangganan' || membership.subscription_status === 'baca_saja') {
+    return (
+      <section className="space-y-3">
+        <Alert tone="info">Aktifkan langganan bisnis ini untuk membuat outlet dan mengatur layanan.</Alert>
+        <Link to="/pemilik/langganan" className="inline-flex rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white">Buka langganan</Link>
+      </section>
+    )
+  }
   if (outlets.data.length === 0) return <CreateOutlet tenantID={membership.tenant_id} />
 
   return (
     <section className="space-y-4">
+      <article className="space-y-3 rounded-2xl border border-stone-200 bg-white p-4">
+        <h2 className="font-bold">Lanjutkan penyiapan</h2>
+        <p className="text-sm leading-6 text-stone-600">Atur harga DP di outlet, pasang QRIS untuk menerima pembayaran, lalu buka sesi di meja admin agar pelanggan bisa memesan.</p>
+        <div className="flex flex-wrap gap-2">
+          <Link to="/pemilik/pembayaran" className="inline-flex rounded-xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-900">Atur pembayaran DP</Link>
+          <Link to="/admin" className="inline-flex rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white">Buka meja admin</Link>
+        </div>
+      </article>
       {outlets.data.map((outlet) => (
         <OutletSettings
           key={outlet.id}

@@ -136,6 +136,10 @@ lalu dari **Atur outlet** pastikan form outlet muncul. Isi nama, pilih zona wakt
 opsional, lalu buat outlet. Pastikan outlet masuk ke daftar dan pengaturan harga DP serta durasi layanan
 tampil; akun tanpa langganan aktif harus menerima penolakan dari API.
 
+Pada onboarding owner, pastikan tenant berstatus **Belum berlangganan** atau **Baca saja** melihat tautan
+**Buka langganan** sebelum form outlet. Untuk tenant aktif/masa tenggang yang sudah punya outlet, pastikan
+ada tautan **Atur pembayaran DP** dan **Buka meja admin** untuk melanjutkan penyiapan.
+
 Untuk alur tagihan owner: buka **Langganan**, pilih paket, lalu buat tagihan saat bisnis belum aktif
 atau periode aktif tinggal 7 hari. Pastikan nominal dan masa berlaku 24 jam muncul di riwayat, invoice
 pending kedua ditolak, dan layar mengarahkan owner menghubungi pemilik Kapsflow untuk detail pembayaran.
