@@ -36,13 +36,14 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 12c-9 | Batasi tagihan pending satu per bisnis dan buka perpanjangan dalam jendela 7 hari |
 | 12d-1 | Layar pemilik SaaS: ringkasan tenant, MRR/ARR, churn, tagihan, aktivitas, dan tren 12 bulan |
 | 13-1 | Website profil statis Astro dengan landing page responsif dan CTA menuju aplikasi |
+| 13-2 | Draf halaman syarat penggunaan dan kebijakan privasi berdasarkan alur data aplikasi; detail operator dan retensi ditandai untuk dilengkapi sebelum publikasi |
 
 ## Berikutnya (urutan wajib)
 
 1. **12b** layar admin (konfirmasi DP, tiket offline, buka/tutup sesi, kuota).
    **12c** layar owner (outlet, staf, harga DP, pembayaran, tautan dan QR outlet, langganan, statistik, ulasan).
    ~~**12d** layar pemilik SaaS (tenant, MRR, ARR, churn).~~ Selesai pada 12d-1.
-2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama. Langkah 13-1 selesai; lanjutkan syarat/privasi lalu onboarding owner.
+2. **13** website profil (Astro), halaman syarat dan privasi, alur daftar owner sampai tiket pertama. Langkah 13-1 dan 13-2 selesai; berikutnya onboarding owner sampai tiket pertama.
 3. **14** pengerasan produksi: rate limit login dan pemesanan, header keamanan, backup database dengan uji
    restore, Sentry, `DEV_AUTO_VERIFY` mati, domain pengirim Resend terverifikasi.
 4. **15** deploy: satu VPS, Docker, Caddy (HTTPS), CI sederhana, migrasi otomatis.
