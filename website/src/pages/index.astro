@@ -1,0 +1,150 @@
+---
+const appUrl = import.meta.env.PUBLIC_APP_URL || 'http://localhost:5173'
+const features = [
+  {
+    number: '01',
+    title: 'Pelanggan pesan sendiri',
+    description: 'Bagikan tautan outlet atau QR agar pelanggan bisa memilih tanggal dan mengambil nomor antrean.',
+  },
+  {
+    number: '02',
+    title: 'Tim tahu siapa berikutnya',
+    description: 'Admin mengelola antrean dan pembayaran DP. Kapster memanggil serta memperbarui status layanan.',
+  },
+  {
+    number: '03',
+    title: 'Pemilik melihat usaha',
+    description: 'Atur outlet dan staf, pantau statistik, serta lihat ulasan pelanggan dari satu tempat.',
+  },
+]
+---
+
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f4f0" />
+    <meta name="description" content="Kapsflow membantu barbershop dan salon mengelola antrean pelanggan secara online." />
+    <title>Kapsflow — Antrean salon lebih tertata</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#beranda" aria-label="Kapsflow, ke beranda"><span class="brand-mark">K</span>Kapsflow</a>
+      <nav aria-label="Navigasi utama">
+        <a href="#cara-kerja">Cara kerja</a>
+        <a class="nav-login" href={`${appUrl}/masuk`}>Masuk</a>
+        <a class="button button-small" href={`${appUrl}/daftar`}>Buat akun</a>
+      </nav>
+    </header>
+
+    <main id="beranda">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow"><span></span> UNTUK BARBERSHOP &amp; SALON</p>
+          <h1>Antrean rapi.<br /><em>Pelanggan nyaman.</em></h1>
+          <p class="hero-description">Bantu pelanggan mengambil nomor dari ponsel, dan bantu tim mengelola layanan tanpa kehilangan urutan.</p>
+          <div class="hero-actions">
+            <a class="button" href={`${appUrl}/daftar`}>Mulai kelola antrean <span aria-hidden="true">↗</span></a>
+            <a class="text-link" href="#cara-kerja">Lihat cara kerjanya <span aria-hidden="true">↓</span></a>
+          </div>
+          <p class="hero-note">Untuk pemilik usaha, admin, kapster, dan pelanggan.</p>
+        </div>
+
+        <div class="preview-wrap" aria-label="Ilustrasi ringkasan antrean Kapsflow">
+          <div class="sun-disc"></div>
+          <article class="queue-card">
+            <div class="card-top"><span class="live-dot"></span><span>ANTREAN HARI INI</span><span class="more">•••</span></div>
+            <div class="queue-count">08<span> pelanggan</span></div>
+            <div class="queue-line"><span></span></div>
+            <div class="queue-meta"><span>3 sedang dilayani</span><span>5 menunggu</span></div>
+            <div class="customer-row"><span class="avatar avatar-one">R</span><span><b>Raka</b><small>Potong rambut</small></span><span class="status">Sedang dilayani</span></div>
+            <div class="customer-row"><span class="avatar avatar-two">A</span><span><b>Adi</b><small>Potong + cuci</small></span><span class="status waiting">Menunggu</span></div>
+            <div class="customer-row"><span class="avatar avatar-three">D</span><span><b>Dimas</b><small>Potong rambut</small></span><span class="status waiting">Menunggu</span></div>
+          </article>
+          <div class="floating-note"><span class="check">✓</span><span><b>Urutan terjaga</b><small>Status diperbarui tim</small></span></div>
+          <span class="spark spark-one">✳</span><span class="spark spark-two">✳</span>
+        </div>
+      </section>
+
+      <section class="trust-strip" aria-label="Manfaat Kapsflow">
+        <p>Lebih teratur dari awal sampai selesai</p>
+        <div><span>01</span> Pesan online</div><div><span>02</span> Pantau giliran</div><div><span>03</span> Kelola dari satu layar</div>
+      </section>
+
+      <section id="cara-kerja" class="features">
+        <div class="section-heading"><p class="eyebrow">SATU ALUR UNTUK SEMUA</p><h2>Semua tahu langkah<br />berikutnya.</h2></div>
+        <div class="feature-list">
+          {features.map((feature) => (
+            <article class="feature-item">
+              <span class="feature-number">{feature.number}</span>
+              <div><h3>{feature.title}</h3><p>{feature.description}</p></div>
+              <span class="feature-arrow" aria-hidden="true">↗</span>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section class="closing-cta">
+        <div><p class="eyebrow">MULAI DARI OUTLET PERTAMAMU</p><h2>Beri waktu lebih banyak<br />untuk pelangganmu.</h2></div>
+        <a class="button button-light" href={`${appUrl}/daftar`}>Buat akun Kapsflow <span aria-hidden="true">↗</span></a>
+      </section>
+    </main>
+
+    <footer><a class="brand" href="#beranda"><span class="brand-mark">K</span>Kapsflow</a><p>Antrean lebih tertata, layanan lebih nyaman.</p><span>© {new Date().getFullYear()} Kapsflow</span></footer>
+  </body>
+</html>
+
+<style>
+  :global(*) { box-sizing: border-box; }
+  :global(html) { scroll-behavior: smooth; }
+  :global(body) { margin: 0; background: #f5f4f0; color: #20231f; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  :global(a) { color: inherit; text-decoration: none; }
+  .topbar { height: 82px; max-width: 1240px; margin: auto; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 800; letter-spacing: -.7px; }
+  .brand-mark { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 10px 10px 10px 3px; background: #e5a15d; color: #20231f; font-size: 16px; }
+  nav { display: flex; align-items: center; gap: 30px; font-size: 13px; font-weight: 600; }
+  nav a:not(.button) { color: #686a64; }
+  .button { display: inline-flex; align-items: center; justify-content: center; gap: 16px; min-height: 52px; padding: 0 22px; border-radius: 12px; background: #253f34; color: white; font-size: 14px; font-weight: 700; transition: transform .2s, background .2s; }
+  .button:hover { transform: translateY(-2px); background: #1c3329; }
+  .button-small { min-height: 42px; padding: 0 16px; }
+  .hero { display: grid; grid-template-columns: 1.02fr .98fr; align-items: center; gap: 40px; max-width: 1240px; min-height: 570px; margin: auto; padding: 64px 40px 74px; }
+  .hero-copy { position: relative; z-index: 1; }
+  .eyebrow { margin: 0 0 22px; color: #6e736b; font-size: 10px; font-weight: 800; letter-spacing: 1.7px; }
+  .hero .eyebrow { display: flex; align-items: center; gap: 9px; }
+  .hero .eyebrow span, .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #df9a57; }
+  h1 { margin: 0; font-size: clamp(48px, 6vw, 76px); line-height: .99; letter-spacing: -5px; font-weight: 750; }
+  h1 em { color: #d58f4e; font-style: normal; }
+  .hero-description { max-width: 465px; margin: 26px 0 28px; color: #686a64; font-size: 16px; line-height: 1.75; }
+  .hero-actions { display: flex; align-items: center; gap: 24px; }
+  .text-link { font-size: 13px; font-weight: 700; }
+  .hero-note { margin-top: 20px; color: #8a8b85; font-size: 11px; }
+  .preview-wrap { position: relative; display: grid; min-height: 425px; place-items: center; }
+  .sun-disc { position: absolute; width: min(390px, 90%); aspect-ratio: 1; border-radius: 50%; background: #e9c49c; }
+  .queue-card { position: relative; width: min(390px, 90%); padding: 24px; border: 1px solid #ebe9e2; border-radius: 19px; background: #fff; box-shadow: 0 25px 70px #4438221a; transform: rotate(2deg); }
+  .card-top { display: flex; align-items: center; gap: 8px; color: #777b72; font-size: 9px; font-weight: 800; letter-spacing: 1px; }
+  .more { margin-left: auto; letter-spacing: 2px; }
+  .queue-count { margin-top: 17px; font-size: 48px; font-weight: 800; letter-spacing: -3px; }
+  .queue-count span { color: #85877f; font-size: 12px; font-weight: 500; letter-spacing: 0; }
+  .queue-line { height: 6px; margin-top: 12px; overflow: hidden; border-radius: 5px; background: #f0eee8; }
+  .queue-line span { display: block; width: 39%; height: 100%; border-radius: inherit; background: #d99555; }
+  .queue-meta { display: flex; justify-content: space-between; margin: 8px 0 21px; color: #85877f; font-size: 9px; }
+  .customer-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px solid #f0eee8; }
+  .avatar { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; font-size: 12px; font-weight: 700; }
+  .avatar-one { background: #e6c6a4; }.avatar-two { background: #c9d7ca; }.avatar-three { background: #e9ddaa; }
+  .customer-row b, .customer-row small { display: block; }.customer-row b { font-size: 11px; }.customer-row small { margin-top: 3px; color: #92938e; font-size: 9px; }
+  .status { margin-left: auto; padding: 6px 8px; border-radius: 20px; background: #e9f0e9; color: #46664c; font-size: 8px; font-weight: 700; }.status.waiting { background: #f5eee5; color: #9c7046; }
+  .floating-note { position: absolute; right: 1%; bottom: 21px; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 1px solid #eeece5; border-radius: 13px; background: #fff; box-shadow: 0 12px 30px #44382212; }
+  .check { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 50%; background: #e9f0e9; color: #456248; font-size: 13px; }.floating-note b,.floating-note small { display: block; }.floating-note b { font-size: 10px; }.floating-note small { margin-top: 3px; color: #888a84; font-size: 9px; }
+  .spark { position: absolute; color: #d99150; }.spark-one { top: 35px; right: 12%; font-size: 25px; }.spark-two { bottom: 68px; left: 5%; font-size: 16px; }
+  .trust-strip { display: flex; align-items: center; justify-content: space-between; gap: 20px; max-width: 1160px; margin: 0 auto; padding: 22px 0; border-top: 1px solid #e4e2db; border-bottom: 1px solid #e4e2db; color: #565950; font-size: 12px; font-weight: 650; }
+  .trust-strip p { margin: 0; color: #898b83; font-size: 11px; font-weight: 500; }.trust-strip div { display: flex; align-items: center; gap: 9px; }.trust-strip div span { color: #d29357; font-size: 9px; }
+  .features { display: grid; grid-template-columns: .8fr 1.2fr; gap: 70px; max-width: 1160px; margin: auto; padding: 110px 0 120px; }
+  .section-heading .eyebrow { margin-bottom: 18px; }.section-heading h2,.closing-cta h2 { margin: 0; font-size: 41px; line-height: 1.1; letter-spacing: -2px; }
+  .feature-list { border-top: 1px solid #dfddd6; }.feature-item { display: grid; grid-template-columns: 42px 1fr 20px; align-items: start; gap: 14px; padding: 23px 0; border-bottom: 1px solid #dfddd6; }.feature-number { padding-top: 3px; color: #d29357; font-size: 11px; font-weight: 800; }.feature-item h3 { margin: 0; font-size: 16px; }.feature-item p { max-width: 470px; margin: 8px 0 0; color: #777970; font-size: 13px; line-height: 1.65; }.feature-arrow { color: #85877f; }
+  .closing-cta { display: flex; align-items: center; justify-content: space-between; gap: 30px; max-width: 1160px; margin: 0 auto 80px; padding: 46px 52px; border-radius: 20px; background: #263f34; color: white; }.closing-cta .eyebrow { color: #b6c0b7; }.closing-cta h2 { font-size: 32px; }.button-light { flex: 0 0 auto; background: #e7ac72; color: #20231f; }.button-light:hover { background: #edb77f; }
+  footer { display: flex; align-items: center; gap: 22px; max-width: 1160px; margin: auto; padding: 0 0 35px; }.footer .brand { font-size: 17px; }footer p { margin: 0; color: #85877f; font-size: 11px; }footer > span { margin-left: auto; color: #85877f; font-size: 10px; }
+  @media (max-width: 900px) { .trust-strip,.features,.closing-cta,footer { margin-right: 30px; margin-left: 30px; }.features { gap: 38px; } }
+  @media (max-width: 680px) { .topbar { height: 70px; padding: 0 20px; }.brand { font-size: 18px; }nav { gap: 14px; }nav a:first-child { display: none; }.button-small { min-height: 38px; padding: 0 12px; font-size: 11px; }.hero { grid-template-columns: 1fr; gap: 12px; padding: 54px 22px 38px; }.hero-copy { max-width: 520px; }h1 { font-size: clamp(49px, 14vw, 70px); letter-spacing: -3.5px; }.hero-description { margin: 20px 0; font-size: 14px; }.hero-actions { align-items: flex-start; flex-direction: column; gap: 17px; }.hero-note { margin-top: 15px; }.preview-wrap { min-height: 380px; }.queue-card { width: min(360px, 87%); padding: 20px; }.sun-disc { width: min(340px, 82%); }.floating-note { right: 2%; bottom: 12px; }.trust-strip { align-items: flex-start; flex-direction: column; margin: 0 22px; padding: 20px 0; }.trust-strip p { margin-bottom: 3px; }.features { grid-template-columns: 1fr; gap: 30px; margin: 0 22px; padding: 74px 0; }.section-heading h2 { font-size: 36px; }.closing-cta { align-items: flex-start; flex-direction: column; margin: 0 22px 56px; padding: 30px 24px; }.closing-cta h2 { font-size: 29px; }.closing-cta .button { width: 100%; }footer { flex-wrap: wrap; gap: 12px; margin: 0 22px; padding-bottom: 25px; }footer p { flex-basis: 100%; order: 3; } }
+  @media (prefers-reduced-motion: reduce) { :global(html) { scroll-behavior: auto; }.button { transition: none; } }
+</style>

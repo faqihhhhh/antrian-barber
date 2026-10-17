@@ -124,6 +124,12 @@ status langganan, tingkat konversi dan churn, tagihan tertunda, aktivitas 30 har
 12 bulan tampil. Masuk dengan akun owner tenant biasa (`cookiesB.txt`) dan buka `/pemilik-saas`;
 layar harus menolak akses dan API `GET /v1/admin/stats` harus membalas 403.
 
+Untuk website profil, dari `~/kapsflow/website` jalankan `npm run dev`, lalu buka
+`http://localhost:4321`. Periksa tampilan desktop dan lebar ponsel: menu, judul, ilustrasi antrean,
+bagian cara kerja, dan CTA harus terbaca tanpa gulir horizontal. Pastikan **Masuk**, **Buat akun**,
+dan kedua CTA pendaftaran mengarah ke `http://localhost:5173/masuk` atau `/daftar` yang sesuai.
+Build statis dibuktikan dengan `npm run build`; hasilnya harus memuat `/index.html`.
+
 ## Sebelum commit
 
 `go build -C backend ./...`, skrip verifikasi fase terkait (0 gagal), `npm run build`, `npm run lint`,
