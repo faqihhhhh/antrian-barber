@@ -84,7 +84,7 @@ Hanya nama variabel. Jangan pernah menulis nilai rahasia ke repo, log, atau jawa
 `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `DATABASE_URL` (role `kapsflow`, superuser, khusus migrasi),
 `APP_DATABASE_URL` (role `kapsflow_app`, dipakai aplikasi), `PORT`, `APP_BASE_URL` (dasar tautan email,
 bawaan `http://localhost:5173`), `ENCRYPTION_KEY` (AES-256-GCM untuk kunci Midtrans), `RESEND_API_KEY`,
-`EMAIL_FROM`, `DEV_AUTO_VERIFY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
+`EMAIL_FROM`, `APP_ENV` (`development`, `test`, atau `production`), `DEV_AUTO_VERIFY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
 Khusus tes: `MIDTRANS_BASE_URL_OVERRIDE` (mengarahkan klien Midtrans ke server tiruan; jangan diisi di produksi).
 
 ## Aturan yang tidak boleh dilanggar
@@ -102,7 +102,7 @@ Khusus tes: `MIDTRANS_BASE_URL_OVERRIDE` (mengarahkan klien Midtrans ke server t
 5. **Rahasia**: kunci Midtrans disimpan terenkripsi dan tidak pernah dikembalikan lewat API atau
    ditulis ke log. Token sesi dan token verifikasi disimpan sebagai hash SHA-256.
 6. **Uang memakai bilangan bulat rupiah** (`int64`), tidak pernah float.
-7. **`DEV_AUTO_VERIFY` harus mati di produksi.** Begitu juga `MIDTRANS_BASE_URL_OVERRIDE`.
+7. **`DEV_AUTO_VERIFY` harus mati di produksi.** Aplikasi menolak startup jika `APP_ENV=production` dan variabel ini bernilai `true`. Begitu juga `MIDTRANS_BASE_URL_OVERRIDE`.
 8. **Migrasi tidak mengedit migrasi lama yang sudah dijalankan.** Perubahan skema = migrasi baru.
 9. **Jangan menambah dependensi besar** tanpa alasan tertulis. Jangan menambah Redis, Kafka, atau
    Kubernetes. Satu proses Go dan satu PostgreSQL cukup sampai ada bukti sebaliknya.

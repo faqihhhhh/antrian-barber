@@ -97,6 +97,12 @@ Jangan menghapus satu-satunya backup setelah skrip lulus; salin backup penting k
 error HTTP 5xx serta panic dikirim ke transport Sentry tiruan. Untuk mengaktifkan proyek Sentry,
 isi `SENTRY_DSN` pada environment API; jangan menaruh DSN produksi ke Git.
 
+## Pengaman verifikasi email produksi
+
+`go test -C backend ./internal/config` memastikan `APP_ENV=development` boleh memakai
+`DEV_AUTO_VERIFY=true`, kombinasi itu ditolak saat `APP_ENV=production`, dan production tetap bisa
+startup ketika `DEV_AUTO_VERIFY=false`. Nilai `APP_ENV` yang tidak dikenal juga ditolak.
+
 ## Checklist browser (backend asli)
 
 Dua terminal: `make dev` dan `npm run dev`. Buka `http://localhost:5173/b/<slug>`.

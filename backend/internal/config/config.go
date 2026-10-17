@@ -6,6 +6,7 @@ import (
 )
 
 type Config struct {
+	AppEnv             string
 	Port               string
 	AppDatabaseURL     string
 	ResendAPIKey       string
@@ -22,6 +23,7 @@ type Config struct {
 
 func Load() (Config, error) {
 	cfg := Config{
+		AppEnv:             getenv("APP_ENV", "development"),
 		Port:               getenv("PORT", "8080"),
 		AppDatabaseURL:     os.Getenv("APP_DATABASE_URL"),
 		ResendAPIKey:       os.Getenv("RESEND_API_KEY"),
@@ -34,6 +36,12 @@ func Load() (Config, error) {
 		VAPIDSubject:       getenv("VAPID_SUBJECT", "mailto:admin@kapsflow.com"),
 		AppBaseURL:         getenv("APP_BASE_URL", "http://localhost:5173"),
 		SentryDSN:          os.Getenv("SENTRY_DSN"),
+	}
+	if cfg.AppEnv != "development" && cfg.AppEnv != "test" && cfg.AppEnv != "production" {
+		return Config{}, fmt.Errorf("APP_ENV harus development, test, atau production")
+	}
+	if cfg.AppEnv == "production" && cfg.DevAutoVerifyEmail {
+		return Config{}, fmt.Errorf("DEV_AUTO_VERIFY tidak boleh true saat APP_ENV=production")
 	}
 	if cfg.AppDatabaseURL == "" {
 		return Config{}, fmt.Errorf("APP_DATABASE_URL wajib diisi")
