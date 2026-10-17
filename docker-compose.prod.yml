@@ -15,6 +15,19 @@ services:
       retries: 10
       start_period: 10s
 
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: migrate
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?isi DATABASE_URL dengan akun migrasi database}
+      APP_DATABASE_PASSWORD: ${APP_DATABASE_PASSWORD:?isi password role kapsflow_app}
+
   api:
     build:
       context: ./backend
@@ -23,6 +36,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       APP_ENV: production
       PORT: "8080"

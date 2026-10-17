@@ -108,21 +108,29 @@ penerima atau isi email yang mungkin memuat token verifikasi dan reset sandi.
 
 ## Image Docker backend
 
-Dari `~/kapsflow`, jalankan `docker build -f backend/Dockerfile -t kapsflow-api:local backend`.
+Untuk API, jalankan `docker build -f backend/Dockerfile -t kapsflow-api:local backend` dari `~/kapsflow`.
 Build harus sukses. Dockerfile menghasilkan binary statis dan menjalankannya sebagai user non-root;
 berkas `.env` backend tidak dikirim sebagai build context.
 
 Workflow `.github/workflows/ci.yml` menjalankan tes/build Go, build/lint frontend, build website,
-validasi Compose/Caddy, serta build image API pada setiap push ke `main` dan pull request.
+validasi Compose/Caddy, build image API, dan uji migrasi penuh pada PostgreSQL sementara setiap push
+ke `main` dan pull request.
 Workflow hanya memeriksa; tidak melakukan deploy.
 
 ## Compose produksi
 
 Periksa sintaks tanpa menyalakan layanan dengan `docker compose --env-file .env.production.example -f docker-compose.prod.yml config -q`.
 Konfigurasi harus valid. Pastikan database tidak memiliki port publik, API hanya memakai jaringan
-internal Compose, dan hanya Caddy membuka port 80/443. Sebelum API bisa berjalan, migrasikan database
-dengan akun `DATABASE_URL` lalu atur password role `kapsflow_app` agar cocok dengan `APP_DATABASE_URL`;
-aplikasi runtime tidak memakai akun superuser.
+internal Compose, dan hanya Caddy membuka port 80/443. Sebelum API bisa berjalan, layanan migrator
+menggunakan `DATABASE_URL` untuk menerapkan migrasi dan mengatur password `kapsflow_app` dari
+`APP_DATABASE_PASSWORD`. Nilainya harus sama dengan password pada `APP_DATABASE_URL` (di-URL-encode
+bila ada karakter khusus). `DATABASE_URL` hanya diberikan ke migrator, sedangkan API runtime tetap
+memakai role non-superuser. Untuk deploy, jalankan
+`docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build`.
+
+Uji migrator secara terisolasi dengan `bash scripts/verify/verify_migration_container.sh`. Skrip
+menjalankan seluruh migrasi pada PostgreSQL sementara, memverifikasi koneksi sebagai role runtime
+yang tidak punya hak superuser atau `BYPASSRLS`, lalu membersihkan container dan jaringan tes.
 
 Caddyfile memakai `APP_DOMAIN` untuk frontend/API dan `WEBSITE_DOMAIN` untuk website statis.
 Frontend/website harus sudah dibangun ke `frontend/dist` dan `website/dist`. Bangun website dengan

@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: migration_test_password
+      POSTGRES_DB: kapsflow
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d kapsflow"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:migration_test_password@db:5432/kapsflow?sslmode=disable
+      APP_DATABASE_PASSWORD: migration_test_app_password
+
+  verify:
+    image: postgres:17
+    entrypoint: ["sh", "-ec"]
+    command:
+      - |
+        result="$$(PGPASSWORD="$${APP_DATABASE_PASSWORD}" psql "postgres://kapsflow_app:$${APP_DATABASE_PASSWORD}@db:5432/kapsflow?sslmode=disable" -Atc 'SELECT NOT rolsuper AND NOT rolbypassrls FROM pg_roles WHERE rolname = current_user')"
+        test "$$result" = "t"
+        echo "PASS: migrasi selesai dan role runtime bukan superuser/bypass RLS"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_DATABASE_PASSWORD: migration_test_app_password

@@ -71,3 +71,6 @@ jobs:
       - name: Build image API
         run: docker build -f backend/Dockerfile -t kapsflow-api:ci backend
 
+      - name: Uji migrasi pada PostgreSQL sementara
+        run: bash scripts/verify/verify_migration_container.sh
+
