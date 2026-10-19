@@ -13,12 +13,10 @@ ORDER BY queue_position
 LIMIT 1
 FOR UPDATE SKIP LOCKED;
 
--- name: NextWaitingTicketExcluding :one
-SELECT * FROM tickets
-WHERE queue_session_id = $1 AND status = 'waiting' AND id != $2
-ORDER BY queue_position
-LIMIT 1
-FOR UPDATE SKIP LOCKED;
+-- name: NextQueuePosition :one
+SELECT COALESCE(MAX(queue_position), 0) + 1
+FROM tickets
+WHERE queue_session_id = $1;
 
 -- name: MarkTicketCalled :exec
 UPDATE tickets SET status = 'called', assigned_membership_id = $2, updated_at = now() WHERE id = $1;
@@ -29,11 +27,17 @@ UPDATE tickets SET status = 'in_progress', updated_at = now() WHERE id = $1 AND 
 -- name: MarkTicketCompleted :exec
 UPDATE tickets SET status = 'completed', updated_at = now() WHERE id = $1 AND status = 'in_progress';
 
--- name: RequeueTicket :exec
-UPDATE tickets SET status = 'waiting', assigned_membership_id = NULL, updated_at = now() WHERE id = $1;
-
--- name: SetTicketQueuePosition :exec
-UPDATE tickets SET queue_position = $2, updated_at = now() WHERE id = $1;
+-- name: RequeueTicketAtEnd :exec
+UPDATE tickets
+SET queue_position = (
+        SELECT COALESCE(MAX(existing.queue_position), 0) + 1
+        FROM tickets AS existing
+        WHERE existing.queue_session_id = $1
+    ),
+    status = 'waiting',
+    assigned_membership_id = NULL,
+    updated_at = now()
+WHERE tickets.id = $2 AND tickets.queue_session_id = $1;
 
 -- name: ListTicketsBySession :many
 SELECT * FROM tickets WHERE queue_session_id = $1 ORDER BY queue_position;

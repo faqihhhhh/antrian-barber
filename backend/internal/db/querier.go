@@ -112,7 +112,7 @@ type Querier interface {
 	MarkTicketPaymentPaid(ctx context.Context, arg MarkTicketPaymentPaidParams) (int64, error)
 	MarkTicketWaiting(ctx context.Context, id uuid.UUID) error
 	MarkUserEmailVerified(ctx context.Context, id uuid.UUID) error
-	NextWaitingTicketExcluding(ctx context.Context, arg NextWaitingTicketExcludingParams) (Ticket, error)
+	NextQueuePosition(ctx context.Context, queueSessionID uuid.UUID) (int32, error)
 	PlatformActivity(ctx context.Context, arg PlatformActivityParams) (PlatformActivityRow, error)
 	PlatformBillingQueue(ctx context.Context) (PlatformBillingQueueRow, error)
 	PlatformMRR(ctx context.Context) (float64, error)

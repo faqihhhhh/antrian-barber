@@ -335,10 +335,14 @@ func (s *Service) AddOfflineTicket(ctx context.Context, tenantID, sessionID, use
 		}
 		return TicketResponse{}, httpx.Internal(fmt.Errorf("mengambil nomor tiket: %w", err))
 	}
+	queuePosition, err := q.NextQueuePosition(ctx, sessionID)
+	if err != nil {
+		return TicketResponse{}, httpx.Internal(fmt.Errorf("mengambil posisi antrean: %w", err))
+	}
 
 	ticket, err := q.CreateTicket(ctx, db.CreateTicketParams{
 		TenantID: tenantID, QueueSessionID: sessionID,
-		TicketNumber: num, QueuePosition: num,
+		TicketNumber: num, QueuePosition: queuePosition,
 		Channel:      "offline",
 		CustomerName: pgtype.Text{String: customerName, Valid: true},
 		MatchCode:    pgtype.Text{}, // offline tidak pakai kode
@@ -533,9 +537,8 @@ func (s *Service) KapsterStart(ctx context.Context, tenantID, sessionID, userID 
 	return nil
 }
 
-// KapsterSkip adalah efek tombol "ganti pelanggan": tiket yang di-skip
-// ditukar posisinya dengan tiket waiting berikutnya (mundur tepat 1
-// antrian, sesuai spesifikasi), lalu kapster langsung mengklaim tiket baru.
+// KapsterSkip memindahkan pelanggan yang dilewati ke belakang semua tiket
+// yang sudah tercatat, lalu kapster langsung memanggil tiket menunggu terdepan.
 func (s *Service) KapsterSkip(ctx context.Context, tenantID, sessionID, userID uuid.UUID) (*TicketResponse, error) {
 	q := s.queries(ctx)
 	membership, err := s.requireKapster(ctx, q, tenantID, userID)
@@ -544,6 +547,13 @@ func (s *Service) KapsterSkip(ctx context.Context, tenantID, sessionID, userID u
 	}
 	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, sessionID, membership); err != nil {
 		return nil, err
+	}
+	lockedSession, err := q.GetQueueSessionForUpdate(ctx, sessionID)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && lockedSession.TenantID != tenantID) {
+		return nil, httpx.NotFound("sesi_tidak_ditemukan", "Sesi antrian tidak ditemukan", nil)
+	}
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("mengunci sesi saat melewati tiket: %w", err))
 	}
 	state, err := q.GetKapsterSessionState(ctx, db.GetKapsterSessionStateParams{QueueSessionID: sessionID, MembershipID: membership.ID})
 	if err != nil {
@@ -559,38 +569,8 @@ func (s *Service) KapsterSkip(ctx context.Context, tenantID, sessionID, userID u
 		return nil, httpx.Internal(fmt.Errorf("mengunci tiket saat ini: %w", err))
 	}
 
-	next, err := q.NextWaitingTicketExcluding(ctx, db.NextWaitingTicketExcludingParams{QueueSessionID: sessionID, ID: currentTicketID})
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			// Tidak ada pelanggan lain menunggu — requeue di posisi semula.
-			if err := q.RequeueTicket(ctx, currentTicketID); err != nil {
-				return nil, httpx.Internal(fmt.Errorf("requeue tiket: %w", err))
-			}
-			if err := q.CreateTicketEvent(ctx, db.CreateTicketEventParams{
-				TenantID: tenantID, TicketID: currentTicketID, EventType: "skipped", ActorMembershipID: dbx.UUID(membership.ID),
-			}); err != nil {
-				return nil, httpx.Internal(fmt.Errorf("mencatat event skip: %w", err))
-			}
-			if _, upErr := q.UpsertKapsterSessionState(ctx, db.UpsertKapsterSessionStateParams{
-				TenantID: tenantID, QueueSessionID: sessionID, MembershipID: membership.ID,
-				Status: "ready", CurrentTicketID: pgtype.UUID{},
-			}); upErr != nil {
-				return nil, httpx.Internal(fmt.Errorf("memperbarui status kapster: %w", upErr))
-			}
-			s.broadcastSnapshot(ctx, q, sessionID)
-			return nil, nil
-		}
-		return nil, httpx.Internal(fmt.Errorf("mencari tiket berikutnya: %w", err))
-	}
-
-	if err := q.SetTicketQueuePosition(ctx, db.SetTicketQueuePositionParams{ID: current.ID, QueuePosition: next.QueuePosition}); err != nil {
-		return nil, httpx.Internal(fmt.Errorf("menukar posisi tiket: %w", err))
-	}
-	if err := q.SetTicketQueuePosition(ctx, db.SetTicketQueuePositionParams{ID: next.ID, QueuePosition: current.QueuePosition}); err != nil {
-		return nil, httpx.Internal(fmt.Errorf("menukar posisi tiket: %w", err))
-	}
-	if err := q.RequeueTicket(ctx, current.ID); err != nil {
-		return nil, httpx.Internal(fmt.Errorf("requeue tiket: %w", err))
+	if err := q.RequeueTicketAtEnd(ctx, db.RequeueTicketAtEndParams{QueueSessionID: sessionID, ID: current.ID}); err != nil {
+		return nil, httpx.Internal(fmt.Errorf("memindahkan tiket ke belakang antrean: %w", err))
 	}
 	if err := q.CreateTicketEvent(ctx, db.CreateTicketEventParams{
 		TenantID: tenantID, TicketID: current.ID, EventType: "skipped", ActorMembershipID: dbx.UUID(membership.ID),
@@ -598,6 +578,20 @@ func (s *Service) KapsterSkip(ctx context.Context, tenantID, sessionID, userID u
 		return nil, httpx.Internal(fmt.Errorf("mencatat event skip: %w", err))
 	}
 
+	next, err := q.ClaimNextWaitingTicket(ctx, sessionID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		if _, upErr := q.UpsertKapsterSessionState(ctx, db.UpsertKapsterSessionStateParams{
+			TenantID: tenantID, QueueSessionID: sessionID, MembershipID: membership.ID,
+			Status: "ready", CurrentTicketID: pgtype.UUID{},
+		}); upErr != nil {
+			return nil, httpx.Internal(fmt.Errorf("memperbarui status kapster: %w", upErr))
+		}
+		s.broadcastSnapshot(ctx, q, sessionID)
+		return nil, nil
+	}
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("mengambil tiket berikutnya: %w", err))
+	}
 	if err := s.claimTicket(ctx, q, tenantID, sessionID, membership.ID, next); err != nil {
 		return nil, err
 	}
@@ -733,6 +727,10 @@ func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUs
 	if num == -1 {
 		return nil, httpx.Conflict("tidak_bisa_memesan", "Antrian sudah ditutup atau kuota sudah penuh", nil)
 	}
+	queuePosition, err := q.NextQueuePosition(ctx, session.ID)
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("mengambil posisi antrean: %w", err))
+	}
 
 	matchCode, err := generateMatchCode()
 	if err != nil {
@@ -741,7 +739,7 @@ func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUs
 
 	ticket, err := q.CreateOnlineTicket(ctx, db.CreateOnlineTicketParams{
 		TenantID: tenantID, QueueSessionID: session.ID,
-		TicketNumber: num, QueuePosition: num,
+		TicketNumber: num, QueuePosition: queuePosition,
 		MatchCode:      pgtype.Text{String: matchCode, Valid: true},
 		CustomerUserID: dbx.UUID(customerUserID),
 		CustomerName:   pgtype.Text{String: customerName, Valid: customerName != ""},

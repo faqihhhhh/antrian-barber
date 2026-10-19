@@ -411,63 +411,38 @@ func (q *Queries) MarkTicketWaiting(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const nextWaitingTicketExcluding = `-- name: NextWaitingTicketExcluding :one
-SELECT id, tenant_id, queue_session_id, ticket_number, queue_position, channel, customer_name, match_code, status, assigned_membership_id, created_at, updated_at, customer_user_id, final_amount_rupiah, final_payment_confirmed_by, final_payment_confirmed_at, turn_notified_at FROM tickets
-WHERE queue_session_id = $1 AND status = 'waiting' AND id != $2
-ORDER BY queue_position
-LIMIT 1
-FOR UPDATE SKIP LOCKED
+const nextQueuePosition = `-- name: NextQueuePosition :one
+SELECT COALESCE(MAX(queue_position), 0) + 1
+FROM tickets
+WHERE queue_session_id = $1
 `
 
-type NextWaitingTicketExcludingParams struct {
+func (q *Queries) NextQueuePosition(ctx context.Context, queueSessionID uuid.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, nextQueuePosition, queueSessionID)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const requeueTicketAtEnd = `-- name: RequeueTicketAtEnd :exec
+UPDATE tickets
+SET queue_position = (
+        SELECT COALESCE(MAX(existing.queue_position), 0) + 1
+        FROM tickets AS existing
+        WHERE existing.queue_session_id = $1
+    ),
+    status = 'waiting',
+    assigned_membership_id = NULL,
+    updated_at = now()
+WHERE tickets.id = $2 AND tickets.queue_session_id = $1
+`
+
+type RequeueTicketAtEndParams struct {
 	QueueSessionID uuid.UUID `json:"queue_session_id"`
 	ID             uuid.UUID `json:"id"`
 }
 
-func (q *Queries) NextWaitingTicketExcluding(ctx context.Context, arg NextWaitingTicketExcludingParams) (Ticket, error) {
-	row := q.db.QueryRow(ctx, nextWaitingTicketExcluding, arg.QueueSessionID, arg.ID)
-	var i Ticket
-	err := row.Scan(
-		&i.ID,
-		&i.TenantID,
-		&i.QueueSessionID,
-		&i.TicketNumber,
-		&i.QueuePosition,
-		&i.Channel,
-		&i.CustomerName,
-		&i.MatchCode,
-		&i.Status,
-		&i.AssignedMembershipID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.CustomerUserID,
-		&i.FinalAmountRupiah,
-		&i.FinalPaymentConfirmedBy,
-		&i.FinalPaymentConfirmedAt,
-		&i.TurnNotifiedAt,
-	)
-	return i, err
-}
-
-const requeueTicket = `-- name: RequeueTicket :exec
-UPDATE tickets SET status = 'waiting', assigned_membership_id = NULL, updated_at = now() WHERE id = $1
-`
-
-func (q *Queries) RequeueTicket(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, requeueTicket, id)
-	return err
-}
-
-const setTicketQueuePosition = `-- name: SetTicketQueuePosition :exec
-UPDATE tickets SET queue_position = $2, updated_at = now() WHERE id = $1
-`
-
-type SetTicketQueuePositionParams struct {
-	ID            uuid.UUID `json:"id"`
-	QueuePosition int32     `json:"queue_position"`
-}
-
-func (q *Queries) SetTicketQueuePosition(ctx context.Context, arg SetTicketQueuePositionParams) error {
-	_, err := q.db.Exec(ctx, setTicketQueuePosition, arg.ID, arg.QueuePosition)
+func (q *Queries) RequeueTicketAtEnd(ctx context.Context, arg RequeueTicketAtEndParams) error {
+	_, err := q.db.Exec(ctx, requeueTicketAtEnd, arg.QueueSessionID, arg.ID)
 	return err
 }
