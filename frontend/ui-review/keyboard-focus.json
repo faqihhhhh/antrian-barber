@@ -1,0 +1,58 @@
+[
+  {
+    "tag": "INPUT",
+    "text": "",
+    "focusVisible": true,
+    "outline": "2px solid",
+    "shadow": "rgb(250, 247, 242) 0px 0px 0px 2px"
+  },
+  {
+    "tag": "INPUT",
+    "text": "",
+    "focusVisible": true,
+    "outline": "2px solid",
+    "shadow": "rgb(250, 247, 242) 0px 0px 0px 2px"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "Tampilkan",
+    "focusVisible": true,
+    "outline": "2px solid",
+    "shadow": "rgb(250, 247, 242) 0px 0px 0px 2px"
+  },
+  {
+    "tag": "BUTTON",
+    "text": "Masuk",
+    "focusVisible": true,
+    "outline": "2px solid",
+    "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px"
+  },
+  {
+    "tag": "A",
+    "text": "Lupa password?",
+    "focusVisible": true,
+    "outline": "2px solid",
+    "shadow": "rgb(250, 247, 242) 0px 0px 0px 2px"
+  },
+  {
+    "tag": "A",
+    "text": "Buat akun baru",
+    "focusVisible": true,
+    "outline": "2px solid",
+    "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px"
+  },
+  {
+    "tag": "BODY",
+    "text": "Kapsflow\nMasuk\n\nMasuk ke akun Kapsflow Anda.\n\nEmail\nPassword\nTampilkan\nMasuk\nLupa password?\nBuat akun baru",
+    "focusVisible": false,
+    "outline": "3px none",
+    "shadow": "none"
+  },
+  {
+    "tag": "INPUT",
+    "text": "",
+    "focusVisible": true,
+    "outline": "2px solid",
+    "shadow": "rgb(250, 247, 242) 0px 0px 0px 2px"
+  }
+]

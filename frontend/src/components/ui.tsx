@@ -9,7 +9,7 @@ type ButtonProps = SharedButtonProps &
   ({ to: string; state?: unknown } | (ButtonHTMLAttributes<HTMLButtonElement> & { to?: never; state?: never }))
 
 const buttonBase =
-  'inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
+  'inline-flex min-h-11 w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink focus-visible:ring-2 focus-visible:ring-brand-ink focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
 
 const buttonStyles: Record<ButtonStyle, string> = {
   primary: 'bg-ink text-white hover:bg-ink-hover',
@@ -40,14 +40,24 @@ export function Button(props: ButtonProps) {
 type FieldProps = InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string; error?: string }
 
 // Ukuran teks input 16px mencegah iPhone memperbesar layar saat fokus.
-export function Field({ label, hint, error, id, type = 'text', className = '', ...rest }: FieldProps) {
+export function Field({
+  label,
+  hint,
+  error,
+  id,
+  type = 'text',
+  className = '',
+  'aria-describedby': existingDescription,
+  'aria-invalid': existingInvalid,
+  ...rest
+}: FieldProps) {
   const generatedID = useId()
   const inputID = id ?? rest.name ?? generatedID
   const hintID = `${inputID}-hint`
   const errorID = `${inputID}-error`
   const [revealed, setRevealed] = useState(false)
   const isPassword = type === 'password'
-  const describedBy = [rest['aria-describedby'], hint ? hintID : undefined, error ? errorID : undefined]
+  const describedBy = [existingDescription, hint ? hintID : undefined, error ? errorID : undefined]
     .filter(Boolean)
     .join(' ') || undefined
 
@@ -61,7 +71,7 @@ export function Field({ label, hint, error, id, type = 'text', className = '', .
           id={inputID}
           type={isPassword && revealed ? 'text' : type}
           aria-describedby={describedBy}
-          aria-invalid={error ? true : rest['aria-invalid']}
+          aria-invalid={error ? true : existingInvalid}
           className={`w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base text-ink outline-none placeholder:text-muted focus-visible:border-brand-ink focus-visible:ring-2 focus-visible:ring-brand-ink ${isPassword ? 'pr-24' : ''} ${className}`}
           {...rest}
         />
@@ -125,7 +135,7 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
       <aside className="relative hidden overflow-hidden bg-ink px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between xl:px-20">
         <div className="absolute -right-28 -top-28 size-96 rounded-full border border-white/10" aria-hidden="true" />
         <div className="absolute -bottom-40 -left-24 size-[30rem] rounded-full border border-white/10" aria-hidden="true" />
-        <div className="relative z-10"><Logo /></div>
+        <div className="relative z-10"><Logo light /></div>
         <div className="relative z-10 grid grid-cols-[1fr_auto] items-center gap-8">
           <div className="max-w-lg">
             <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">Rapi dari kursi pertama</p>

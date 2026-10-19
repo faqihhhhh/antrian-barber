@@ -11,7 +11,7 @@
   --color-line: #e3d9ce;
   --color-line-soft: #eee7df;
   --color-line-strong: #c8bbae;
-  --color-muted: #756b62;
+  --color-muted: #70655c;
   --color-body-muted: #5a5048;
   --color-body: #403831;
   --color-brand: #b45309;
@@ -21,4 +21,10 @@
 
 html {
   font-family: var(--font-sans);
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand-ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--color-paper);
 }

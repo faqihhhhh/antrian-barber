@@ -45,7 +45,7 @@ export default function ReviewForm({ ticket }: { ticket: MyTicket }) {
             aria-label={`${n} bintang`}
             onClick={() => setRating(n)}
             className={`h-12 w-12 rounded-xl text-2xl leading-none transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink ${
-              n <= rating ? 'text-amber-500' : 'text-paper-muted'
+              n <= rating ? 'text-amber-500' : 'text-muted'
             }`}
           >
             ★
