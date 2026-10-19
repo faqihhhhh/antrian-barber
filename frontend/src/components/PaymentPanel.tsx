@@ -36,25 +36,25 @@ export default function PaymentPanel({ ticket }: { ticket: MyTicket }) {
 
   return (
     <section className="space-y-4" aria-label="Pembayaran DP">
-      <div className="rounded-3xl border border-stone-200 bg-white p-6 text-center">
-        <p className="text-sm text-stone-600">Bayar DP sebesar</p>
+      <div className="rounded-3xl border border-line bg-white p-6 text-center">
+        <p className="text-sm text-body-muted">Bayar DP sebesar</p>
         <p className="mt-1 text-4xl font-bold tabular-nums">{formatRupiah(payment.amount_rupiah)}</p>
         {isManual && (
-          <p className="mt-2 text-sm text-stone-600">
+          <p className="mt-2 text-sm text-body-muted">
             Bayar tepat sesuai angka ini, termasuk tiga angka terakhir. Angka itulah yang dipakai admin untuk mengenali
             pembayaran Anda.
           </p>
         )}
 
-        <div className="mx-auto mt-5 flex aspect-square w-full max-w-64 items-center justify-center rounded-2xl border border-stone-200 bg-white p-2">
+        <div className="mx-auto mt-5 flex aspect-square w-full max-w-64 items-center justify-center rounded-2xl border border-line bg-white p-2">
           {qrSrc && !imageFailed ? (
             <img src={qrSrc} alt="Kode QRIS untuk membayar DP" className="h-full w-full object-contain" onError={() => setImageFailed(true)} />
           ) : (
-            <p className="px-4 text-sm text-stone-600">Gambar QRIS tidak bisa dimuat. Muat ulang halaman ini.</p>
+            <p className="px-4 text-sm text-body-muted">Gambar QRIS tidak bisa dimuat. Muat ulang halaman ini.</p>
           )}
         </div>
 
-        <p className="mt-4 text-sm text-stone-600" role="timer">
+        <p className="mt-4 text-sm text-body-muted" role="timer">
           {expired ? (
             <strong>Waktu pembayaran habis</strong>
           ) : (
@@ -73,14 +73,14 @@ export default function PaymentPanel({ ticket }: { ticket: MyTicket }) {
           </Alert>
           <Link
             to={`/b/${ticket.outlet_slug}`}
-            className="inline-flex w-full items-center justify-center rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white"
+            className="inline-flex w-full items-center justify-center rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white"
           >
             Pesan ulang
           </Link>
         </>
       ) : (
         <>
-          <ol className="list-decimal space-y-1 pl-5 text-sm text-stone-700">
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-body">
             <li>Buka aplikasi e-wallet atau mobile banking yang mendukung QRIS.</li>
             <li>Scan kode di atas. Di HP yang sama, simpan gambar QR lalu pilih dari galeri di aplikasi pembayaran.</li>
             <li>Kembali ke halaman ini dan tekan tombol di bawah.</li>

@@ -31,7 +31,7 @@ export default function VerifikasiEmail() {
       {verify.isError && (
         <>
           <Alert>{messageOf(verify.error)}</Alert>
-          <p className="text-sm text-stone-600">
+          <p className="text-sm text-body-muted">
             Tautan mungkin sudah dipakai atau kedaluwarsa. Coba masuk, dan kalau diminta, kirim ulang email verifikasi.
           </p>
           <LinkButton to="/masuk">Ke halaman masuk</LinkButton>

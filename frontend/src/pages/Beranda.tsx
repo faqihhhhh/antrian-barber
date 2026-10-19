@@ -48,12 +48,12 @@ export default function Beranda() {
   return (
     <main className="mx-auto max-w-md px-5 py-8">
       <header className="mb-6">
-        <p className="text-sm font-semibold tracking-wide text-stone-500">KAPSFLOW</p>
+        <p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW</p>
         <h1 className="mt-1 text-xl font-bold">Halo</h1>
-        <p className="text-sm text-stone-600">{data.user.email}</p>
+        <p className="text-sm text-body-muted">{data.user.email}</p>
         {data.is_platform_admin && (
           <div className="mt-2 flex items-center gap-2">
-            <span className="inline-block rounded-full bg-stone-900 px-3 py-1 text-xs font-semibold text-white">Pemilik SaaS</span>
+            <span className="inline-block rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white">Pemilik SaaS</span>
             <Link to="/pemilik-saas" className="text-sm font-semibold underline">Buka ringkasan platform</Link>
           </div>
         )}
@@ -62,10 +62,10 @@ export default function Beranda() {
       <section className="space-y-3">
         <Link
           to="/tiket"
-          className="block rounded-2xl border border-stone-900 bg-white p-4 font-semibold transition hover:bg-stone-100"
+          className="block rounded-2xl border border-ink bg-white p-4 font-semibold transition hover:bg-paper-raised"
         >
           Tiket saya
-          <span className="block text-sm font-normal text-stone-600">Lihat antrian dan status pembayaran</span>
+          <span className="block text-sm font-normal text-body-muted">Lihat antrian dan status pembayaran</span>
         </Link>
         {outlet && (
           <Link to={`/b/${outlet}`} className="block px-1 text-sm font-semibold underline">
@@ -76,29 +76,29 @@ export default function Beranda() {
         {data.memberships.length === 0 && (
           <div className="space-y-3">
             <Alert tone="info">Akun ini belum terhubung ke bisnis mana pun. Untuk memesan antrean, buka tautan atau scan QR dari outlet.</Alert>
-            <Link to="/mulai-bisnis" className="block rounded-2xl border border-stone-200 bg-white p-4 font-semibold transition hover:bg-stone-100">
+            <Link to="/mulai-bisnis" className="block rounded-2xl border border-line bg-white p-4 font-semibold transition hover:bg-paper-raised">
               Saya pemilik barbershop atau salon
-              <span className="block text-sm font-normal text-stone-600">Buat bisnis pertama di Kapsflow</span>
+              <span className="block text-sm font-normal text-body-muted">Buat bisnis pertama di Kapsflow</span>
             </Link>
           </div>
         )}
 
         {data.memberships.map((m) => (
-          <article key={m.membership_id} className="rounded-2xl border border-stone-200 bg-white p-4">
+          <article key={m.membership_id} className="rounded-2xl border border-line bg-white p-4">
             <h2 className="font-semibold">{m.tenant_name}</h2>
-            <p className="mt-1 text-sm text-stone-600">{m.roles.map((r) => ROLE_LABEL[r] ?? r).join(' • ')}</p>
+            <p className="mt-1 text-sm text-body-muted">{m.roles.map((r) => ROLE_LABEL[r] ?? r).join(' • ')}</p>
             {m.roles.includes('kapster') && (
-              <Link to="/kapster" className="mt-3 inline-flex rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white">
+              <Link to="/kapster" className="mt-3 inline-flex rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white">
                 Buka meja kapster
               </Link>
             )}
             {(m.roles.includes('admin') || m.roles.includes('owner')) && (
-              <Link to="/admin" className="mt-3 inline-flex rounded-xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-900">
+              <Link to="/admin" className="mt-3 inline-flex rounded-xl border border-line-strong px-4 py-3 text-sm font-semibold text-ink">
                 Buka meja admin
               </Link>
             )}
             {m.roles.includes('owner') && (
-              <Link to="/pemilik" className="mt-3 inline-flex rounded-xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-900">
+              <Link to="/pemilik" className="mt-3 inline-flex rounded-xl border border-line-strong px-4 py-3 text-sm font-semibold text-ink">
                 Atur outlet
               </Link>
             )}
@@ -111,13 +111,13 @@ export default function Beranda() {
                   year: 'numeric',
                 })}`}
             </p>
-            <ul className="mt-3 space-y-1 border-t border-stone-100 pt-3 text-sm text-stone-700">
+            <ul className="mt-3 space-y-1 border-t border-line-soft pt-3 text-sm text-body">
               {m.outlets.map((o) => (
                 <li key={o.id}>
-                  {o.name} <span className="text-stone-400">({o.timezone})</span>
+                  {o.name} <span className="text-muted">({o.timezone})</span>
                 </li>
               ))}
-              {m.outlets.length === 0 && <li className="text-stone-400">Belum ada outlet</li>}
+              {m.outlets.length === 0 && <li className="text-muted">Belum ada outlet</li>}
             </ul>
           </article>
         ))}

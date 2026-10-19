@@ -23,10 +23,10 @@ export default function PemilikPembayaran() {
   const membership = memberships.find((item) => item.tenant_id === tenantID)
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-stone-50 px-5 py-6">
+    <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-5 py-6">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold tracking-wide text-stone-500">KAPSFLOW</p>
+          <p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW</p>
           <h1 className="mt-1 text-2xl font-bold">Pembayaran DP</h1>
         </div>
         <Link to="/pemilik" className="pt-1 text-sm font-semibold underline">Pengaturan outlet</Link>
@@ -38,10 +38,10 @@ export default function PemilikPembayaran() {
         <>
           {memberships.length > 1 && (
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-stone-700">Bisnis</span>
+              <span className="mb-1 block text-sm font-medium text-body">Bisnis</span>
               <select
                 aria-label="Bisnis"
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-stone-900"
+                className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
                 value={tenantID}
                 onChange={(event) => setTenantChoice(event.target.value)}
               >
@@ -114,22 +114,22 @@ function PaymentSettings({ membership }: { membership: Membership }) {
     upload.mutate()
   }
 
-  if (profile.isPending) return <p className="py-6 text-center text-sm text-stone-500" role="status">Memuat status pembayaran…</p>
+  if (profile.isPending) return <p className="py-6 text-center text-sm text-muted" role="status">Memuat status pembayaran…</p>
   if (profile.isError) return <Alert>{messageOf(profile.error)}</Alert>
 
   return (
     <section className="space-y-4">
-      <article className="rounded-3xl border border-stone-200 bg-white p-5">
+      <article className="rounded-3xl border border-line bg-white p-5">
         <h2 className="text-lg font-bold">QRIS manual</h2>
-        <p className="mt-1 text-sm text-stone-600">
+        <p className="mt-1 text-sm text-body-muted">
           Pelanggan membayar DP ke QRIS ini. Admin bisnis perlu mencocokkan nominal pembayaran sebelum mengonfirmasi tiket.
         </p>
-        <p className="mt-4 rounded-xl bg-stone-100 px-4 py-3 text-sm">
+        <p className="mt-4 rounded-xl bg-paper-raised px-4 py-3 text-sm">
           Status: <strong>{profile.data.manual_qris_configured ? 'QRIS sudah terpasang' : 'QRIS belum dipasang'}</strong>
         </p>
         <form className="mt-5 space-y-4" onSubmit={submit}>
           <label className="block" htmlFor="qris-image">
-            <span className="mb-1 block text-sm font-medium text-stone-700">Gambar QRIS</span>
+            <span className="mb-1 block text-sm font-medium text-body">Gambar QRIS</span>
             <input
               ref={fileInput}
               id="qris-image"
@@ -143,11 +143,11 @@ function PaymentSettings({ membership }: { membership: Membership }) {
                 clear.reset()
                 setFile(event.target.files?.[0] ?? null)
               }}
-              className="w-full rounded-xl border border-stone-300 bg-white p-3 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-stone-900 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
+              className="w-full rounded-xl border border-line-strong bg-white p-3 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
             />
-            <span className="mt-1 block text-xs text-stone-500">PNG, JPG, atau WebP. Maksimal 512 KB. Mengunggah gambar baru akan mengganti QRIS yang terpasang.</span>
+            <span className="mt-1 block text-xs text-muted">PNG, JPG, atau WebP. Maksimal 512 KB. Mengunggah gambar baru akan mengganti QRIS yang terpasang.</span>
           </label>
-          {file && <p className="text-sm text-stone-600">Dipilih: {file.name} ({Math.ceil(file.size / 1024)} KB)</p>}
+          {file && <p className="text-sm text-body-muted">Dipilih: {file.name} ({Math.ceil(file.size / 1024)} KB)</p>}
           {upload.isError && <Alert>{messageOf(upload.error)}</Alert>}
           {upload.isSuccess && <Alert tone="success">Gambar QRIS tersimpan.</Alert>}
           {clear.isError && <Alert>{messageOf(clear.error)}</Alert>}
@@ -168,9 +168,9 @@ function PaymentSettings({ membership }: { membership: Membership }) {
         )}
       </article>
 
-      <article className="rounded-3xl border border-stone-200 bg-white p-5">
+      <article className="rounded-3xl border border-line bg-white p-5">
         <h2 className="font-bold">Midtrans</h2>
-        <p className="mt-1 text-sm text-stone-600">
+        <p className="mt-1 text-sm text-body-muted">
           {profile.data.midtrans_configured
             ? 'Kunci Midtrans sudah tersimpan. Pengaturan kunci tidak ditampilkan di layar ini.'
             : 'Belum diatur. Pembayaran online Midtrans memerlukan akun dan kunci dari Midtrans.'}

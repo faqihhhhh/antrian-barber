@@ -49,7 +49,7 @@ export default function Outlet() {
     return (
       <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 text-center">
         <h1 className="text-2xl font-bold">Outlet tidak ditemukan</h1>
-        <p className="mt-2 text-sm text-stone-600">Periksa lagi tautan atau scan ulang QR dari outlet.</p>
+        <p className="mt-2 text-sm text-body-muted">Periksa lagi tautan atau scan ulang QR dari outlet.</p>
       </main>
     )
   }
@@ -63,9 +63,9 @@ function OutletView({ outlet }: { outlet: OutletData }) {
   return (
     <main className="mx-auto max-w-md space-y-6 px-5 py-8">
       <header>
-        <p className="text-sm text-stone-600">{outlet.business_name}</p>
+        <p className="text-sm text-body-muted">{outlet.business_name}</p>
         <h1 className="text-2xl font-bold">{outlet.outlet_name}</h1>
-        {outlet.address && <p className="mt-1 text-sm text-stone-600">{outlet.address}</p>}
+        {outlet.address && <p className="mt-1 text-sm text-body-muted">{outlet.address}</p>}
       </header>
 
       <QueueNow today={today} live={stream.connected} />
@@ -131,7 +131,7 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
     <section className="space-y-4" aria-label="Pesan antrian">
       <div>
         <h2 className="text-lg font-bold">Pesan antrian</h2>
-        <p className="text-sm text-stone-600">Pilih tanggal. Nomor antrian Anda aman setelah DP dibayar.</p>
+        <p className="text-sm text-body-muted">Pilih tanggal. Nomor antrian Anda aman setelah DP dibayar.</p>
       </div>
 
       <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Pilih tanggal">
@@ -146,12 +146,12 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
               aria-checked={isSelected}
               disabled={!d.open}
               onClick={() => setParams({ tanggal: d.date }, { replace: true })}
-              className={`rounded-xl border px-1 py-2 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 disabled:cursor-not-allowed ${
+              className={`rounded-xl border px-1 py-2 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink disabled:cursor-not-allowed ${
                 isSelected
-                  ? 'border-stone-900 bg-stone-900 text-white'
+                  ? 'border-ink bg-ink text-white'
                   : d.open
-                    ? 'border-stone-300 bg-white hover:border-stone-900'
-                    : 'border-stone-200 bg-stone-100 text-stone-400'
+                    ? 'border-line-strong bg-white hover:border-ink'
+                    : 'border-line bg-paper-raised text-muted'
               }`}
             >
               <span className="block text-xs">{d.date === outlet.local_today ? 'Hari ini' : weekdayShort(d.date)}</span>
@@ -165,7 +165,7 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
 
       {selected && (
         <form
-          className="space-y-4 rounded-3xl border border-stone-200 bg-white p-5"
+          className="space-y-4 rounded-3xl border border-line bg-white p-5"
           onSubmit={(e) => {
             e.preventDefault()
             if (loggedIn) book.mutate()
@@ -182,8 +182,8 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <div className="flex items-baseline justify-between border-t border-stone-100 pt-3 text-sm">
-            <span className="text-stone-600">DP lewat QRIS</span>
+          <div className="flex items-baseline justify-between border-t border-line-soft pt-3 text-sm">
+            <span className="text-body-muted">DP lewat QRIS</span>
             <strong className="text-lg tabular-nums">{formatRupiah(outlet.dp_price_rupiah)}</strong>
           </div>
 
@@ -211,7 +211,7 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
             </Button>
           ) : (
             <div className="space-y-2">
-              <p className="text-sm text-stone-600">Masuk dulu supaya tiket Anda tersimpan dan bisa dilihat dari HP mana pun.</p>
+              <p className="text-sm text-body-muted">Masuk dulu supaya tiket Anda tersimpan dan bisa dilihat dari HP mana pun.</p>
               <LinkButton to="/masuk" state={{ from }}>
                 Masuk untuk memesan
               </LinkButton>

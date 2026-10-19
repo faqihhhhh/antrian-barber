@@ -28,15 +28,15 @@ export default function PemilikStatistik() {
   if (!tenantID) return <main className="mx-auto max-w-md px-5 py-10"><Alert tone="info">Akun ini belum menjadi owner bisnis.</Alert></main>
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-stone-50 px-5 py-6">
+    <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-5 py-6">
       <header className="flex items-start justify-between gap-4">
-        <div><p className="text-sm font-semibold tracking-wide text-stone-500">KAPSFLOW</p><h1 className="mt-1 text-2xl font-bold">Statistik bisnis</h1></div>
+        <div><p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW</p><h1 className="mt-1 text-2xl font-bold">Statistik bisnis</h1></div>
         <Link to="/pemilik" className="pt-1 text-sm font-semibold underline">Pengaturan outlet</Link>
       </header>
-      {owners.length > 1 && <label className="block"><span className="mb-1 block text-sm font-medium text-stone-700">Bisnis</span><select aria-label="Bisnis" className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-base" value={tenantID} onChange={(event) => setTenantChoice(event.target.value)}>{owners.map((item) => <option key={item.tenant_id} value={item.tenant_id}>{item.tenant_name}</option>)}</select></label>}
+      {owners.length > 1 && <label className="block"><span className="mb-1 block text-sm font-medium text-body">Bisnis</span><select aria-label="Bisnis" className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base" value={tenantID} onChange={(event) => setTenantChoice(event.target.value)}>{owners.map((item) => <option key={item.tenant_id} value={item.tenant_id}>{item.tenant_name}</option>)}</select></label>}
       {stats.isPending ? <Spinner /> : stats.isError ? <Alert>{messageOf(stats.error)}</Alert> : (
         <>
-          <p className="text-sm text-stone-600">30 hari terakhir: {stats.data.from} – {stats.data.to}</p>
+          <p className="text-sm text-body-muted">30 hari terakhir: {stats.data.from} – {stats.data.to}</p>
           <section className="grid grid-cols-2 gap-3" aria-label="Ringkasan 30 hari terakhir">
             <Metric label="Total tiket" value={String(stats.data.totals.tickets_total)} />
             <Metric label="Tiket selesai" value={String(stats.data.totals.tickets_completed)} />
@@ -45,7 +45,7 @@ export default function PemilikStatistik() {
             <Metric label="Rata-rata per tiket lunas" value={formatRupiah(stats.data.totals.avg_ticket_rupiah)} />
             <Metric label="Tingkat penyelesaian" value={`${stats.data.totals.completion_pct}%`} />
           </section>
-          <p className="text-xs text-stone-500">Pendapatan dihitung dari DP yang sudah lunas, termasuk tiket yang belum selesai.</p>
+          <p className="text-xs text-muted">Pendapatan dihitung dari DP yang sudah lunas, termasuk tiket yang belum selesai.</p>
         </>
       )}
     </main>
@@ -53,5 +53,5 @@ export default function PemilikStatistik() {
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return <article className="rounded-2xl border border-stone-200 bg-white p-4"><p className="text-sm text-stone-600">{label}</p><p className="mt-2 text-lg font-bold">{value}</p></article>
+  return <article className="rounded-2xl border border-line bg-white p-4"><p className="text-sm text-body-muted">{label}</p><p className="mt-2 text-lg font-bold">{value}</p></article>
 }

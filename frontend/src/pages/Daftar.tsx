@@ -72,9 +72,9 @@ export default function Daftar() {
           Daftar
         </Button>
       </form>
-      <p className="text-center text-sm text-stone-600">
+      <p className="text-center text-sm text-body-muted">
         Sudah punya akun?{' '}
-        <Link to="/masuk" className="font-semibold text-stone-900 underline">
+        <Link to="/masuk" className="font-semibold text-ink underline">
           Masuk
         </Link>
       </p>

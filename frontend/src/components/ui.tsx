@@ -8,9 +8,9 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function Button({ variant = 'primary', loading, disabled, className = '', children, ...rest }: ButtonProps) {
   const base =
-    'inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 disabled:opacity-60'
+    'inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink disabled:opacity-60'
   const styles =
-    variant === 'primary' ? 'bg-stone-900 text-white hover:bg-stone-800' : 'bg-transparent text-stone-700 hover:bg-stone-100'
+    variant === 'primary' ? 'bg-ink text-white hover:bg-ink-hover' : 'bg-transparent text-body hover:bg-paper-raised'
   return (
     <button className={`${base} ${styles} ${className}`} disabled={disabled || loading} {...rest}>
       {loading ? 'Memproses…' : children}
@@ -31,13 +31,13 @@ export function LinkButton({
 }) {
   const styles =
     variant === 'primary'
-      ? 'bg-stone-900 text-white hover:bg-stone-800'
-      : 'border border-stone-300 bg-white text-stone-900 hover:bg-stone-100'
+      ? 'bg-ink text-white hover:bg-ink-hover'
+      : 'border border-line-strong bg-white text-ink hover:bg-paper-raised'
   return (
     <Link
       to={to}
       state={state}
-      className={`inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-stone-900 ${styles}`}
+      className={`inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink ${styles}`}
     >
       {children}
     </Link>
@@ -51,13 +51,13 @@ export function Field({ label, hint, id, className = '', ...rest }: FieldProps) 
   const inputId = id ?? rest.name
   return (
     <label className="block" htmlFor={inputId}>
-      <span className="mb-1 block text-sm font-medium text-stone-700">{label}</span>
+      <span className="mb-1 block text-sm font-medium text-body">{label}</span>
       <input
         id={inputId}
-        className={`w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-base outline-none focus:border-stone-900 focus:ring-1 focus:ring-stone-900 ${className}`}
+        className={`w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base outline-none focus:border-ink focus:ring-1 focus:ring-brand-ink ${className}`}
         {...rest}
       />
-      {hint && <span className="mt-1 block text-xs text-stone-500">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs text-muted">{hint}</span>}
     </label>
   )
 }
@@ -66,7 +66,7 @@ export function Alert({ tone = 'error', children }: { tone?: 'error' | 'success'
   const tones = {
     error: 'border-red-200 bg-red-50 text-red-800',
     success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-    info: 'border-stone-200 bg-stone-100 text-stone-700',
+    info: 'border-line bg-paper-raised text-body',
   }
   return (
     <div role="alert" className={`rounded-xl border px-4 py-3 text-sm ${tones[tone]}`}>
@@ -77,7 +77,7 @@ export function Alert({ tone = 'error', children }: { tone?: 'error' | 'success'
 
 export function Spinner() {
   return (
-    <div className="flex min-h-dvh items-center justify-center text-sm text-stone-500" role="status">
+    <div className="flex min-h-dvh items-center justify-center text-sm text-muted" role="status">
       Memuat…
     </div>
   )
@@ -87,9 +87,9 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-10">
       <div className="mb-8">
-        <p className="text-sm font-semibold tracking-wide text-stone-500">KAPSFLOW</p>
+        <p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW</p>
         <h1 className="mt-2 text-2xl font-bold">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-stone-600">{subtitle}</p>}
+        {subtitle && <p className="mt-1 text-sm text-body-muted">{subtitle}</p>}
       </div>
       <div className="space-y-4">{children}</div>
     </main>

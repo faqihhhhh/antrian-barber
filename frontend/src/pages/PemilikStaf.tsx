@@ -26,10 +26,10 @@ export default function PemilikStaf() {
   const membership = memberships.find((item) => item.tenant_id === tenantID)
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-stone-50 px-5 py-6">
+    <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-5 py-6">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold tracking-wide text-stone-500">KAPSFLOW</p>
+          <p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW</p>
           <h1 className="mt-1 text-2xl font-bold">Kelola staf</h1>
         </div>
         <Link to="/pemilik" className="pt-1 text-sm font-semibold underline">Pengaturan outlet</Link>
@@ -41,10 +41,10 @@ export default function PemilikStaf() {
         <>
           {memberships.length > 1 && (
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-stone-700">Bisnis</span>
+              <span className="mb-1 block text-sm font-medium text-body">Bisnis</span>
               <select
                 aria-label="Bisnis"
-                className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-stone-900"
+                className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
                 value={tenantID}
                 onChange={(event) => setTenantChoice(event.target.value)}
               >
@@ -113,33 +113,33 @@ function StaffPanel({ membership }: { membership: Membership }) {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-3xl border border-stone-200 bg-white p-5">
+      <section className="rounded-3xl border border-line bg-white p-5">
         <h2 className="text-lg font-bold">Undang staf</h2>
-        <p className="mt-1 text-sm text-stone-600">Staf akan menerima email untuk memverifikasi akunnya.</p>
+        <p className="mt-1 text-sm text-body-muted">Staf akan menerima email untuk memverifikasi akunnya.</p>
         <form className="mt-4 space-y-4" onSubmit={submit}>
           <Field label="Email staf" name="staff-email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
           <Field label="Kata sandi awal" name="staff-password" type="password" autoComplete="new-password" minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} hint="Minimal 8 karakter. Sampaikan kata sandi ini dengan aman kepada staf." />
 
           <fieldset className="space-y-2">
-            <legend className="mb-2 text-sm font-medium text-stone-700">Peran staf</legend>
+            <legend className="mb-2 text-sm font-medium text-body">Peran staf</legend>
             {(['admin', 'kapster'] as const).map((role) => (
-              <label key={role} className="flex items-center gap-3 rounded-xl border border-stone-200 px-4 py-3 text-sm">
-                <input type="checkbox" checked={roles.includes(role)} onChange={() => toggleRole(role)} className="size-5 accent-stone-900" />
+              <label key={role} className="flex items-center gap-3 rounded-xl border border-line px-4 py-3 text-sm">
+                <input type="checkbox" checked={roles.includes(role)} onChange={() => toggleRole(role)} className="size-5 accent-brand" />
                 <span>{ROLE_LABEL[role]}</span>
               </label>
             ))}
-            <p className="text-xs text-stone-500">Boleh memilih keduanya. Owner tidak ditambahkan lewat undangan staf.</p>
+            <p className="text-xs text-muted">Boleh memilih keduanya. Owner tidak ditambahkan lewat undangan staf.</p>
           </fieldset>
 
           <fieldset className="space-y-2">
-            <legend className="mb-2 text-sm font-medium text-stone-700">Outlet tugas</legend>
+            <legend className="mb-2 text-sm font-medium text-body">Outlet tugas</legend>
             {membership.outlets.map((outlet) => (
-              <label key={outlet.id} className="flex items-center gap-3 rounded-xl border border-stone-200 px-4 py-3 text-sm">
-                <input type="checkbox" checked={outletIDs.includes(outlet.id)} onChange={() => toggleOutlet(outlet.id)} className="size-5 accent-stone-900" />
+              <label key={outlet.id} className="flex items-center gap-3 rounded-xl border border-line px-4 py-3 text-sm">
+                <input type="checkbox" checked={outletIDs.includes(outlet.id)} onChange={() => toggleOutlet(outlet.id)} className="size-5 accent-brand" />
                 <span>{outlet.name}</span>
               </label>
             ))}
-            {membership.outlets.length === 0 && <p className="text-sm text-stone-500">Buat outlet lebih dulu sebelum mengundang staf.</p>}
+            {membership.outlets.length === 0 && <p className="text-sm text-muted">Buat outlet lebih dulu sebelum mengundang staf.</p>}
           </fieldset>
 
           {invite.isError && <Alert>{messageOf(invite.error)}</Alert>}
@@ -156,17 +156,17 @@ function StaffPanel({ membership }: { membership: Membership }) {
 
       <section className="space-y-3">
         <h2 className="text-lg font-bold">Staf bisnis</h2>
-        {staff.isPending && <p className="text-center text-sm text-stone-500" role="status">Memuat daftar staf…</p>}
+        {staff.isPending && <p className="text-center text-sm text-muted" role="status">Memuat daftar staf…</p>}
         {staff.isError && <Alert>{messageOf(staff.error)}</Alert>}
         {staff.data?.length === 0 && <Alert tone="info">Belum ada staf di bisnis ini.</Alert>}
         {staff.data?.map((member) => (
-          <article key={member.membership_id} className="rounded-2xl border border-stone-200 bg-white p-4">
+          <article key={member.membership_id} className="rounded-2xl border border-line bg-white p-4">
             <h3 className="font-semibold">{member.email}</h3>
-            <p className="mt-1 text-sm text-stone-600">{member.roles.map((role) => ROLE_LABEL[role as StaffRole] ?? role).join(' · ')}</p>
-            <p className="mt-1 text-sm text-stone-600">
+            <p className="mt-1 text-sm text-body-muted">{member.roles.map((role) => ROLE_LABEL[role as StaffRole] ?? role).join(' · ')}</p>
+            <p className="mt-1 text-sm text-body-muted">
               Outlet: {member.outlet_ids.map((id) => membership.outlets.find((outlet) => outlet.id === id)?.name).filter(Boolean).join(', ') || 'Tidak ada'}
             </p>
-            <p className="mt-2 text-xs text-stone-500">Email {member.email_verified ? 'terverifikasi' : 'belum diverifikasi'}</p>
+            <p className="mt-2 text-xs text-muted">Email {member.email_verified ? 'terverifikasi' : 'belum diverifikasi'}</p>
           </article>
         ))}
       </section>

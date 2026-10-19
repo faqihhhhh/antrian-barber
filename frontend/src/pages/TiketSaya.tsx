@@ -31,9 +31,9 @@ export default function TiketSaya() {
       </header>
 
       {tickets.data.length === 0 && (
-        <div className="rounded-3xl border border-stone-200 bg-white p-6">
+        <div className="rounded-3xl border border-line bg-white p-6">
           <p className="font-semibold">Belum ada tiket</p>
-          <p className="mt-1 text-sm text-stone-600">Buka tautan atau scan QR dari outlet untuk memesan antrian.</p>
+          <p className="mt-1 text-sm text-body-muted">Buka tautan atau scan QR dari outlet untuk memesan antrian.</p>
           {outlet && (
             <Link to={`/b/${outlet}`} className="mt-3 inline-block text-sm font-semibold underline">
               Pesan di outlet terakhir yang Anda buka
@@ -52,7 +52,7 @@ export default function TiketSaya() {
 
       {history.length > 0 && (
         <section className="space-y-3" aria-label="Riwayat">
-          <h2 className="text-sm font-semibold text-stone-600">Seminggu terakhir</h2>
+          <h2 className="text-sm font-semibold text-body-muted">Seminggu terakhir</h2>
           {history.map((t) => (
             <TicketRow key={t.ticket_id} ticket={t} />
           ))}
@@ -66,8 +66,8 @@ function TicketRow({ ticket, highlight }: { ticket: MyTicket; highlight?: boolea
   return (
     <Link
       to={`/tiket/${ticket.ticket_id}`}
-      className={`flex items-center gap-4 rounded-2xl border p-4 transition hover:border-stone-900 ${
-        highlight ? 'border-stone-900 bg-white' : 'border-stone-200 bg-white text-stone-600'
+      className={`flex items-center gap-4 rounded-2xl border p-4 transition hover:border-ink ${
+        highlight ? 'border-ink bg-white' : 'border-line bg-white text-body-muted'
       }`}
     >
       <span className="w-14 text-center text-3xl font-bold tabular-nums">{ticket.ticket_number}</span>

@@ -31,15 +31,15 @@ export default function PemilikMulai() {
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 bg-stone-50 px-5 py-8">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 bg-paper px-5 py-8">
       <header>
         <Link to="/" className="text-sm font-semibold underline">← Beranda</Link>
-        <p className="mt-8 text-sm font-semibold tracking-wide text-stone-500">MULAI DENGAN BISNISMU</p>
+        <p className="mt-8 text-sm font-semibold tracking-wide text-muted">MULAI DENGAN BISNISMU</p>
         <h1 className="mt-2 text-3xl font-bold">Buat bisnis pertama</h1>
-        <p className="mt-2 text-sm leading-6 text-stone-600">Nama ini digunakan untuk mengenali akun usahamu di Kapsflow. Setelah bisnis dibuat, lanjutkan dengan menambahkan outlet.</p>
+        <p className="mt-2 text-sm leading-6 text-body-muted">Nama ini digunakan untuk mengenali akun usahamu di Kapsflow. Setelah bisnis dibuat, lanjutkan dengan menambahkan outlet.</p>
       </header>
 
-      <form className="space-y-4 rounded-3xl border border-stone-200 bg-white p-5" onSubmit={submit}>
+      <form className="space-y-4 rounded-3xl border border-line bg-white p-5" onSubmit={submit}>
         <Field
           label="Nama bisnis atau barbershop"
           name="businessName"

@@ -40,7 +40,7 @@ export default function Tiket() {
     return (
       <main className="mx-auto max-w-md space-y-4 px-5 py-10">
         <h1 className="text-2xl font-bold">Tiket tidak ditemukan</h1>
-        <p className="text-sm text-stone-600">Tiket yang selesai lebih dari seminggu lalu tidak ditampilkan lagi.</p>
+        <p className="text-sm text-body-muted">Tiket yang selesai lebih dari seminggu lalu tidak ditampilkan lagi.</p>
         <Link to="/tiket" className="text-sm font-semibold underline">
           Kembali ke daftar tiket
         </Link>
@@ -67,25 +67,25 @@ function StatusBody({ ticket }: { ticket: MyTicket }) {
 
     case 'waiting':
       return (
-        <section className="space-y-3 rounded-3xl border border-stone-200 bg-white p-6" aria-live="polite">
+        <section className="space-y-3 rounded-3xl border border-line bg-white p-6" aria-live="polite">
           <h2 className="text-lg font-bold">Pembayaran diterima. Anda sudah masuk antrian.</h2>
           {ticket.estimate ? (
             <dl className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <dt className="text-stone-600">Tiket di depan Anda</dt>
+                <dt className="text-body-muted">Tiket di depan Anda</dt>
                 <dd className="text-3xl font-bold tabular-nums">{ticket.estimate.tickets_ahead}</dd>
               </div>
               <div>
-                <dt className="text-stone-600">Perkiraan menunggu</dt>
+                <dt className="text-body-muted">Perkiraan menunggu</dt>
                 <dd className="font-semibold">
                   {formatWait(ticket.estimate.estimated_wait_minutes, ticket.estimate.active_kapsters)}
                 </dd>
               </div>
             </dl>
           ) : (
-            <p className="text-sm text-stone-600">Perkiraan waktu belum tersedia.</p>
+            <p className="text-sm text-body-muted">Perkiraan waktu belum tersedia.</p>
           )}
-          <p className="text-sm text-stone-600">
+          <p className="text-sm text-body-muted">
             Halaman ini berubah sendiri saat antrian bergerak. Saat dipanggil, sebutkan kode di atas kepada kapster.
           </p>
         </section>
@@ -101,9 +101,9 @@ function StatusBody({ ticket }: { ticket: MyTicket }) {
 
     case 'in_progress':
       return (
-        <section className="rounded-3xl border border-stone-200 bg-white p-6">
+        <section className="rounded-3xl border border-line bg-white p-6">
           <h2 className="text-lg font-bold">Sedang dilayani</h2>
-          <p className="mt-1 text-sm text-stone-600">Setelah selesai, Anda bisa memberi penilaian di halaman ini.</p>
+          <p className="mt-1 text-sm text-body-muted">Setelah selesai, Anda bisa memberi penilaian di halaman ini.</p>
         </section>
       )
 
@@ -116,9 +116,9 @@ function StatusBody({ ticket }: { ticket: MyTicket }) {
 
     case 'canceled':
       return (
-        <section className="space-y-3 rounded-3xl border border-stone-200 bg-white p-6">
+        <section className="space-y-3 rounded-3xl border border-line bg-white p-6">
           <h2 className="text-lg font-bold">Tiket dibatalkan</h2>
-          <p className="text-sm text-stone-600">
+          <p className="text-sm text-body-muted">
             Pesanan yang tidak dibayar tepat waktu dibatalkan otomatis dan kuotanya dikembalikan.
           </p>
           <Link to={`/b/${ticket.outlet_slug}`} className="inline-block text-sm font-semibold underline">

@@ -24,9 +24,9 @@ export default function PemilikSaaS() {
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-5xl space-y-6 bg-stone-50 px-5 py-6">
+    <main className="mx-auto min-h-dvh max-w-5xl space-y-6 bg-paper px-5 py-6">
       <header className="flex items-start justify-between gap-4">
-        <div><p className="text-sm font-semibold tracking-wide text-stone-500">KAPSFLOW · PLATFORM</p><h1 className="mt-1 text-2xl font-bold">Ringkasan SaaS</h1><p className="mt-1 text-sm text-stone-600">Kinerja bisnis dan langganan platform.</p></div>
+        <div><p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW · PLATFORM</p><h1 className="mt-1 text-2xl font-bold">Ringkasan SaaS</h1><p className="mt-1 text-sm text-body-muted">Kinerja bisnis dan langganan platform.</p></div>
         <Link to="/" className="pt-1 text-sm font-semibold underline">Beranda</Link>
       </header>
       {stats.isPending ? <Spinner /> : stats.isError ? <Alert>{messageOf(stats.error)}</Alert> : (
@@ -49,33 +49,33 @@ export default function PemilikSaaS() {
               <Metric label="Konversi berbayar" value={percent(stats.data.tenants.conversion_pct)} />
               <Metric label="Churn 30 hari" value={percent(stats.data.tenants.churn_rate_30d_pct)} hint={`${stats.data.tenants.churned_30d} tenant berhenti`} />
             </div>
-            <p className="text-sm text-stone-600">{stats.data.tenants.outlets} outlet · {stats.data.tenants.staff} staf · {stats.data.tenants.users} pengguna · {stats.data.tenants.onboarding_completed} bisnis menyelesaikan penyiapan</p>
+            <p className="text-sm text-body-muted">{stats.data.tenants.outlets} outlet · {stats.data.tenants.staff} staf · {stats.data.tenants.users} pengguna · {stats.data.tenants.onboarding_completed} bisnis menyelesaikan penyiapan</p>
           </section>
 
           <section className="grid gap-3 sm:grid-cols-2" aria-label="Tagihan dan aktivitas">
-            <article className="rounded-2xl border border-stone-200 bg-white p-4">
+            <article className="rounded-2xl border border-line bg-white p-4">
               <h2 className="font-bold">Tagihan</h2>
-              <p className="mt-3 text-sm text-stone-700">Menunggu konfirmasi: <strong>{stats.data.billing.pending_invoices}</strong> · {formatRupiah(stats.data.billing.pending_amount_rupiah)}</p>
-              <p className="mt-2 text-sm text-stone-700">Jatuh tempo 7 hari: <strong>{stats.data.billing.expiring_7d}</strong> · {formatRupiah(stats.data.billing.expiring_7d_rupiah)}</p>
+              <p className="mt-3 text-sm text-body">Menunggu konfirmasi: <strong>{stats.data.billing.pending_invoices}</strong> · {formatRupiah(stats.data.billing.pending_amount_rupiah)}</p>
+              <p className="mt-2 text-sm text-body">Jatuh tempo 7 hari: <strong>{stats.data.billing.expiring_7d}</strong> · {formatRupiah(stats.data.billing.expiring_7d_rupiah)}</p>
             </article>
-            <article className="rounded-2xl border border-stone-200 bg-white p-4">
+            <article className="rounded-2xl border border-line bg-white p-4">
               <h2 className="font-bold">Aktivitas 30 hari</h2>
-              <p className="mt-3 text-sm text-stone-700">Outlet aktif: <strong>{stats.data.activity_30d.active_outlets}</strong></p>
-              <p className="mt-2 text-sm text-stone-700">Antrean selesai: <strong>{stats.data.activity_30d.tickets_completed}</strong></p>
-              <p className="mt-2 text-sm text-stone-700">Nilai transaksi DP: <strong>{formatRupiah(stats.data.activity_30d.gmv_rupiah)}</strong></p>
+              <p className="mt-3 text-sm text-body">Outlet aktif: <strong>{stats.data.activity_30d.active_outlets}</strong></p>
+              <p className="mt-2 text-sm text-body">Antrean selesai: <strong>{stats.data.activity_30d.tickets_completed}</strong></p>
+              <p className="mt-2 text-sm text-body">Nilai transaksi DP: <strong>{formatRupiah(stats.data.activity_30d.gmv_rupiah)}</strong></p>
             </article>
           </section>
 
           <section className="space-y-3" aria-label="Tren bulanan">
             <h2 className="text-lg font-bold">Tren 12 bulan</h2>
-            <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
+            <div className="overflow-x-auto rounded-2xl border border-line bg-white">
               <table className="w-full min-w-[520px] text-left text-sm">
-                <thead className="border-b border-stone-200 bg-stone-100 text-stone-600"><tr><th className="px-4 py-3 font-semibold">Bulan</th><th className="px-4 py-3 font-semibold">Tenant baru</th><th className="px-4 py-3 font-semibold">Tagihan lunas</th><th className="px-4 py-3 text-right font-semibold">Pendapatan</th></tr></thead>
-                <tbody>{stats.data.monthly.map((month) => <tr key={month.month} className="border-b border-stone-100 last:border-0"><td className="px-4 py-3">{formatMonthYear(`${month.month}-01`)}</td><td className="px-4 py-3">{month.tenants_created}</td><td className="px-4 py-3">{month.invoices_paid}</td><td className="px-4 py-3 text-right tabular-nums">{formatRupiah(month.revenue_rupiah)}</td></tr>)}</tbody>
+                <thead className="border-b border-line bg-paper-raised text-body-muted"><tr><th className="px-4 py-3 font-semibold">Bulan</th><th className="px-4 py-3 font-semibold">Tenant baru</th><th className="px-4 py-3 font-semibold">Tagihan lunas</th><th className="px-4 py-3 text-right font-semibold">Pendapatan</th></tr></thead>
+                <tbody>{stats.data.monthly.map((month) => <tr key={month.month} className="border-b border-line-soft last:border-0"><td className="px-4 py-3">{formatMonthYear(`${month.month}-01`)}</td><td className="px-4 py-3">{month.tenants_created}</td><td className="px-4 py-3">{month.invoices_paid}</td><td className="px-4 py-3 text-right tabular-nums">{formatRupiah(month.revenue_rupiah)}</td></tr>)}</tbody>
               </table>
             </div>
           </section>
-          <p className="text-xs text-stone-500">MRR dan ARR dihitung dari langganan aktif. Pendapatan bulanan berasal dari tagihan yang lunas.</p>
+          <p className="text-xs text-muted">MRR dan ARR dihitung dari langganan aktif. Pendapatan bulanan berasal dari tagihan yang lunas.</p>
         </>
       )}
     </main>
@@ -83,7 +83,7 @@ export default function PemilikSaaS() {
 }
 
 function Metric({ label, value, hint, dark = false }: { label: string; value: string; hint?: string; dark?: boolean }) {
-  return <article className={`rounded-2xl border p-4 ${dark ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-200 bg-white'}`}><p className={`text-sm ${dark ? 'text-stone-300' : 'text-stone-600'}`}>{label}</p><p className="mt-2 text-xl font-bold tabular-nums">{value}</p>{hint && <p className={`mt-1 text-xs ${dark ? 'text-stone-300' : 'text-stone-500'}`}>{hint}</p>}</article>
+  return <article className={`rounded-2xl border p-4 ${dark ? 'border-ink bg-ink text-white' : 'border-line bg-white'}`}><p className={`text-sm ${dark ? 'text-paper-muted' : 'text-body-muted'}`}>{label}</p><p className="mt-2 text-xl font-bold tabular-nums">{value}</p>{hint && <p className={`mt-1 text-xs ${dark ? 'text-paper-muted' : 'text-muted'}`}>{hint}</p>}</article>
 }
 
 function percent(value: number | null): string {
