@@ -109,6 +109,15 @@ export function Alert({ tone = 'error', children }: { tone?: AlertTone; children
   )
 }
 
+export function RetryAlert({ children, onRetry }: { children: ReactNode; onRetry: () => void }) {
+  return (
+    <div className="space-y-2">
+      <Alert>{children}</Alert>
+      <Button type="button" variant="secondary" onClick={onRetry}>Coba lagi</Button>
+    </div>
+  )
+}
+
 export type BadgeTone = 'success' | 'warning' | 'danger' | 'neutral'
 
 export function Badge({ tone = 'neutral', children }: { tone?: BadgeTone; children: ReactNode }) {

@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
-import { Alert, Button, Field, Spinner } from '../components/ui'
+import { Alert, Button, Field, RetryAlert, Spinner } from '../components/ui'
 import type { components } from '../api/schema'
 import { formatDateTime, formatLongDate, formatRupiah } from '../lib/format'
 
@@ -61,7 +61,7 @@ export default function Admin() {
 
   if (me.isPending) return <Spinner />
   if (me.isError) {
-    return <main className="mx-auto max-w-md px-5 py-10"><Alert>{messageOf(me.error)}</Alert></main>
+    return <main className="mx-auto max-w-md px-5 py-10"><RetryAlert onRetry={() => void me.refetch()}>{messageOf(me.error)}</RetryAlert></main>
   }
   if (routeSessionLookupPending) return <Spinner />
 
@@ -80,7 +80,7 @@ export default function Admin() {
   const selected = outlets.find(({ membership, outlet }) => `${membership.tenant_id}:${outlet.id}` === selectedKey)
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-5 py-6">
+    <main className="mx-auto min-h-dvh max-w-4xl space-y-5 bg-paper px-5 py-6">
       <header className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW</p>
@@ -107,10 +107,62 @@ export default function Admin() {
               })}
             </select>
           </label>
+          {selected && <PublicOutletLink membership={selected.membership} outlet={selected.outlet} />}
           {selected && <SessionPanel selected={selected} sessionChoice={routeSessionID ?? sessionChoice} onSessionChange={setSessionChoice} />}
         </>
       )}
     </main>
+  )
+}
+
+function PublicOutletLink({ membership, outlet }: { membership: Membership; outlet: Membership['outlets'][number] }) {
+  const [copied, setCopied] = useState(false)
+  const [copyFailed, setCopyFailed] = useState(false)
+  const isOwner = membership.roles.includes('owner')
+  const outlets = useQuery({
+    queryKey: ['admin-public-outlet-link', membership.tenant_id],
+    enabled: isOwner,
+    queryFn: async () => {
+      const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/outlets', {
+        params: { path: { tenantID: membership.tenant_id } },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+  })
+  if (!isOwner) {
+    return <p className="rounded-xl bg-paper-raised px-4 py-3 text-sm text-body-muted">Minta owner bisnis membagikan tautan publik outlet ini.</p>
+  }
+  if (outlets.isPending) return <p className="text-sm text-muted" role="status">Memuat tautan publik…</p>
+  if (outlets.isError) return <RetryAlert onRetry={() => void outlets.refetch()}>{messageOf(outlets.error)}</RetryAlert>
+  const selectedOutlet = outlets.data.find((item) => item.id === outlet.id)
+  if (!selectedOutlet) return <Alert>Data tautan outlet belum tersedia.</Alert>
+  const publicURL = `${window.location.origin}/o/${selectedOutlet.slug}`
+  return (
+    <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white p-4">
+      <div className="min-w-0">
+        <h2 className="text-sm font-semibold">Tautan publik outlet</h2>
+        <a href={publicURL} target="_blank" rel="noreferrer" className="mt-1 inline-flex min-h-11 max-w-full items-center break-all text-sm font-semibold text-brand-ink underline focus-visible:outline-2 focus-visible:outline-brand-ink">{publicURL}</a>
+      </div>
+      <Button
+        type="button"
+        variant="secondary"
+        className="w-auto"
+        onClick={() => {
+          if (!navigator.clipboard?.writeText) {
+            setCopyFailed(true)
+            return
+          }
+          void navigator.clipboard.writeText(publicURL)
+            .then(() => { setCopied(true); setCopyFailed(false) })
+            .catch(() => { setCopied(false); setCopyFailed(true) })
+        }}
+      >
+        {copied ? 'Tersalin' : 'Salin tautan'}
+      </Button>
+      {copied && <span className="sr-only" role="status">Tautan outlet disalin.</span>}
+      {copyFailed && <p className="w-full text-sm text-body-muted" role="status">Salin alamat tautan di atas secara manual.</p>}
+    </section>
   )
 }
 
@@ -152,7 +204,7 @@ function SessionPanel({
     ?? sessions.data?.[0]
 
   if (sessions.isPending) return <p className="py-6 text-center text-sm text-muted" role="status">Memuat sesi antrian…</p>
-  if (sessions.isError) return <Alert>{messageOf(sessions.error)}</Alert>
+  if (sessions.isError) return <RetryAlert onRetry={() => void sessions.refetch()}>{messageOf(sessions.error)}</RetryAlert>
 
   const outletToday = dateInTimezone(selected.outlet.timezone)
   const validInitialQuota = Number.isInteger(Number(initialQuota)) && Number(initialQuota) > 0 && Number(initialQuota) <= 1000
@@ -208,7 +260,7 @@ function SessionPanel({
         >
           {sessions.data.map((session) => (
             <option key={session.id} value={session.id}>
-              {formatLongDate(session.session_date)} · {session.status === 'open' ? 'Dibuka' : 'Ditutup'}
+              {formatLongDate(session.session_date)} · Kuota {session.used_quota}/{session.max_quota} · {session.status === 'open' ? 'Dibuka' : 'Ditutup'}
             </option>
           ))}
         </select>
@@ -221,19 +273,25 @@ function SessionPanel({
               to={`/kelola/${selected.membership.tenant_id}/sesi/${session.id}`}
               className={`inline-flex min-h-11 shrink-0 items-center rounded-xl border px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-brand-ink ${session.id === currentSession?.id ? 'border-ink bg-ink text-white' : 'border-line-strong bg-white text-ink'}`}
             >
-              {formatLongDate(session.session_date)}
+              {formatLongDate(session.session_date)} · {session.used_quota}/{session.max_quota}
             </Link>
           ))}
         </nav>
       )}
-      {currentSession.status === 'open' ? (
-        <CloseSessionControl membership={selected.membership} session={currentSession} />
-      ) : (
-        <Alert tone="info">Sesi sudah ditutup. Pelanggan tidak bisa membuat pesanan baru.</Alert>
-      )}
-      <PaymentPanel membership={selected.membership} session={currentSession} />
-      <SettlementPanel membership={selected.membership} session={currentSession} />
-      <OfflineTicketPanel membership={selected.membership} session={currentSession} />
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="space-y-5">
+          {currentSession.status === 'open' ? (
+            <CloseSessionControl membership={selected.membership} session={currentSession} />
+          ) : (
+            <Alert tone="info">Sesi sudah ditutup. Pelanggan tidak bisa membuat pesanan baru.</Alert>
+          )}
+          <PaymentPanel membership={selected.membership} session={currentSession} />
+        </div>
+        <div className="space-y-5">
+          <SettlementPanel membership={selected.membership} session={currentSession} />
+          <OfflineTicketPanel membership={selected.membership} session={currentSession} />
+        </div>
+      </div>
         </>
       )}
     </>
@@ -438,7 +496,7 @@ function PaymentPanel({ membership, session }: { membership: Membership; session
   })
 
   if (payments.isPending) return <p className="py-6 text-center text-sm text-muted" role="status">Memuat DP yang menunggu…</p>
-  if (payments.isError) return <Alert>{messageOf(payments.error)}</Alert>
+  if (payments.isError) return <RetryAlert onRetry={() => void payments.refetch()}>{messageOf(payments.error)}</RetryAlert>
 
   return (
     <section aria-label="DP menunggu konfirmasi" className="space-y-3">
@@ -511,7 +569,7 @@ function SettlementPanel({ membership, session }: { membership: Membership; sess
   })
 
   if (tickets.isPending) return <p className="py-4 text-center text-sm text-muted" role="status">Memuat pelunasan…</p>
-  if (tickets.isError) return <Alert>{messageOf(tickets.error)}</Alert>
+  if (tickets.isError) return <RetryAlert onRetry={() => void tickets.refetch()}>{messageOf(tickets.error)}</RetryAlert>
 
   return (
     <section aria-label="Pelunasan menunggu konfirmasi" className="space-y-3 border-t border-line pt-5">

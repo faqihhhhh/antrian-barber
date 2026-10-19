@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
-import { Alert, Spinner } from '../components/ui'
+import { Alert, RetryAlert, Spinner } from '../components/ui'
 import type { components } from '../api/schema'
 import { formatLongDate } from '../lib/format'
 import { useQueueStream } from '../hooks/useQueueStream'
@@ -23,7 +23,7 @@ export default function Kapster() {
   if (me.isError) {
     return (
       <main className="mx-auto max-w-md px-5 py-10">
-        <Alert>{messageOf(me.error)}</Alert>
+        <RetryAlert onRetry={() => void me.refetch()}>{messageOf(me.error)}</RetryAlert>
       </main>
     )
   }
@@ -104,7 +104,7 @@ function SessionPanel({
     ?? sessions.data?.[0]
 
   if (sessions.isPending) return <p className="py-6 text-center text-sm text-muted" role="status">Memuat sesi antrian…</p>
-  if (sessions.isError) return <Alert>{messageOf(sessions.error)}</Alert>
+  if (sessions.isError) return <RetryAlert onRetry={() => void sessions.refetch()}>{messageOf(sessions.error)}</RetryAlert>
   if (!selectedSession) {
     return (
       <Alert tone="info">
@@ -215,8 +215,8 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
   if (tickets.isPending || kapsterStates.isPending) {
     return <p className="py-6 text-center text-sm text-muted" role="status">Memuat kondisi antrian…</p>
   }
-  if (tickets.isError) return <Alert>{messageOf(tickets.error)}</Alert>
-  if (kapsterStates.isError) return <Alert>{messageOf(kapsterStates.error)}</Alert>
+  if (tickets.isError) return <RetryAlert onRetry={() => void tickets.refetch()}>{messageOf(tickets.error)}</RetryAlert>
+  if (kapsterStates.isError) return <RetryAlert onRetry={() => void kapsterStates.refetch()}>{messageOf(kapsterStates.error)}</RetryAlert>
 
   const myState = kapsterStates.data.find((state) => state.membership_id === membership.membership_id)
   const currentTicket = tickets.data.find((ticket) => ticket.id === myState?.current_ticket_id)
@@ -244,7 +244,7 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
         </p>
       </section>
 
-      <section aria-label="Aksi kapster" className="space-y-3">
+      <section aria-label="Aksi kapster" className="sticky bottom-2 z-10 space-y-3 rounded-2xl border border-line bg-paper/95 p-3 shadow-lg backdrop-blur">
         {!currentTicket && (!myState || myState.status === 'idle') && (
           <button
             type="button"
@@ -294,7 +294,9 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
             </button>
           </div>
         )}
-        {action.isError && <Alert>{messageOf(action.error)}</Alert>}
+        {action.isError && <Alert>{action.error instanceof ApiError && action.error.code === 'berlangganan_diperlukan'
+          ? 'Langganan bisnis ini tidak aktif. Minta owner bisnis memperbarui langganannya.'
+          : messageOf(action.error)}</Alert>}
         {toast && <p className="rounded-xl bg-ink px-4 py-3 text-sm text-white" role="status">{toast}</p>}
         {session.status !== 'open' && <Alert tone="info">Sesi ditutup untuk pesanan baru. Selesaikan tiket yang masih tersisa.</Alert>}
       </section>

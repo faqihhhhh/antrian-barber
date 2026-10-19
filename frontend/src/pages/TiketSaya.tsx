@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Alert, Spinner } from '../components/ui'
+import { RetryAlert, Spinner } from '../components/ui'
 import { messageOf } from '../api/client'
 import { useMyTickets, type MyTicket } from '../hooks/useMyTickets'
 import { formatLongDate, isActiveStatus, TICKET_STATUS_LABEL } from '../lib/format'
@@ -12,7 +12,7 @@ export default function TiketSaya() {
   if (tickets.isError) {
     return (
       <main className="mx-auto max-w-md px-5 py-10">
-        <Alert>{messageOf(tickets.error)}</Alert>
+        <RetryAlert onRetry={() => void tickets.refetch()}>{messageOf(tickets.error)}</RetryAlert>
       </main>
     )
   }
