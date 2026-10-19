@@ -14,6 +14,7 @@ import (
 	db "kapsflow/internal/db"
 	"kapsflow/internal/dbx"
 	"kapsflow/internal/httpx"
+	"kapsflow/internal/pgerr"
 )
 
 const (
@@ -34,14 +35,19 @@ type Service struct {
 func NewService(pool *pgxpool.Pool, mailer Mailer, log *slog.Logger, baseURL string, devAutoVerify bool) *Service {
 	return &Service{q: db.New(pool), mailer: mailer, log: log, baseURL: baseURL, devAutoVerify: devAutoVerify}
 }
+
 // Register mendaftarkan akun baru dan mengirim email verifikasi. Kalau
 // email sudah ada tapi belum terverifikasi, dianggap percobaan ulang dan
 // email verifikasi dikirim lagi. Kalau sudah terverifikasi, balasannya
 // tetap "sukses" ke pemanggil, supaya tidak membocorkan email siapa saja
 // yang sudah terdaftar.
-func (s *Service) Register(ctx context.Context, email, password string) error {
+func (s *Service) Register(ctx context.Context, email, password, rawUsername string) error {
 	if len(password) < 8 {
 		return httpx.BadRequest("password_terlalu_pendek", "Password minimal 8 karakter", nil)
+	}
+	username, err := NormalizeUsername(rawUsername)
+	if err != nil {
+		return err
 	}
 
 	existing, err := s.q.GetUserByEmail(ctx, email)
@@ -49,10 +55,20 @@ func (s *Service) Register(ctx context.Context, email, password string) error {
 		if existing.EmailVerifiedAt.Valid {
 			return nil
 		}
+		if !existing.Username.Valid {
+			if err := s.setUsername(ctx, existing.ID, username); err != nil {
+				return err
+			}
+		}
 		return s.sendVerificationEmail(ctx, existing.ID, existing.Email)
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return httpx.Internal(fmt.Errorf("cek user existing: %w", err))
+	}
+	if _, err := s.q.GetUserByUsername(ctx, dbx.Text(username)); err == nil {
+		return usernameTaken()
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return httpx.Internal(fmt.Errorf("cek username: %w", err))
 	}
 
 	hash, err := HashPassword(password)
@@ -60,12 +76,34 @@ func (s *Service) Register(ctx context.Context, email, password string) error {
 		return httpx.Internal(fmt.Errorf("hash password: %w", err))
 	}
 
-	user, err := s.q.CreateUser(ctx, db.CreateUserParams{Email: email, PasswordHash: hash})
+	user, err := s.q.CreateUser(ctx, db.CreateUserParams{Email: email, PasswordHash: hash, Username: dbx.Text(username)})
 	if err != nil {
+		if pgerr.IsUniqueViolationOn(err, "users_username_key") {
+			return usernameTaken()
+		}
 		return httpx.Internal(fmt.Errorf("membuat user: %w", err))
 	}
 
 	return s.sendVerificationEmail(ctx, user.ID, user.Email)
+}
+
+func (s *Service) setUsername(ctx context.Context, userID uuid.UUID, username string) error {
+	if _, err := s.q.GetUserByUsername(ctx, dbx.Text(username)); err == nil {
+		return usernameTaken()
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return httpx.Internal(fmt.Errorf("cek username: %w", err))
+	}
+	if err := s.q.UpdateUserUsername(ctx, db.UpdateUserUsernameParams{ID: userID, Username: dbx.Text(username)}); err != nil {
+		if pgerr.IsUniqueViolationOn(err, "users_username_key") {
+			return usernameTaken()
+		}
+		return httpx.Internal(fmt.Errorf("menyimpan username: %w", err))
+	}
+	return nil
+}
+
+func usernameTaken() error {
+	return httpx.Conflict("username_sudah_dipakai", "Username ini sudah digunakan. Pilih username lain.", nil)
 }
 
 func (s *Service) sendVerificationEmail(ctx context.Context, userID uuid.UUID, email string) error {
@@ -97,7 +135,6 @@ func (s *Service) sendVerificationEmail(ctx context.Context, userID uuid.UUID, e
 	}
 	return nil
 }
-
 
 func (s *Service) VerifyEmail(ctx context.Context, rawToken string) error {
 	row, err := s.q.GetValidEmailVerificationToken(ctx, hashToken(rawToken))
@@ -248,7 +285,7 @@ func (s *Service) SendVerificationEmailUsing(ctx context.Context, q Querier, use
 		}
 		return nil
 	}
-	
+
 	rawToken, err := generateToken()
 	if err != nil {
 		return httpx.Internal(err)

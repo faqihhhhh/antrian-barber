@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Logo } from './Logo'
@@ -34,6 +34,59 @@ export function Button(props: ButtonProps) {
     <button className={classes} disabled={disabled || loading} {...rest}>
       {loading ? 'Memproses…' : children}
     </button>
+  )
+}
+
+export function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmLabel,
+  loading = false,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean
+  title: string
+  description: string
+  confirmLabel: string
+  loading?: boolean
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const titleID = useId()
+  const descriptionID = useId()
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) return
+    if (open && !dialog.open) dialog.showModal()
+    if (!open && dialog.open) dialog.close()
+  }, [open])
+
+  return (
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleID}
+      aria-describedby={descriptionID}
+      onCancel={(event) => {
+        event.preventDefault()
+        if (!loading) onCancel()
+      }}
+      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-line bg-paper p-0 text-ink shadow-2xl backdrop:bg-ink/50"
+    >
+      <div className="space-y-4 p-5">
+        <div>
+          <h2 id={titleID} className="text-lg font-bold">{title}</h2>
+          <p id={descriptionID} className="mt-2 text-sm leading-6 text-body-muted">{description}</p>
+        </div>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button type="button" variant="secondary" disabled={loading} onClick={onCancel} className="sm:w-auto">Batal</Button>
+          <Button type="button" loading={loading} onClick={onConfirm} className="sm:w-auto">{confirmLabel}</Button>
+        </div>
+      </div>
+    </dialog>
   )
 }
 
@@ -147,20 +200,20 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
         <div className="relative z-10"><Logo light /></div>
         <div className="relative z-10 grid grid-cols-[1fr_auto] items-center gap-8">
           <div className="max-w-lg">
-            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">Rapi dari kursi pertama</p>
+            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-white/70">Rapi dari kursi pertama</p>
             <p className="text-4xl font-bold leading-tight xl:text-5xl">Antrian lancar, pelanggan nyaman.</p>
             <p className="mt-5 max-w-md text-base leading-7 text-white/80">Atur outlet dan layanan, lalu biarkan pelanggan memantau giliran mereka dari ponsel.</p>
           </div>
           <svg aria-hidden="true" viewBox="0 0 132 280" className="h-56 w-28 xl:h-72 xl:w-32">
             <defs><clipPath id="barber-pole"><rect x="30" y="36" width="72" height="208" rx="30" /></clipPath></defs>
-            <rect x="24" y="30" width="84" height="220" rx="36" fill="#faf7f2" />
+            <rect x="24" y="30" width="84" height="220" rx="36" fill="#fafafa" />
             <g clipPath="url(#barber-pole)">
-              <rect x="30" y="36" width="72" height="208" fill="#faf7f2" />
-              <path d="M8 206 122 92M8 258 122 144M8 154 122 40M8 102 74 36" stroke="#b45309" strokeWidth="20" />
+              <rect x="30" y="36" width="72" height="208" fill="#fafafa" />
+              <path d="M8 206 122 92M8 258 122 144M8 154 122 40M8 102 74 36" stroke="#737373" strokeWidth="20" />
             </g>
-            <path d="M24 52h84M24 228h84" stroke="#b45309" strokeWidth="12" strokeLinecap="round" />
-            <circle cx="66" cy="18" r="10" fill="#b45309" />
-            <circle cx="66" cy="262" r="10" fill="#b45309" />
+            <path d="M24 52h84M24 228h84" stroke="#737373" strokeWidth="12" strokeLinecap="round" />
+            <circle cx="66" cy="18" r="10" fill="#737373" />
+            <circle cx="66" cy="262" r="10" fill="#737373" />
           </svg>
         </div>
         <p className="relative z-10 text-xs text-white/70">Kapsflow · Antrian untuk barbershop dan salon</p>

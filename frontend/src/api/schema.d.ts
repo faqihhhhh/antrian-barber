@@ -102,7 +102,7 @@ export interface paths {
          * Daftar akun baru
          * @description Selalu membalas 202 dengan pesan yang sama, baik email itu baru maupun
          *     sudah terdaftar, supaya tidak membocorkan email siapa yang sudah punya akun.
-         *     Kode error: `password_terlalu_pendek`.
+         *     Kode error: `password_terlalu_pendek`, `username_tidak_valid`, `username_sudah_dipakai`.
          */
         post: operations["register"];
         delete?: never;
@@ -239,6 +239,23 @@ export interface paths {
         /** Siapa saya, bisnis dan peran saya, outlet yang boleh saya akses */
         get: operations["getMe"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/username": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Atur atau ubah username akun */
+        put: operations["setMyUsername"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1120,6 +1137,19 @@ export interface components {
             email: string;
             password: string;
         };
+        RegisterRequest: {
+            /** Format: email */
+            email: string;
+            password: string;
+            /** @description Username unik; disimpan dalam huruf kecil. */
+            username: string;
+        };
+        UsernameRequest: {
+            username: string;
+        };
+        UsernameResponse: {
+            username: string;
+        };
         EmailRequest: {
             /** Format: email */
             email: string;
@@ -1135,6 +1165,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             email: string;
+            username: string | null;
         };
         OutletInfo: {
             /** Format: uuid */
@@ -1180,6 +1211,7 @@ export interface components {
             membership_id: string;
             /** Format: email */
             email: string;
+            username: string | null;
             roles: ("admin" | "kapster")[];
             email_verified: boolean;
             outlet_ids: string[];
@@ -1188,6 +1220,7 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
+            username: string;
             roles: ("admin" | "kapster")[];
             outlet_ids: string[];
         };
@@ -1494,7 +1527,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Credentials"];
+                "application/json": components["schemas"]["RegisterRequest"];
             };
         };
         responses: {
@@ -1674,6 +1707,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeContext"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    setMyUsername: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UsernameRequest"];
+            };
+        };
+        responses: {
+            /** @description Username tersimpan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsernameResponse"];
                 };
             };
             default: components["responses"]["Error"];

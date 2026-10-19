@@ -96,7 +96,7 @@ export default function Tiket() {
       </div>
       <TicketStub ticket={ticket} showCode={ticket.status !== 'pending_payment' && ticket.status !== 'canceled'} />
       <StatusStepper status={ticket.status} />
-      {(ticket.status === 'waiting' || ticket.status === 'called') && <PushPrompt />}
+      {ticket.status === 'waiting' && <PushPrompt />}
       <StatusBody ticket={ticket} />
     </main>
   )
@@ -105,7 +105,7 @@ export default function Tiket() {
 function StatusStepper({ status }: { status: string }) {
   if (status === 'canceled') return <p className="rounded-xl border border-line bg-white px-4 py-3 text-sm font-semibold">Tiket dibatalkan</p>
   const steps = [
-    ['pending_payment', 'Menunggu pembayaran'],
+    ['pending_payment', 'Bayar DP'],
     ['waiting', 'Dalam antrian'],
     ['called', 'Dipanggil'],
     ['in_progress', 'Sedang dilayani'],
@@ -115,7 +115,7 @@ function StatusStepper({ status }: { status: string }) {
   return (
     <ol aria-label="Tahapan tiket" className="grid grid-cols-5 gap-1">
       {steps.map(([key, label], index) => (
-        <li key={key} className={`border-t-2 pt-2 text-center text-[10px] leading-tight ${index <= current ? 'border-brand text-brand-ink' : 'border-line text-muted'}`} aria-current={index === current ? 'step' : undefined}>
+        <li key={key} className={`border-t-2 pt-2 text-center text-xs leading-tight ${index <= current ? 'border-brand text-brand-ink' : 'border-line text-muted'}`} aria-current={index === current ? 'step' : undefined}>
           <span className="block font-bold">{index < current ? '✓' : index + 1}</span>
           {label}
         </li>

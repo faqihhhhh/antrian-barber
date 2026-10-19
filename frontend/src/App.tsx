@@ -1,30 +1,34 @@
+import { lazy, Suspense } from 'react'
 import { Link, Route, Routes } from 'react-router'
 import RequireLogin from './auth/RequireLogin'
+import AppShell from './components/AppShell'
+import { Spinner } from './components/ui'
 import AturUlangPassword from './pages/AturUlangPassword'
-import Beranda from './pages/Beranda'
 import Daftar from './pages/Daftar'
 import LupaPassword from './pages/LupaPassword'
 import Masuk from './pages/Masuk'
-import Kapster from './pages/Kapster'
-import Admin from './pages/Admin'
-import Outlet from './pages/Outlet'
+import HalamanOutlet from './pages/Outlet'
 import Tiket from './pages/Tiket'
 import TiketSaya from './pages/TiketSaya'
 import VerifikasiEmail from './pages/VerifikasiEmail'
-import Pemilik from './pages/Pemilik'
-import PemilikStaf from './pages/PemilikStaf'
-import PemilikPembayaran from './pages/PemilikPembayaran'
-import PemilikStatistik from './pages/PemilikStatistik'
-import PemilikUlasan from './pages/PemilikUlasan'
-import PemilikLangganan from './pages/PemilikLangganan'
-import PemilikSaaS from './pages/PemilikSaaS'
-import PemilikMulai from './pages/PemilikMulai'
+
+const Admin = lazy(() => import('./pages/Admin'))
+const Kapster = lazy(() => import('./pages/Kapster'))
+const Beranda = lazy(() => import('./pages/Beranda'))
+const Pemilik = lazy(() => import('./pages/Pemilik'))
+const PemilikStaf = lazy(() => import('./pages/PemilikStaf'))
+const PemilikPembayaran = lazy(() => import('./pages/PemilikPembayaran'))
+const PemilikStatistik = lazy(() => import('./pages/PemilikStatistik'))
+const PemilikUlasan = lazy(() => import('./pages/PemilikUlasan'))
+const PemilikLangganan = lazy(() => import('./pages/PemilikLangganan'))
+const PemilikSaaS = lazy(() => import('./pages/PemilikSaaS'))
+const PemilikMulai = lazy(() => import('./pages/PemilikMulai'))
 
 function NotFound() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-5 text-center">
+    <main className="mx-auto flex min-h-[70dvh] max-w-md flex-col items-center justify-center px-5 text-center">
       <h1 className="text-2xl font-bold">Halaman tidak ditemukan</h1>
-      <Link to="/" className="mt-4 text-sm font-semibold underline">
+      <Link to="/" className="mt-4 inline-flex min-h-11 items-center px-2 text-sm font-semibold underline">
         Kembali ke beranda
       </Link>
     </main>
@@ -33,139 +37,38 @@ function NotFound() {
 
 export default function App() {
   return (
-    <>
-    <Routes>
-      <Route path="/masuk" element={<Masuk />} />
-      <Route path="/daftar" element={<Daftar />} />
-      <Route path="/verifikasi-email" element={<VerifikasiEmail />} />
-      <Route path="/lupa-password" element={<LupaPassword />} />
-      <Route path="/atur-ulang-password" element={<AturUlangPassword />} />
-      <Route path="/o/:slug" element={<Outlet />} />
-      <Route path="/o/:slug/pesan" element={<Outlet />} />
-      {/* URL lama tetap berfungsi untuk tautan yang sudah terlanjur dibagikan. */}
-      <Route path="/b/:slug" element={<Outlet />} />
-      <Route
-        path="/tiket"
-        element={
-          <RequireLogin>
-            <TiketSaya />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          <RequireLogin>
-            <Admin />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/kelola/:tenantId/:outletId"
-        element={
-          <RequireLogin>
-            <Admin />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/kelola/:tenantId/sesi/:sessionId"
-        element={
-          <RequireLogin>
-            <Admin />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/pemilik"
-        element={
-          <RequireLogin>
-            <Pemilik />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/pemilik/staf"
-        element={
-          <RequireLogin>
-            <PemilikStaf />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/pemilik/pembayaran"
-        element={
-          <RequireLogin>
-            <PemilikPembayaran />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/pemilik/statistik"
-        element={
-          <RequireLogin>
-            <PemilikStatistik />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/pemilik/ulasan"
-        element={
-          <RequireLogin>
-            <PemilikUlasan />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/pemilik/langganan"
-        element={
-          <RequireLogin>
-            <PemilikLangganan />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/pemilik-saas"
-        element={
-          <RequireLogin>
-            <PemilikSaaS />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/mulai-bisnis"
-        element={
-          <RequireLogin>
-            <PemilikMulai />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/kapster"
-        element={
-          <RequireLogin>
-            <Kapster />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/tiket/:ticketId"
-        element={
-          <RequireLogin>
-            <Tiket />
-          </RequireLogin>
-        }
-      />
-      <Route
-        path="/"
-        element={
-          <RequireLogin>
-            <Beranda />
-          </RequireLogin>
-        }
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-    </>
+    <Suspense fallback={<Spinner />}>
+      <Routes>
+        <Route path="/masuk" element={<Masuk />} />
+        <Route path="/daftar" element={<Daftar />} />
+        <Route path="/verifikasi-email" element={<VerifikasiEmail />} />
+        <Route path="/lupa-password" element={<LupaPassword />} />
+        <Route path="/atur-ulang-password" element={<AturUlangPassword />} />
+        <Route path="/o/:slug" element={<HalamanOutlet />} />
+        <Route path="/o/:slug/pesan" element={<HalamanOutlet />} />
+        {/* URL lama tetap berfungsi untuk tautan yang sudah terlanjur dibagikan. */}
+        <Route path="/b/:slug" element={<HalamanOutlet />} />
+
+        <Route element={<RequireLogin><AppShell /></RequireLogin>}>
+          <Route index element={<Beranda />} />
+          <Route path="tiket" element={<TiketSaya />} />
+          <Route path="tiket/:ticketId" element={<Tiket />} />
+          <Route path="admin" element={<Admin />} />
+          <Route path="kelola/:tenantId/:outletId" element={<Admin />} />
+          <Route path="kelola/:tenantId/sesi/:sessionId" element={<Admin />} />
+          <Route path="pemilik" element={<Pemilik />} />
+          <Route path="pemilik/staf" element={<PemilikStaf />} />
+          <Route path="pemilik/pembayaran" element={<PemilikPembayaran />} />
+          <Route path="pemilik/statistik" element={<PemilikStatistik />} />
+          <Route path="pemilik/ulasan" element={<PemilikUlasan />} />
+          <Route path="pemilik/langganan" element={<PemilikLangganan />} />
+          <Route path="pemilik-saas" element={<PemilikSaaS />} />
+          <Route path="mulai-bisnis" element={<PemilikMulai />} />
+          <Route path="kapster" element={<Kapster />} />
+        </Route>
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   )
 }

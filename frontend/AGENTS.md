@@ -28,17 +28,22 @@ dari `src/api/client.ts` (bertipe penuh). Error API dibungkus `ApiError` dan dit
 ```
 api/         client.ts, schema.d.ts (hasil generate, jangan diedit)
 auth/        useMe (['me']), RequireLogin, useResendVerification
-components/  ui.tsx (Button, LinkButton, Field, Alert, Spinner, AuthLayout), TicketStub,
-             PaymentPanel, ReviewForm, QueueNow
+components/  ui.tsx (Button, Field, Alert, Badge, ConfirmDialog, Spinner, AuthLayout),
+             AppShell, Logo, TicketStub, PaymentPanel, ReviewForm, QueueNow, PushPrompt
 hooks/       useQueueStream (SSE), useMyTickets, usePollWhileActive, useNow
 lib/         format.ts (rupiah, tanggal, estimasi), storage.ts (localStorage aman)
 pages/       satu file per layar
 ```
 
-Rute saat ini: `/masuk`, `/daftar`, `/verifikasi-email`, `/lupa-password`, `/atur-ulang-password`,
-`/` (Beranda, perlu login), `/b/:slug` (halaman outlet publik), `/tiket` dan `/tiket/:ticketId`
-(perlu login). Halaman yang butuh login dibungkus `RequireLogin`, yang menyimpan alamat tujuan
-(termasuk query string) agar kembali setelah masuk.
+Rute publik: `/masuk`, `/daftar`, `/verifikasi-email`, `/lupa-password`, `/atur-ulang-password`,
+`/o/:slug` (halaman outlet; `/b/:slug` masih alias lama). Rute berlogin berada di satu layout
+route yang memakai `RequireLogin` dan `AppShell`; shell menyediakan logo, akun, logout, dan
+navigasi utama. `RequireLogin` menyimpan alamat tujuan (termasuk query string) agar kembali setelah
+masuk. Halaman Beranda, admin, kapster, dan pemilik dimuat dengan `React.lazy`; halaman outlet dan
+tiket pelanggan tetap berada di jalur pemuatan utama. Rute berlogin meliputi `/`, `/tiket`,
+`/tiket/:ticketId`, `/kapster`, `/kelola/:tenantId/:outletId`,
+`/kelola/:tenantId/sesi/:sessionId`, `/pemilik` dan subhalamannya, `/pemilik-saas`, serta
+`/mulai-bisnis`.
 
 ## Aturan kode
 
@@ -56,11 +61,11 @@ Rute saat ini: `/masuk`, `/daftar`, `/verifikasi-email`, `/lupa-password`, `/atu
 
 ## Desain
 
-Mobile first (pelanggan memakai HP). Palet `stone` Tailwind, satu warna tegas: kartu gelap
-`stone-900` untuk hal yang paling penting (nomor antrian, jumlah antrian). Hijau hanya untuk
-"giliran Anda" dan indikator langsung, amber hanya untuk bintang penilaian. Sudut membulat besar
-(`rounded-3xl` kartu, `rounded-xl` tombol dan input). Fokus keyboard harus terlihat. Gerak hanya
-sebagai jawaban atas aksi pengguna.
+Mobile first (pelanggan dan staf memakai HP). Tema utama monokrom memakai token semantik di
+`src/index.css` (`ink`, `paper`, `line`, `body`); jangan menambahkan warna `stone-*` langsung di
+halaman. Hijau dipakai untuk "giliran Anda" dan indikator langsung, amber untuk peringatan dan
+penilaian. Sudut membulat besar (`rounded-3xl` kartu, `rounded-xl` tombol dan input). Fokus keyboard
+harus terlihat. Gerak hanya sebagai jawaban atas aksi pengguna.
 
 Teks antarmuka: bahasa Indonesia sederhana, kalimat aktif, tombol berisi kata kerja ("Pesan dan
 bayar DP", bukan "Kirim"). Pesan error menjelaskan apa yang salah dan apa yang bisa dilakukan, tanpa

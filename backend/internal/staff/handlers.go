@@ -23,6 +23,7 @@ func NewHandlers(svc *Service, log *slog.Logger) *Handlers {
 type inviteStaffRequest struct {
 	Email     string   `json:"email"`
 	Password  string   `json:"password"`
+	Username  string   `json:"username"`
 	Roles     []string `json:"roles"`
 	OutletIDs []string `json:"outlet_ids"`
 }
@@ -51,7 +52,7 @@ func (h *Handlers) InviteStaff(w http.ResponseWriter, r *http.Request) {
 	}
 
 	membership, err := h.svc.InviteStaff(r.Context(), tenantID, InviteInput{
-		Email: req.Email, Password: req.Password, Roles: req.Roles, OutletIDs: outletIDs,
+		Email: req.Email, Password: req.Password, Username: req.Username, Roles: req.Roles, OutletIDs: outletIDs,
 	})
 	if err != nil {
 		httpx.Error(w, r, h.log, err)

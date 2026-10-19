@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
-import { Alert, Button, Field, RetryAlert, Spinner } from '../components/ui'
+import { Alert, Button, ConfirmDialog, Field, RetryAlert, Spinner } from '../components/ui'
 import type { components } from '../api/schema'
 import { formatDateTime, formatLongDate, formatRupiah } from '../lib/format'
 
@@ -83,7 +83,6 @@ export default function Admin() {
     <main className="mx-auto min-h-dvh max-w-4xl space-y-5 bg-paper px-5 py-6">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW</p>
           <h1 className="mt-1 text-2xl font-bold">Meja admin</h1>
         </div>
         <Link to="/" className="pt-1 text-sm font-semibold underline">Beranda</Link>
@@ -146,8 +145,8 @@ function PublicOutletLink({ membership, outlet }: { membership: Membership; outl
       </div>
       <Button
         type="button"
-        variant="secondary"
-        className="w-auto"
+        variant="primary"
+        className="w-full sm:w-auto"
         onClick={() => {
           if (!navigator.clipboard?.writeText) {
             setCopyFailed(true)
@@ -210,96 +209,88 @@ function SessionPanel({
   const validInitialQuota = Number.isInteger(Number(initialQuota)) && Number(initialQuota) > 0 && Number(initialQuota) <= 1000
 
   return (
-    <>
-      <form
-        className="space-y-3 rounded-2xl border border-line bg-white p-4"
-        onSubmit={(event) => {
-          event.preventDefault()
-          if (sessionDate && validInitialQuota) openSession.mutate()
-        }}
-      >
-        <h2 className="font-bold">Buka sesi baru</h2>
-        <Field
-          label="Tanggal sesi"
-          name="new-session-date"
-          type="date"
-          min={outletToday}
-          value={sessionDate}
-          onChange={(event) => setSessionDate(event.target.value)}
-        />
-        <Field
-          label="Kuota awal"
-          name="new-session-quota"
-          type="number"
-          min={1}
-          max={1000}
-          step={1}
-          inputMode="numeric"
-          value={initialQuota}
-          onChange={(event) => setInitialQuota(event.target.value)}
-          hint="Masukkan 1–1.000 tiket."
-        />
-        {openSession.isError && <Alert>{messageOf(openSession.error)}</Alert>}
-        {openSession.isSuccess && <Alert tone="info">Sesi berhasil dibuka.</Alert>}
-        <Button type="submit" loading={openSession.isPending} disabled={!sessionDate || !validInitialQuota}>
-          Buka sesi
-        </Button>
-      </form>
-
-      {!currentSession ? (
-        <Alert tone="info">Belum ada sesi antrian di outlet ini. Buka sesi baru untuk mulai menerima pelanggan.</Alert>
-      ) : (
+    <div className="space-y-5">
+      {currentSession ? (
         <>
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium text-body">Sesi antrian</span>
-        <select
-          aria-label="Sesi antrian"
-          className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
-          value={currentSession.id}
-          onChange={(event) => onSessionChange(event.target.value)}
-        >
-          {sessions.data.map((session) => (
-            <option key={session.id} value={session.id}>
-              {formatLongDate(session.session_date)} · Kuota {session.used_quota}/{session.max_quota} · {session.status === 'open' ? 'Dibuka' : 'Ditutup'}
-            </option>
-          ))}
-        </select>
-      </label>
-      {sessions.data.length > 0 && (
-        <nav aria-label="Kelola sesi antrian" className="flex gap-2 overflow-x-auto pb-1">
-          {sessions.data.map((session) => (
-            <Link
-              key={session.id}
-              to={`/kelola/${selected.membership.tenant_id}/sesi/${session.id}`}
-              className={`inline-flex min-h-11 shrink-0 items-center rounded-xl border px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-brand-ink ${session.id === currentSession?.id ? 'border-ink bg-ink text-white' : 'border-line-strong bg-white text-ink'}`}
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-body">Sesi antrian</span>
+            <select
+              aria-label="Sesi antrian"
+              className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
+              value={currentSession.id}
+              onChange={(event) => onSessionChange(event.target.value)}
             >
-              {formatLongDate(session.session_date)} · {session.used_quota}/{session.max_quota}
-            </Link>
-          ))}
-        </nav>
-      )}
-      <div className="grid gap-5 lg:grid-cols-2">
-        <div className="space-y-5">
+              {sessions.data.map((session) => (
+                <option key={session.id} value={session.id}>
+                  {formatLongDate(session.session_date)} · Kuota {session.used_quota}/{session.max_quota} · {session.status === 'open' ? 'Dibuka' : 'Ditutup'}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            <PaymentPanel membership={selected.membership} session={currentSession} />
+            <SettlementPanel membership={selected.membership} session={currentSession} />
+          </div>
+
+          <OfflineTicketPanel membership={selected.membership} session={currentSession} />
           {currentSession.status === 'open' ? (
             <CloseSessionControl membership={selected.membership} session={currentSession} />
           ) : (
             <Alert tone="info">Sesi sudah ditutup. Pelanggan tidak bisa membuat pesanan baru.</Alert>
           )}
-          <PaymentPanel membership={selected.membership} session={currentSession} />
-        </div>
-        <div className="space-y-5">
-          <SettlementPanel membership={selected.membership} session={currentSession} />
-          <OfflineTicketPanel membership={selected.membership} session={currentSession} />
-        </div>
-      </div>
         </>
+      ) : (
+        <Alert tone="info">Belum ada sesi antrian di outlet ini. Buka sesi baru untuk mulai menerima pelanggan.</Alert>
       )}
-    </>
+
+      <details className="group rounded-2xl border border-line-strong bg-white">
+        <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-2xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-brand-ink">
+          Buka sesi baru
+          <span aria-hidden="true" className="text-lg text-body-muted group-open:rotate-45">+</span>
+        </summary>
+        <form
+          className="space-y-3 border-t border-line p-4"
+          onSubmit={(event) => {
+            event.preventDefault()
+            if (sessionDate && validInitialQuota) openSession.mutate()
+          }}
+        >
+          <p className="text-sm text-body-muted">Buat sesi untuk tanggal layanan yang belum tersedia.</p>
+          <Field
+            label="Tanggal sesi"
+            name="new-session-date"
+            type="date"
+            min={outletToday}
+            value={sessionDate}
+            onChange={(event) => setSessionDate(event.target.value)}
+          />
+          <Field
+            label="Kuota awal"
+            name="new-session-quota"
+            type="number"
+            min={1}
+            max={1000}
+            step={1}
+            inputMode="numeric"
+            value={initialQuota}
+            onChange={(event) => setInitialQuota(event.target.value)}
+            hint="Masukkan 1–1.000 tiket."
+          />
+          {openSession.isError && <Alert>{messageOf(openSession.error)}</Alert>}
+          {openSession.isSuccess && <Alert tone="info">Sesi berhasil dibuka.</Alert>}
+          <Button type="submit" loading={openSession.isPending} disabled={!sessionDate || !validInitialQuota}>
+            Buka sesi
+          </Button>
+        </form>
+      </details>
+    </div>
   )
 }
 
 function CloseSessionControl({ membership, session }: { membership: Membership; session: QueueSession }) {
   const queryClient = useQueryClient()
+  const [confirmClose, setConfirmClose] = useState(false)
   const closeSession = useMutation({
     mutationFn: async () => {
       const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/close', {
@@ -322,16 +313,22 @@ function CloseSessionControl({ membership, session }: { membership: Membership; 
       {closeSession.isError && <Alert>{messageOf(closeSession.error)}</Alert>}
       <Button
         type="button"
-        variant="ghost"
+        variant="secondary"
+        className="w-full border-red-300 text-red-800 hover:bg-red-50 sm:w-auto"
         loading={closeSession.isPending}
-        onClick={() => {
-          if (window.confirm('Tutup sesi ini? Tiket yang masih menunggu pembayaran atau layanan harus diselesaikan terlebih dahulu.')) {
-            closeSession.mutate()
-          }
-        }}
+        onClick={() => setConfirmClose(true)}
       >
         Tutup sesi antrian
       </Button>
+      <ConfirmDialog
+        open={confirmClose}
+        title="Tutup sesi antrian?"
+        description="Tiket yang masih menunggu pembayaran atau layanan harus diselesaikan terlebih dahulu."
+        confirmLabel="Tutup sesi"
+        loading={closeSession.isPending}
+        onCancel={() => setConfirmClose(false)}
+        onConfirm={() => closeSession.mutate(undefined, { onSettled: () => setConfirmClose(false) })}
+      />
     </section>
   )
 }
@@ -541,6 +538,7 @@ function PaymentPanel({ membership, session }: { membership: Membership; session
 function SettlementPanel({ membership, session }: { membership: Membership; session: QueueSession }) {
   const queryClient = useQueryClient()
   const [amounts, setAmounts] = useState<Record<string, string>>({})
+  const [pendingSettlement, setPendingSettlement] = useState<{ ticketID: string; amount: number; ticketNumber: number } | null>(null)
   const queryKey = ['admin-awaiting-settlement', membership.tenant_id, session.id] as const
   const tickets = useQuery({
     queryKey,
@@ -591,8 +589,7 @@ function SettlementPanel({ membership, session }: { membership: Membership; sess
             onSubmit={(event) => {
               event.preventDefault()
               if (!validAmount || confirm.isPending) return
-              const description = `Konfirmasi pelunasan tiket #${ticket.ticket_number} sebesar ${formatRupiah(amount)}?`
-              if (window.confirm(description)) confirm.mutate({ ticketID: ticket.id, amount })
+              setPendingSettlement({ ticketID: ticket.id, amount, ticketNumber: ticket.ticket_number })
             }}
           >
             <div>
@@ -619,6 +616,17 @@ function SettlementPanel({ membership, session }: { membership: Membership; sess
           </form>
         )
       })}
+      <ConfirmDialog
+        open={pendingSettlement !== null}
+        title="Konfirmasi pelunasan?"
+        description={pendingSettlement ? `Tiket #${pendingSettlement.ticketNumber} akan ditandai lunas sebesar ${formatRupiah(pendingSettlement.amount)}.` : ''}
+        confirmLabel="Konfirmasi pelunasan"
+        loading={confirm.isPending}
+        onCancel={() => setPendingSettlement(null)}
+        onConfirm={() => {
+          if (pendingSettlement) confirm.mutate(pendingSettlement, { onSettled: () => setPendingSettlement(null) })
+        }}
+      />
     </section>
   )
 }

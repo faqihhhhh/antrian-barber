@@ -1,12 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router'
-import { api } from '../api/client'
+import { useState } from 'react'
+import { Link } from 'react-router'
+import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
-import { Badge, Button } from '../components/ui'
-import { Logo } from '../components/Logo'
+import { Alert, Badge, Button, Field } from '../components/ui'
 import { displayTimezone } from '../lib/timezone'
 import { lastOutlet } from '../lib/storage'
-import { removePushSubscription } from '../hooks/usePushNotifications'
 
 const ROLE_LABEL: Record<string, string> = {
   owner: 'Pemilik bisnis',
@@ -39,42 +38,51 @@ const STATUS: Record<string, { label: string; tone: 'success' | 'warning' | 'dan
 export default function Beranda() {
   const me = useMe()
   const queryClient = useQueryClient()
-  const navigate = useNavigate()
+  const [username, setUsername] = useState('')
 
-  const logout = useMutation({
+  const saveUsername = useMutation({
     mutationFn: async () => {
-      try {
-        await removePushSubscription()
-      } catch {
-        // Logout harus tetap bisa dilakukan jika penghapusan subscription gagal.
-      }
-      await api.POST('/v1/auth/logout')
+      const { data, error, response } = await api.PUT('/v1/me/username', { body: { username } })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
     },
-    onSuccess: () => {
-      // Hapus semua data tersimpan supaya akun berikutnya tidak melihat data akun ini.
-      queryClient.clear()
-      queryClient.setQueryData(['me'], null)
-      navigate('/masuk', { replace: true })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['me'] })
     },
   })
 
   const data = me.data
   const outlet = lastOutlet()
   if (!data) return null // RequireLogin sudah memastikan data ada
-  const localEmailPart = data.user.email.split('@', 1)[0]
-  const greetingName = localEmailPart ? localEmailPart[0].toLocaleUpperCase('id-ID') + localEmailPart.slice(1) : null
-
   return (
-    <main className="mx-auto min-h-dvh max-w-3xl px-5 pb-24 pt-8">
-      <header className="sticky top-0 z-20 -mx-5 mb-7 flex items-center justify-between border-b border-line bg-paper/95 px-5 py-3 backdrop-blur">
-        <Logo />
-        <Button type="button" variant="ghost" className="w-auto px-3" loading={logout.isPending} onClick={() => logout.mutate()}>
-          Keluar
-        </Button>
-      </header>
+    <main className="mx-auto min-h-[70dvh] max-w-3xl px-5 pb-8 pt-8">
       <div className="mb-6">
-        <h1 className="mt-1 text-2xl font-bold">{greetingName ? `Halo, ${greetingName}` : 'Halo'}</h1>
+        <h1 className="mt-1 text-2xl font-bold">{data.user.username ? `Halo, ${data.user.username}` : 'Halo'}</h1>
         <p className="text-sm text-body-muted">{data.user.email}</p>
+        {!data.user.username && (
+          <form
+            className="mt-4 max-w-md space-y-3 rounded-2xl border border-line bg-white p-4"
+            onSubmit={(event) => {
+              event.preventDefault()
+              saveUsername.mutate()
+            }}
+          >
+            <Field
+              label="Buat username akun"
+              name="profile-username"
+              autoComplete="username"
+              required
+              minLength={3}
+              maxLength={24}
+              pattern="[A-Za-z][A-Za-z0-9_]{2,23}"
+              hint="3–24 karakter. Awali dengan huruf; gunakan huruf, angka, atau garis bawah."
+              value={username}
+              onChange={(event) => setUsername(event.target.value.toLowerCase())}
+            />
+            {saveUsername.isError && <Alert>{messageOf(saveUsername.error)}</Alert>}
+            <Button type="submit" loading={saveUsername.isPending}>Simpan username</Button>
+          </form>
+        )}
         {data.is_platform_admin && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Badge tone="neutral">Pemilik SaaS</Badge>
@@ -159,8 +167,6 @@ export default function Beranda() {
             </div>
 
             <div className="mt-auto flex flex-wrap gap-2 pt-4">
-              {m.roles.includes('kapster') && <Link to="/kapster" className="inline-flex min-h-11 items-center rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink">Buka meja kapster</Link>}
-              {(m.roles.includes('admin') || m.roles.includes('owner')) && <Link to={m.outlets[0] ? `/kelola/${m.tenant_id}/${m.outlets[0].id}` : '/admin'} className="inline-flex min-h-11 items-center rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-brand-ink">Kelola antrian</Link>}
               {m.roles.includes('owner') && <Link to="/pemilik" className="inline-flex min-h-11 items-center rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-brand-ink">Atur outlet</Link>}
             </div>
           </article>
@@ -168,10 +174,6 @@ export default function Beranda() {
         })}
       </section>
 
-      <nav aria-label="Navigasi utama" className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-2 border-t border-line bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur md:hidden">
-        <Link to="/" aria-current="page" className="flex min-h-11 items-center justify-center rounded-xl px-3 text-sm font-semibold text-brand-ink focus-visible:outline-2 focus-visible:outline-brand-ink">Beranda</Link>
-        <Link to="/tiket" className="flex min-h-11 items-center justify-center rounded-xl px-3 text-sm font-semibold text-body focus-visible:outline-2 focus-visible:outline-brand-ink">Tiket saya</Link>
-      </nav>
     </main>
   )
 }

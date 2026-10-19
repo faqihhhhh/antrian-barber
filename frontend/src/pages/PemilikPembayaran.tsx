@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
-import { Alert, Button, Spinner } from '../components/ui'
+import { Alert, Button, ConfirmDialog, Spinner } from '../components/ui'
 import type { components } from '../api/schema'
 
 type Membership = components['schemas']['MembershipInfo']
@@ -26,7 +26,6 @@ export default function PemilikPembayaran() {
     <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-5 py-6">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW</p>
           <h1 className="mt-1 text-2xl font-bold">Pembayaran DP</h1>
         </div>
         <Link to="/pemilik" className="pt-1 text-sm font-semibold underline">Pengaturan outlet</Link>
@@ -60,6 +59,7 @@ function PaymentSettings({ membership }: { membership: Membership }) {
   const queryClient = useQueryClient()
   const fileInput = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
+  const [confirmClear, setConfirmClear] = useState(false)
 
   const profile = useQuery({
     queryKey: ['owner-payment-profile', membership.tenant_id],
@@ -155,17 +155,19 @@ function PaymentSettings({ membership }: { membership: Membership }) {
           <Button type="submit" loading={upload.isPending} disabled={!file || clear.isPending}>Simpan QRIS</Button>
         </form>
         {profile.data.manual_qris_configured && (
-          <button
-            type="button"
-            className="mt-3 w-full rounded-xl px-4 py-3 text-sm font-semibold text-red-700 underline focus-visible:outline-2 focus-visible:outline-red-700 disabled:opacity-60"
-            disabled={clear.isPending}
-            onClick={() => {
-              if (window.confirm('Hapus QRIS manual? Pelanggan tidak dapat memesan dengan DP manual sampai QRIS baru dipasang.')) clear.mutate()
-            }}
-          >
+          <Button type="button" variant="ghost" className="mt-3 text-red-700" disabled={clear.isPending} onClick={() => setConfirmClear(true)}>
             {clear.isPending ? 'Menghapus…' : 'Hapus QRIS manual'}
-          </button>
+          </Button>
         )}
+        <ConfirmDialog
+          open={confirmClear}
+          title="Hapus QRIS manual?"
+          description="Pelanggan tidak dapat memesan dengan DP manual sampai QRIS baru dipasang."
+          confirmLabel="Hapus QRIS"
+          loading={clear.isPending}
+          onCancel={() => setConfirmClear(false)}
+          onConfirm={() => clear.mutate(undefined, { onSettled: () => setConfirmClear(false) })}
+        />
       </article>
 
       <article className="rounded-3xl border border-line bg-white p-5">

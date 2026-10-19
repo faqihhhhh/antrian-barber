@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'reac
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
+import { Logo } from '../components/Logo'
 import QueueNow from '../components/QueueNow'
 import { Alert, Button, Field, Spinner } from '../components/ui'
 import { MY_TICKETS_KEY } from '../hooks/useMyTickets'
@@ -62,40 +63,48 @@ function OutletView({ outlet }: { outlet: OutletData }) {
   const today = stream.snapshot ?? outlet.today
 
   return (
-    <main className="mx-auto max-w-md space-y-6 px-5 py-8">
-      <header>
-        <p className="text-sm text-body-muted">{outlet.business_name}</p>
-        <h1 className="text-2xl font-bold">{outlet.outlet_name}</h1>
-        {outlet.address && <p className="mt-1 text-sm text-body-muted">{outlet.address}</p>}
+    <main className="mx-auto min-h-dvh max-w-6xl px-5 pb-12 pt-4 sm:px-8 lg:px-10">
+      <header className="mb-8 flex items-center justify-between border-b border-line pb-4">
+        <Logo />
+        <Link to="/tiket" className="inline-flex min-h-11 items-center px-2 text-sm font-semibold underline focus-visible:outline-2 focus-visible:outline-brand-ink">
+          Tiket saya
+        </Link>
       </header>
 
-      <section className="grid grid-cols-2 gap-3 rounded-2xl border border-line bg-white p-4" aria-label="Informasi layanan">
-        <div>
-          <p className="text-xs text-body-muted">Uang muka</p>
-          <p className="mt-1 font-bold tabular-nums">{formatRupiah(outlet.dp_price_rupiah)}</p>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.9fr)] lg:items-start lg:gap-12">
+        <div className="space-y-6">
+          <section>
+            <p className="text-sm font-semibold text-body-muted">{outlet.business_name}</p>
+            <h1 className="mt-1 text-3xl font-bold tracking-tight">{outlet.outlet_name}</h1>
+            {outlet.address && <p className="mt-2 text-sm text-body-muted">{outlet.address}</p>}
+          </section>
+
+          <section className="grid grid-cols-2 gap-3 rounded-2xl border border-line bg-white p-4" aria-label="Informasi layanan">
+            <div>
+              <p className="text-xs text-body-muted">Uang muka</p>
+              <p className="mt-1 font-bold tabular-nums">{formatRupiah(outlet.dp_price_rupiah)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-body-muted">Durasi layanan</p>
+              <p className="mt-1 font-bold">± {outlet.default_duration_minutes} menit</p>
+            </div>
+          </section>
+
+          <QueueNow today={today} live={stream.connected} />
         </div>
-        <div>
-          <p className="text-xs text-body-muted">Durasi layanan</p>
-          <p className="mt-1 font-bold">± {outlet.default_duration_minutes} menit</p>
+
+        <div className="space-y-4 lg:pt-1">
+          {outlet.accepting_bookings ? (
+            <BookingSection outlet={outlet} />
+          ) : (
+            <Alert tone="info">
+              {(outlet.unavailable_reason && UNAVAILABLE_TEXT[outlet.unavailable_reason]) ||
+                'Outlet ini belum menerima pemesanan online.'}
+            </Alert>
+          )}
+          <p className="text-center text-xs text-body-muted">Dikelola dengan Kapsflow</p>
         </div>
-      </section>
-
-      <QueueNow today={today} live={stream.connected} />
-
-      {outlet.accepting_bookings ? (
-        <BookingSection outlet={outlet} />
-      ) : (
-        <Alert tone="info">
-          {(outlet.unavailable_reason && UNAVAILABLE_TEXT[outlet.unavailable_reason]) ||
-            'Outlet ini belum menerima pemesanan online.'}
-        </Alert>
-      )}
-
-      <nav className="text-center text-sm">
-        <Link to="/tiket" className="font-semibold underline">
-          Lihat tiket saya
-        </Link>
-      </nav>
+      </div>
     </main>
   )
 }
@@ -113,6 +122,8 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
   const wanted = params.get('tanggal')
   const firstOpen = outlet.days.find((d) => d.open)
   const selected = outlet.days.find((d) => d.open && d.date === wanted) ?? firstOpen
+  const openedDays = outlet.days.filter((day) => day.session_id !== null)
+  const notOpenedCount = outlet.days.filter((day) => day.session_id === null).length
 
   const book = useMutation({
     mutationFn: async () => {
@@ -146,34 +157,42 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
         <p className="text-sm text-body-muted">Pilih tanggal. Nomor antrian Anda aman setelah DP dibayar.</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Pilih tanggal">
-        {outlet.days.map((d) => {
+      <fieldset>
+        <legend className="sr-only">Pilih tanggal antrian</legend>
+        <div className="flex gap-2 overflow-x-auto pb-2" aria-label="Tanggal yang sudah dibuka">
+        {openedDays.map((d) => {
           const isSelected = selected?.date === d.date
-          const note = !d.session_id ? 'Belum dibuka' : d.open ? `Sisa ${d.remaining}/${d.max_quota}` : d.remaining === 0 ? 'Penuh' : 'Tutup'
+          const note = d.open ? `Sisa ${d.remaining}/${d.max_quota}` : d.remaining === 0 ? 'Penuh' : 'Tutup'
           return (
-            <button
-              key={d.date}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              disabled={!d.open}
-              onClick={() => setParams({ tanggal: d.date }, { replace: true })}
-              className={`rounded-xl border px-1 py-2 text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-ink disabled:cursor-not-allowed ${
+            <label key={d.date} className="relative min-w-[5.5rem] flex-none cursor-pointer">
+              <input
+                type="radio"
+                name="tanggal-antrian"
+                value={d.date}
+                checked={isSelected}
+                disabled={!d.open}
+                onChange={() => setParams({ tanggal: d.date }, { replace: true })}
+                className="peer sr-only"
+              />
+              <span className={`block rounded-xl border px-2 py-2 text-center transition peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-ink ${
                 isSelected
                   ? 'border-ink bg-ink text-white'
                   : d.open
                     ? 'border-line-strong bg-white hover:border-ink'
-                    : 'border-line bg-paper-raised text-muted'
+                    : 'border-line bg-paper-raised text-muted cursor-not-allowed'
               }`}
-            >
-              <span className="block text-xs">{d.date === outlet.local_today ? 'Hari ini' : weekdayShort(d.date)}</span>
-              <span className="block text-xl font-bold tabular-nums">{dayOfMonth(d.date)}</span>
-              <span className="block text-[10px]">{formatMonthYear(d.date)}</span>
-              <span className="block text-xs">{note}</span>
-            </button>
+              >
+                <span className="block text-xs">{d.date === outlet.local_today ? 'Hari ini' : weekdayShort(d.date)}</span>
+                <span className="block text-xl font-bold tabular-nums">{dayOfMonth(d.date)}</span>
+                <span className="block text-xs">{formatMonthYear(d.date)}</span>
+                <span className="block text-xs">{note}</span>
+              </span>
+            </label>
           )
         })}
-      </div>
+        </div>
+      </fieldset>
+      {notOpenedCount > 0 && <p className="-mt-2 text-xs text-body-muted">{notOpenedCount} tanggal lain belum dibuka.</p>}
 
       {selected && (
         <form

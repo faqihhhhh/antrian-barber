@@ -22,6 +22,7 @@ func NewHandlers(svc *Service, log *slog.Logger) *Handlers {
 type registerRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Username string `json:"username"`
 }
 
 func (h *Handlers) Register(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +31,7 @@ func (h *Handlers) Register(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
 		return
 	}
-	if err := h.svc.Register(r.Context(), req.Email, req.Password); err != nil {
+	if err := h.svc.Register(r.Context(), req.Email, req.Password, req.Username); err != nil {
 		httpx.Error(w, r, h.log, err)
 		return
 	}
@@ -95,7 +96,11 @@ func (h *Handlers) Me(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, r, h.log, httpx.Unauthorized("belum_login", "Anda belum masuk", nil))
 		return
 	}
-	httpx.JSON(w, http.StatusOK, map[string]any{"id": user.ID, "email": user.Email})
+	var username *string
+	if user.Username.Valid {
+		username = &user.Username.String
+	}
+	httpx.JSON(w, http.StatusOK, map[string]any{"id": user.ID, "email": user.Email, "username": username})
 }
 
 type forgotPasswordRequest struct {

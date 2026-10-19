@@ -137,6 +137,7 @@ SELECT
     m.created_at,
     u.id AS user_id,
     u.email,
+    u.username,
     u.email_verified_at
 FROM memberships m
 JOIN users u ON u.id = m.user_id
@@ -150,6 +151,7 @@ type ListStaffByTenantRow struct {
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UserID          uuid.UUID          `json:"user_id"`
 	Email           string             `json:"email"`
+	Username        pgtype.Text        `json:"username"`
 	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
 }
 
@@ -168,6 +170,7 @@ func (q *Queries) ListStaffByTenant(ctx context.Context, tenantID uuid.UUID) ([]
 			&i.CreatedAt,
 			&i.UserID,
 			&i.Email,
+			&i.Username,
 			&i.EmailVerifiedAt,
 		); err != nil {
 			return nil, err

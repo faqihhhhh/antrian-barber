@@ -16,6 +16,7 @@ SELECT
     m.created_at,
     u.id AS user_id,
     u.email,
+    u.username,
     u.email_verified_at
 FROM memberships m
 JOIN users u ON u.id = m.user_id

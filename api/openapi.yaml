@@ -132,13 +132,13 @@ paths:
       description: |
         Selalu membalas 202 dengan pesan yang sama, baik email itu baru maupun
         sudah terdaftar, supaya tidak membocorkan email siapa yang sudah punya akun.
-        Kode error: `password_terlalu_pendek`.
+        Kode error: `password_terlalu_pendek`, `username_tidak_valid`, `username_sudah_dipakai`.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Credentials'
+              $ref: '#/components/schemas/RegisterRequest'
       responses:
         '202':
           description: Diterima
@@ -290,6 +290,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MeContext'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/me/username:
+    put:
+      operationId: setMyUsername
+      tags: [akun]
+      summary: Atur atau ubah username akun
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsernameRequest'
+      responses:
+        '200':
+          description: Username tersimpan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsernameResponse'
         default:
           $ref: '#/components/responses/Error'
   /v1/tenants/:
@@ -1630,6 +1652,37 @@ components:
         password:
           type: string
           minLength: 8
+    RegisterRequest:
+      type: object
+      required: [email, password, username]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        username:
+          type: string
+          minLength: 3
+          maxLength: 24
+          pattern: '^[a-zA-Z][a-zA-Z0-9_]{2,23}$'
+          description: Username unik; disimpan dalam huruf kecil.
+    UsernameRequest:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 24
+          pattern: '^[a-zA-Z][a-zA-Z0-9_]{2,23}$'
+    UsernameResponse:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string
     EmailRequest:
       type: object
       required: [email]
@@ -1654,13 +1707,18 @@ components:
           minLength: 8
     UserInfo:
       type: object
-      required: [id, email]
+      required: [id, email, username]
       properties:
         id:
           type: string
           format: uuid
         email:
           type: string
+        username:
+          type: string
+          nullable: true
+          minLength: 3
+          maxLength: 24
     OutletInfo:
       type: object
       required: [id, name, timezone]
@@ -1737,7 +1795,7 @@ components:
           minimum: 1
     StaffMember:
       type: object
-      required: [membership_id, email, roles, email_verified, outlet_ids]
+      required: [membership_id, email, username, roles, email_verified, outlet_ids]
       properties:
         membership_id:
           type: string
@@ -1745,6 +1803,9 @@ components:
         email:
           type: string
           format: email
+        username:
+          type: string
+          nullable: true
         roles:
           type: array
           items:
@@ -1759,7 +1820,7 @@ components:
             format: uuid
     InviteStaffRequest:
       type: object
-      required: [email, password, roles, outlet_ids]
+      required: [email, password, username, roles, outlet_ids]
       properties:
         email:
           type: string
@@ -1767,6 +1828,11 @@ components:
         password:
           type: string
           minLength: 8
+        username:
+          type: string
+          minLength: 3
+          maxLength: 24
+          pattern: '^[a-zA-Z][a-zA-Z0-9_]{2,23}$'
         roles:
           type: array
           minItems: 1

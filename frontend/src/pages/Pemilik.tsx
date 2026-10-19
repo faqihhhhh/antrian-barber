@@ -27,7 +27,6 @@ export default function Pemilik() {
     <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-5 py-6">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW</p>
           <h1 className="mt-1 text-2xl font-bold">Pengaturan outlet</h1>
         </div>
         <Link

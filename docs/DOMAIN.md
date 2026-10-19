@@ -18,6 +18,9 @@ Hak per peran **harus diperiksa di service**, RLS hanya memastikan keanggotaan t
 
 ## Entitas utama
 
+- `users` menyimpan email, password, dan `username` unik untuk sapaan profil. Username 3–24
+  karakter, diawali huruf, hanya memakai huruf, angka, dan garis bawah. Akun lama boleh belum
+  memiliki username dan dapat mengaturnya dari Beranda.
 - `tenants` (bisnis), `outlets` (cabang: `slug` unik, `timezone`, `address`, `dp_price_rupiah`,
   `default_duration_minutes`), `memberships` (pengguna di tenant, `roles[]`, penugasan outlet).
 - `tenant_profiles`: kunci Midtrans terenkripsi, `midtrans_is_production`, gambar QRIS manual
@@ -80,6 +83,12 @@ tiket `canceled`, kuota kembali. Untuk Midtrans, job mengecek status dulu (bisa 
 -> `completed`. `canceled` bisa dari `pending_payment`. Tiket offline (tambah oleh admin) langsung `waiting`.
 Antrian diurutkan `queue_position`. Kapster yang menekan "siap" saat masih sibuk tidak boleh
 menghasilkan tiket yatim (ada guard `busy`).
+
+Jika pelanggan belum hadir saat dipanggil, kapster dapat memilih "Ganti pelanggan". Tiket itu tetap
+menunggu tetapi dipindah ke belakang seluruh antrean, lalu tiket menunggu terdepan berikutnya langsung
+dipanggil. Posisi antrean baru selalu dialokasikan setelah posisi tertinggi yang sudah dipakai, agar
+pemesanan baru tidak menyelip di depan pelanggan yang sudah dilewati. Dengan begitu beberapa pelanggan
+yang tidak hadir tidak membuat antrean berputar di antara tiket yang sama.
 
 Admin hanya dapat menutup sesi manual jika tidak ada tiket `pending_payment`, `waiting`, `called`, atau
 `in_progress`. Job otomatis menutup sesi setelah tanggal lokal outlet lewat, agar pemesanan baru berhenti.

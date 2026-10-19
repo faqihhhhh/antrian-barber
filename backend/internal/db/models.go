@@ -231,4 +231,5 @@ type User struct {
 	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	Username        pgtype.Text        `json:"username"`
 }

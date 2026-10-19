@@ -29,7 +29,6 @@ export default function PemilikStaf() {
     <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-5 py-6">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW</p>
           <h1 className="mt-1 text-2xl font-bold">Kelola staf</h1>
         </div>
         <Link to="/pemilik" className="pt-1 text-sm font-semibold underline">Pengaturan outlet</Link>
@@ -63,6 +62,7 @@ function StaffPanel({ membership }: { membership: Membership }) {
   const queryClient = useQueryClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
   const [roles, setRoles] = useState<StaffRole[]>([])
   const [outletIDs, setOutletIDs] = useState<string[]>([])
   const [created, setCreated] = useState(false)
@@ -82,7 +82,7 @@ function StaffPanel({ membership }: { membership: Membership }) {
     mutationFn: async () => {
       const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/staff', {
         params: { path: { tenantID: membership.tenant_id } },
-        body: { email, password, roles, outlet_ids: outletIDs },
+        body: { email, password, username, roles, outlet_ids: outletIDs },
       })
       if (!response.ok || !data) throw new ApiError(error)
       return data
@@ -90,6 +90,7 @@ function StaffPanel({ membership }: { membership: Membership }) {
     onSuccess: async () => {
       setEmail('')
       setPassword('')
+      setUsername('')
       setRoles([])
       setOutletIDs([])
       setCreated(true)
@@ -118,6 +119,7 @@ function StaffPanel({ membership }: { membership: Membership }) {
         <p className="mt-1 text-sm text-body-muted">Staf akan menerima email untuk memverifikasi akunnya.</p>
         <form className="mt-4 space-y-4" onSubmit={submit}>
           <Field label="Email staf" name="staff-email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
+          <Field label="Username staf" name="staff-username" autoComplete="username" required minLength={3} maxLength={24} pattern="[A-Za-z][A-Za-z0-9_]{2,23}" hint="3–24 karakter. Awali dengan huruf; gunakan huruf, angka, atau garis bawah." value={username} onChange={(event) => setUsername(event.target.value.toLowerCase())} />
           <Field label="Kata sandi awal" name="staff-password" type="password" autoComplete="new-password" minLength={8} required value={password} onChange={(event) => setPassword(event.target.value)} hint="Minimal 8 karakter. Sampaikan kata sandi ini dengan aman kepada staf." />
 
           <fieldset className="space-y-2">
@@ -162,6 +164,7 @@ function StaffPanel({ membership }: { membership: Membership }) {
         {staff.data?.map((member) => (
           <article key={member.membership_id} className="rounded-2xl border border-line bg-white p-4">
             <h3 className="font-semibold">{member.email}</h3>
+            {member.username && <p className="mt-1 text-sm text-body-muted">@{member.username}</p>}
             <p className="mt-1 text-sm text-body-muted">{member.roles.map((role) => ROLE_LABEL[role as StaffRole] ?? role).join(' · ')}</p>
             <p className="mt-1 text-sm text-body-muted">
               Outlet: {member.outlet_ids.map((id) => membership.outlets.find((outlet) => outlet.id === id)?.name).filter(Boolean).join(', ') || 'Tidak ada'}
