@@ -47,9 +47,14 @@ export default function Beranda() {
   if (!data) return null // RequireLogin sudah memastikan data ada
 
   return (
-    <main className="mx-auto max-w-md px-5 py-8">
-      <header className="mb-6">
+    <main className="mx-auto min-h-dvh max-w-3xl px-5 pb-24 pt-8">
+      <header className="sticky top-0 z-20 -mx-5 mb-7 flex items-center justify-between border-b border-line bg-paper/95 px-5 py-3 backdrop-blur">
         <Logo />
+        <Button type="button" variant="ghost" className="w-auto px-3" loading={logout.isPending} onClick={() => logout.mutate()}>
+          Keluar
+        </Button>
+      </header>
+      <div className="mb-6">
         <h1 className="mt-1 text-xl font-bold">Halo</h1>
         <p className="text-sm text-body-muted">{data.user.email}</p>
         {data.is_platform_admin && (
@@ -58,9 +63,9 @@ export default function Beranda() {
             <Link to="/pemilik-saas" className="text-sm font-semibold underline">Buka ringkasan platform</Link>
           </div>
         )}
-      </header>
+      </div>
 
-      <section className="space-y-3">
+      <section className="grid gap-4 md:grid-cols-2">
         <Link
           to="/tiket"
           className="block rounded-2xl border border-ink bg-white p-4 font-semibold transition hover:bg-paper-raised"
@@ -124,11 +129,10 @@ export default function Beranda() {
         ))}
       </section>
 
-      <div className="mt-8">
-        <Button type="button" variant="ghost" loading={logout.isPending} onClick={() => logout.mutate()}>
-          Keluar
-        </Button>
-      </div>
+      <nav aria-label="Navigasi utama" className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-2 border-t border-line bg-white/95 px-4 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur md:hidden">
+        <Link to="/" aria-current="page" className="flex min-h-11 items-center justify-center rounded-xl px-3 text-sm font-semibold text-brand-ink focus-visible:outline-2 focus-visible:outline-brand-ink">Beranda</Link>
+        <Link to="/tiket" className="flex min-h-11 items-center justify-center rounded-xl px-3 text-sm font-semibold text-body focus-visible:outline-2 focus-visible:outline-brand-ink">Tiket saya</Link>
+      </nav>
     </main>
   )
 }
