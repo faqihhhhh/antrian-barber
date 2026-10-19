@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
 import { Link } from 'react-router'
+import { Logo } from './Logo'
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: 'primary' | 'ghost'
@@ -87,7 +88,7 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-10">
       <div className="mb-8">
-        <p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW</p>
+        <Logo />
         <h1 className="mt-2 text-2xl font-bold">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-body-muted">{subtitle}</p>}
       </div>

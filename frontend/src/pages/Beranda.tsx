@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router'
 import { api } from '../api/client'
 import { useMe } from '../auth/useMe'
 import { Alert, Button } from '../components/ui'
+import { Logo } from '../components/Logo'
 import { lastOutlet } from '../lib/storage'
 import { removePushSubscription } from '../hooks/usePushNotifications'
 
@@ -48,7 +49,7 @@ export default function Beranda() {
   return (
     <main className="mx-auto max-w-md px-5 py-8">
       <header className="mb-6">
-        <p className="text-sm font-semibold tracking-wide text-muted">KAPSFLOW</p>
+        <Logo />
         <h1 className="mt-1 text-xl font-bold">Halo</h1>
         <p className="text-sm text-body-muted">{data.user.email}</p>
         {data.is_platform_admin && (
