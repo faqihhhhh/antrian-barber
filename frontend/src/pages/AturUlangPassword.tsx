@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { useMutation } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
-import { Alert, AuthLayout, Button, Field, LinkButton } from '../components/ui'
+import { Alert, AuthLayout, Button, Field } from '../components/ui'
 
 export default function AturUlangPassword() {
   const [params] = useSearchParams()
@@ -20,7 +20,7 @@ export default function AturUlangPassword() {
     return (
       <AuthLayout title="Password diubah">
         <Alert tone="success">Password Anda berhasil diubah.</Alert>
-        <LinkButton to="/masuk">Masuk sekarang</LinkButton>
+        <Button to="/masuk">Masuk sekarang</Button>
       </AuthLayout>
     )
   }

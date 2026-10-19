@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
 import QueueNow from '../components/QueueNow'
-import { Alert, Button, Field, LinkButton, Spinner } from '../components/ui'
+import { Alert, Button, Field, Spinner } from '../components/ui'
 import { MY_TICKETS_KEY } from '../hooks/useMyTickets'
 import { useQueueStream } from '../hooks/useQueueStream'
 import { dayOfMonth, formatLongDate, formatMonthYear, formatRupiah, weekdayShort } from '../lib/format'
@@ -212,12 +212,12 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
           ) : (
             <div className="space-y-2">
               <p className="text-sm text-body-muted">Masuk dulu supaya tiket Anda tersimpan dan bisa dilihat dari HP mana pun.</p>
-              <LinkButton to="/masuk" state={{ from }}>
+              <Button to="/masuk" state={{ from }}>
                 Masuk untuk memesan
-              </LinkButton>
-              <LinkButton to="/daftar" state={{ from }} variant="outline">
+              </Button>
+              <Button to="/daftar" state={{ from }} variant="secondary">
                 Buat akun baru
-              </LinkButton>
+              </Button>
             </div>
           )}
         </form>

@@ -21,7 +21,7 @@ export default function LupaPassword() {
         subtitle="Kalau email itu terdaftar, tautan untuk mengatur ulang password sudah dikirim. Tautan berlaku 1 jam."
       >
         <p className="text-center text-sm">
-          <Link to="/masuk" className="font-semibold underline">
+          <Link to="/masuk" className="inline-flex min-h-11 items-center px-3 py-2 font-semibold underline focus-visible:outline-2 focus-visible:outline-brand-ink">
             Kembali ke halaman masuk
           </Link>
         </p>
@@ -53,7 +53,7 @@ export default function LupaPassword() {
         </Button>
       </form>
       <p className="text-center text-sm">
-        <Link to="/masuk" className="font-semibold underline">
+        <Link to="/masuk" className="inline-flex min-h-11 items-center px-3 py-2 font-semibold underline focus-visible:outline-2 focus-visible:outline-brand-ink">
           Kembali ke halaman masuk
         </Link>
       </p>

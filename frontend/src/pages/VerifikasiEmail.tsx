@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router'
 import { useMutation } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
-import { Alert, AuthLayout, LinkButton } from '../components/ui'
+import { Alert, AuthLayout, Button } from '../components/ui'
 
 export default function VerifikasiEmail() {
   const [params] = useSearchParams()
@@ -34,13 +34,13 @@ export default function VerifikasiEmail() {
           <p className="text-sm text-body-muted">
             Tautan mungkin sudah dipakai atau kedaluwarsa. Coba masuk, dan kalau diminta, kirim ulang email verifikasi.
           </p>
-          <LinkButton to="/masuk">Ke halaman masuk</LinkButton>
+          <Button to="/masuk">Ke halaman masuk</Button>
         </>
       )}
       {verify.isSuccess && (
         <>
           <Alert tone="success">Email terverifikasi. Akun Anda sudah aktif.</Alert>
-          <LinkButton to="/masuk">Masuk sekarang</LinkButton>
+          <Button to="/masuk">Masuk sekarang</Button>
         </>
       )}
     </AuthLayout>

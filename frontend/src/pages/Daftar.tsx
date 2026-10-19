@@ -30,7 +30,7 @@ export default function Daftar() {
           Kirim ulang email verifikasi
         </Button>
         <p className="text-center text-sm">
-          <Link to="/masuk" className="font-semibold underline">
+          <Link to="/masuk" className="inline-flex min-h-11 items-center px-3 py-2 font-semibold underline focus-visible:outline-2 focus-visible:outline-brand-ink">
             Ke halaman masuk
           </Link>
         </p>
@@ -74,7 +74,7 @@ export default function Daftar() {
       </form>
       <p className="text-center text-sm text-body-muted">
         Sudah punya akun?{' '}
-        <Link to="/masuk" className="font-semibold text-ink underline">
+        <Link to="/masuk" className="inline-flex min-h-11 items-center px-2 py-2 font-semibold text-ink underline focus-visible:outline-2 focus-visible:outline-brand-ink">
           Masuk
         </Link>
       </p>

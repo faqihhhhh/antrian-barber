@@ -59,7 +59,7 @@ export default function Masuk() {
         />
         {login.isError && !needsVerification && <Alert>{messageOf(login.error)}</Alert>}
         {needsVerification && (
-          <Alert tone="info">
+          <Alert tone="warning">
             Email Anda belum diverifikasi. Klik tautan di email yang kami kirim, atau kirim ulang tautannya.
           </Alert>
         )}
@@ -78,13 +78,11 @@ export default function Masuk() {
         </>
       )}
 
-      <div className="flex justify-between text-sm">
-        <Link to="/lupa-password" className="font-semibold underline">
+      <div className="flex flex-col items-center gap-2 text-sm">
+        <Link to="/lupa-password" className="inline-flex min-h-11 items-center px-3 py-2 font-semibold text-body-muted underline focus-visible:outline-2 focus-visible:outline-brand-ink">
           Lupa password?
         </Link>
-        <Link to="/daftar" className="font-semibold underline">
-          Daftar
-        </Link>
+        <Button to="/daftar" variant="secondary">Buat akun baru</Button>
       </div>
     </AuthLayout>
   )
