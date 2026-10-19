@@ -35,7 +35,7 @@ export default function TiketSaya() {
           <p className="font-semibold">Belum ada tiket</p>
           <p className="mt-1 text-sm text-body-muted">Buka tautan atau scan QR dari outlet untuk memesan antrian.</p>
           {outlet && (
-            <Link to={`/b/${outlet}`} className="mt-3 inline-block text-sm font-semibold underline">
+            <Link to={`/o/${outlet}`} className="mt-3 inline-block text-sm font-semibold underline">
               Pesan di outlet terakhir yang Anda buka
             </Link>
           )}

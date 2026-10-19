@@ -72,7 +72,7 @@ export default function PaymentPanel({ ticket }: { ticket: MyTicket }) {
             ingin antri.
           </Alert>
           <Link
-            to={`/b/${ticket.outlet_slug}`}
+            to={`/o/${ticket.outlet_slug}`}
             className="inline-flex w-full items-center justify-center rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white"
           >
             Pesan ulang

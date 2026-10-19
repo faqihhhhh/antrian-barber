@@ -176,7 +176,7 @@ function OutletSettings({ tenantID, outlet }: { tenantID: string; outlet: Outlet
   const [saved, setSaved] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
   const [copyError, setCopyError] = useState(false)
-  const publicURL = `${window.location.origin}/b/${outlet.slug}`
+  const publicURL = `${window.location.origin}/o/${outlet.slug}`
 
   const save = useMutation({
     mutationFn: async () => {
@@ -218,11 +218,11 @@ function OutletSettings({ tenantID, outlet }: { tenantID: string; outlet: Outlet
       <h2 className="text-lg font-bold">{outlet.name}</h2>
       <p className="mt-1 text-sm text-body-muted">{outlet.address || 'Alamat belum diisi'} · {outlet.timezone}</p>
       <p className="mt-2 text-sm text-body-muted">
-        Tautan publik: <a className="font-semibold underline" href={`/b/${outlet.slug}`}>{publicURL}</a>
+        Tautan publik: <a className="font-semibold underline" href={`/o/${outlet.slug}`}>{publicURL}</a>
       </p>
       <div className="mt-3 flex gap-2">
         <Button type="button" variant="ghost" className="border border-line-strong" onClick={copyPublicURL}>Salin tautan</Button>
-        <a className="inline-flex w-full items-center justify-center rounded-xl border border-line-strong px-4 py-3 text-sm font-semibold text-ink hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" href={`/b/${outlet.slug}`} target="_blank" rel="noreferrer">Buka halaman</a>
+        <a className="inline-flex w-full items-center justify-center rounded-xl border border-line-strong px-4 py-3 text-sm font-semibold text-ink hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" href={`/o/${outlet.slug}`} target="_blank" rel="noreferrer">Buka halaman</a>
       </div>
       {linkCopied && <p className="mt-2 text-sm text-emerald-700" role="status">Tautan outlet disalin.</p>}
       {copyError && <p className="mt-2 text-sm text-red-700" role="alert">Tautan tidak bisa disalin. Pilih dan salin alamat di atas.</p>}

@@ -92,7 +92,7 @@ export default function Beranda() {
           <span className="block text-sm font-normal text-body-muted">Lihat antrian dan status pembayaran</span>
         </Link>
         {outlet && (
-          <Link to={`/b/${outlet}`} className="block px-1 text-sm font-semibold underline">
+          <Link to={`/o/${outlet}`} className="block px-1 text-sm font-semibold underline">
             Kembali ke halaman pemesanan terakhir
           </Link>
         )}

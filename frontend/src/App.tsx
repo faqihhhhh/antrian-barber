@@ -40,6 +40,9 @@ export default function App() {
       <Route path="/verifikasi-email" element={<VerifikasiEmail />} />
       <Route path="/lupa-password" element={<LupaPassword />} />
       <Route path="/atur-ulang-password" element={<AturUlangPassword />} />
+      <Route path="/o/:slug" element={<Outlet />} />
+      <Route path="/o/:slug/pesan" element={<Outlet />} />
+      {/* URL lama tetap berfungsi untuk tautan yang sudah terlanjur dibagikan. */}
       <Route path="/b/:slug" element={<Outlet />} />
       <Route
         path="/tiket"

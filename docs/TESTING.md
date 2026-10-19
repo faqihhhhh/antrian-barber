@@ -140,7 +140,7 @@ mengarah ke VPS dan port 80/443 terbuka, Caddy akan mengurus sertifikat HTTPS ot
 
 ## Checklist browser (backend asli)
 
-Dua terminal: `make dev` dan `npm run dev`. Buka `http://localhost:5173/b/<slug>`.
+Dua terminal: `make dev` dan `npm run dev`. Buka `http://localhost:5173/o/<slug>`.
 Buat sesi bersih dengan `POST /v1/tenants/$T/outlets/$OUTLET/queue-sessions`. Alur yang diuji:
 belum login -> masuk -> kembali ke tanggal pilihan -> pesan -> layar bayar -> "Saya sudah bayar" ->
 konfirmasi admin lewat `curl` -> status berubah sendiri -> `ready`, `start`, `complete` lewat kapster ->

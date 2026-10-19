@@ -121,7 +121,7 @@ function StatusBody({ ticket }: { ticket: MyTicket }) {
           <p className="text-sm text-body-muted">
             Pesanan yang tidak dibayar tepat waktu dibatalkan otomatis dan kuotanya dikembalikan.
           </p>
-          <Link to={`/b/${ticket.outlet_slug}`} className="inline-block text-sm font-semibold underline">
+          <Link to={`/o/${ticket.outlet_slug}`} className="inline-block text-sm font-semibold underline">
             Pesan lagi di {ticket.outlet_name}
           </Link>
         </section>
