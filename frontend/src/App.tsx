@@ -61,6 +61,22 @@ export default function App() {
         }
       />
       <Route
+        path="/kelola/:tenantId/:outletId"
+        element={
+          <RequireLogin>
+            <Admin />
+          </RequireLogin>
+        }
+      />
+      <Route
+        path="/kelola/:tenantId/sesi/:sessionId"
+        element={
+          <RequireLogin>
+            <Admin />
+          </RequireLogin>
+        }
+      />
+      <Route
         path="/pemilik"
         element={
           <RequireLogin>

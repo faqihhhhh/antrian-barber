@@ -44,7 +44,8 @@ export async function removePushSubscription() {
   const registration = await navigator.serviceWorker.ready
   const subscription = await registration.pushManager.getSubscription()
   if (!subscription) return
-  await api.POST('/v1/tenants/push/unsubscribe', { body: { endpoint: subscription.endpoint } })
+  const { error, response } = await api.POST('/v1/tenants/push/unsubscribe', { body: { endpoint: subscription.endpoint } })
+  if (!response.ok) throw new ApiError(error)
   await subscription.unsubscribe()
 }
 
@@ -68,5 +69,9 @@ export function usePushNotifications() {
     mutationFn: registerPush,
     onSuccess: () => setActive(true),
   })
-  return { supported: supported(), active, enable }
+  const disable = useMutation({
+    mutationFn: removePushSubscription,
+    onSuccess: () => setActive(false),
+  })
+  return { supported: supported(), active, enable, disable }
 }

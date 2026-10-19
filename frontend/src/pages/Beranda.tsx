@@ -160,7 +160,7 @@ export default function Beranda() {
 
             <div className="mt-auto flex flex-wrap gap-2 pt-4">
               {m.roles.includes('kapster') && <Link to="/kapster" className="inline-flex min-h-11 items-center rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink">Buka meja kapster</Link>}
-              {(m.roles.includes('admin') || m.roles.includes('owner')) && <Link to="/admin" className="inline-flex min-h-11 items-center rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-brand-ink">Buka meja admin</Link>}
+              {(m.roles.includes('admin') || m.roles.includes('owner')) && <Link to={m.outlets[0] ? `/kelola/${m.tenant_id}/${m.outlets[0].id}` : '/admin'} className="inline-flex min-h-11 items-center rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-brand-ink">Kelola antrian</Link>}
               {m.roles.includes('owner') && <Link to="/pemilik" className="inline-flex min-h-11 items-center rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-brand-ink">Atur outlet</Link>}
             </div>
           </article>

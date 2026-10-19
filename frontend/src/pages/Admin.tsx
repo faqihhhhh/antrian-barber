@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, useParams } from 'react-router'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
 import { Alert, Button, Field, Spinner } from '../components/ui'
@@ -32,21 +32,51 @@ function dateInTimezone(timeZone: string): string {
   return `${part('year')}-${part('month')}-${part('day')}`
 }
 
+async function loadQueueSessions(tenantID: string, outletID: string): Promise<QueueSession[]> {
+  const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/outlets/{outletID}/queue-sessions', {
+    params: { path: { tenantID, outletID } },
+  })
+  if (!response.ok || !data) throw new ApiError(error)
+  return data
+}
+
 export default function Admin() {
   const me = useMe()
   const [outletChoice, setOutletChoice] = useState('')
   const [sessionChoice, setSessionChoice] = useState('')
+  const { tenantId: routeTenantID, outletId: routeOutletID, sessionId: routeSessionID } = useParams()
+
+  const memberships = (me.data?.memberships ?? []).filter((item) => item.roles.includes('owner') || item.roles.includes('admin'))
+  const outlets = memberships.flatMap((membership) => membership.outlets.map((outlet) => ({ membership, outlet })))
+  const sessionLookups = useQueries({
+    queries: outlets.map(({ membership, outlet }) => ({
+      queryKey: ['admin-sessions', membership.tenant_id, outlet.id],
+      queryFn: () => loadQueueSessions(membership.tenant_id, outlet.id),
+      enabled: !!routeSessionID && membership.tenant_id === routeTenantID,
+    })),
+  })
+  const routeSessionLookupPending = !!routeSessionID && sessionLookups.some((query, index) =>
+    outlets[index]?.membership.tenant_id === routeTenantID && query.isPending,
+  )
 
   if (me.isPending) return <Spinner />
   if (me.isError) {
     return <main className="mx-auto max-w-md px-5 py-10"><Alert>{messageOf(me.error)}</Alert></main>
   }
+  if (routeSessionLookupPending) return <Spinner />
 
-  const memberships = (me.data?.memberships ?? []).filter((item) => item.roles.includes('owner') || item.roles.includes('admin'))
-  const outlets = memberships.flatMap((membership) => membership.outlets.map((outlet) => ({ membership, outlet })))
-  const selectedKey = outlets.some(({ membership, outlet }) => `${membership.tenant_id}:${outlet.id}` === outletChoice)
+  const sessionOutletIndex = routeSessionID
+    ? sessionLookups.findIndex((query) => query.data?.some((session) => session.id === routeSessionID))
+    : -1
+  const sessionOutlet = sessionOutletIndex >= 0 ? outlets[sessionOutletIndex] : undefined
+  const routeOutlet = outlets.find(({ membership, outlet }) =>
+    membership.tenant_id === routeTenantID && (!routeOutletID || outlet.id === routeOutletID),
+  )
+  const preferredOutlet = routeSessionID ? sessionOutlet ?? routeOutlet : routeOutlet
+  const preferredKey = preferredOutlet ? `${preferredOutlet.membership.tenant_id}:${preferredOutlet.outlet.id}` : ''
+  const selectedKey = preferredKey || (outlets.some(({ membership, outlet }) => `${membership.tenant_id}:${outlet.id}` === outletChoice)
     ? outletChoice
-    : outlets[0] ? `${outlets[0].membership.tenant_id}:${outlets[0].outlet.id}` : ''
+    : outlets[0] ? `${outlets[0].membership.tenant_id}:${outlets[0].outlet.id}` : '')
   const selected = outlets.find(({ membership, outlet }) => `${membership.tenant_id}:${outlet.id}` === selectedKey)
 
   return (
@@ -77,7 +107,7 @@ export default function Admin() {
               })}
             </select>
           </label>
-          {selected && <SessionPanel selected={selected} sessionChoice={sessionChoice} onSessionChange={setSessionChoice} />}
+          {selected && <SessionPanel selected={selected} sessionChoice={routeSessionID ?? sessionChoice} onSessionChange={setSessionChoice} />}
         </>
       )}
     </main>
@@ -98,13 +128,7 @@ function SessionPanel({
   const [initialQuota, setInitialQuota] = useState('10')
   const sessions = useQuery({
     queryKey: ['admin-sessions', selected.membership.tenant_id, selected.outlet.id],
-    queryFn: async (): Promise<QueueSession[]> => {
-      const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/outlets/{outletID}/queue-sessions', {
-        params: { path: { tenantID: selected.membership.tenant_id, outletID: selected.outlet.id } },
-      })
-      if (!response.ok || !data) throw new ApiError(error)
-      return data
-    },
+    queryFn: () => loadQueueSessions(selected.membership.tenant_id, selected.outlet.id),
     refetchInterval: POLL_INTERVAL,
   })
 
@@ -189,6 +213,19 @@ function SessionPanel({
           ))}
         </select>
       </label>
+      {sessions.data.length > 0 && (
+        <nav aria-label="Kelola sesi antrian" className="flex gap-2 overflow-x-auto pb-1">
+          {sessions.data.map((session) => (
+            <Link
+              key={session.id}
+              to={`/kelola/${selected.membership.tenant_id}/sesi/${session.id}`}
+              className={`inline-flex min-h-11 shrink-0 items-center rounded-xl border px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-brand-ink ${session.id === currentSession?.id ? 'border-ink bg-ink text-white' : 'border-line-strong bg-white text-ink'}`}
+            >
+              {formatLongDate(session.session_date)}
+            </Link>
+          ))}
+        </nav>
+      )}
       {currentSession.status === 'open' ? (
         <CloseSessionControl membership={selected.membership} session={currentSession} />
       ) : (
