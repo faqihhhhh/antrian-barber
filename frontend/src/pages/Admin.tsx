@@ -195,6 +195,7 @@ function SessionPanel({
         <Alert tone="info">Sesi sudah ditutup. Pelanggan tidak bisa membuat pesanan baru.</Alert>
       )}
       <PaymentPanel membership={selected.membership} session={currentSession} />
+      <SettlementPanel membership={selected.membership} session={currentSession} />
       <OfflineTicketPanel membership={selected.membership} session={currentSession} />
         </>
       )}
@@ -437,6 +438,91 @@ function PaymentPanel({ membership, session }: { membership: Membership; session
           )}
         </article>
       ))}
+    </section>
+  )
+}
+
+function SettlementPanel({ membership, session }: { membership: Membership; session: QueueSession }) {
+  const queryClient = useQueryClient()
+  const [amounts, setAmounts] = useState<Record<string, string>>({})
+  const queryKey = ['admin-awaiting-settlement', membership.tenant_id, session.id] as const
+  const tickets = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/awaiting-settlement', {
+        params: { path: { tenantID: membership.tenant_id, sessionID: session.id } },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    refetchInterval: POLL_INTERVAL,
+  })
+  const confirm = useMutation({
+    mutationFn: async ({ ticketID, amount }: { ticketID: string; amount: number }) => {
+      const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/tickets/{ticketID}/confirm-final-payment', {
+        params: { path: { tenantID: membership.tenant_id, ticketID } },
+        body: { total_amount_rupiah: amount },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey })
+      await queryClient.invalidateQueries({ queryKey: ['admin-tickets', membership.tenant_id, session.id] })
+    },
+  })
+
+  if (tickets.isPending) return <p className="py-4 text-center text-sm text-muted" role="status">Memuat pelunasan…</p>
+  if (tickets.isError) return <Alert>{messageOf(tickets.error)}</Alert>
+
+  return (
+    <section aria-label="Pelunasan menunggu konfirmasi" className="space-y-3 border-t border-line pt-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold">Konfirmasi pelunasan</h2>
+        <span className="rounded-full bg-paper-raised px-3 py-1 text-sm font-semibold">{tickets.data.length}</span>
+      </div>
+      {confirm.isError && <Alert>{messageOf(confirm.error)}</Alert>}
+      {tickets.data.length === 0 ? (
+        <Alert tone="info">Belum ada tiket selesai yang menunggu pelunasan.</Alert>
+      ) : tickets.data.map((ticket) => {
+        const rawAmount = amounts[ticket.id] ?? ''
+        const amount = Number(rawAmount)
+        const validAmount = Number.isSafeInteger(amount) && amount > 0
+        return (
+          <form
+            key={ticket.id}
+            className="space-y-3 rounded-2xl border border-line bg-white p-4"
+            onSubmit={(event) => {
+              event.preventDefault()
+              if (!validAmount || confirm.isPending) return
+              const description = `Konfirmasi pelunasan tiket #${ticket.ticket_number} sebesar ${formatRupiah(amount)}?`
+              if (window.confirm(description)) confirm.mutate({ ticketID: ticket.id, amount })
+            }}
+          >
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted">Tiket #{ticket.ticket_number}</p>
+              <p className="mt-1 font-semibold">{ticket.customer_name || 'Pelanggan'}</p>
+            </div>
+            <Field
+              label="Total pembayaran akhir (rupiah)"
+              name={`settlement-${ticket.id}`}
+              type="number"
+              min={1}
+              step={1}
+              inputMode="numeric"
+              value={rawAmount}
+              onChange={(event) => setAmounts((current) => ({ ...current, [ticket.id]: event.target.value }))}
+              hint="Masukkan jumlah yang benar-benar dibayar pelanggan."
+            />
+            <Button type="submit" loading={confirm.isPending && confirm.variables?.ticketID === ticket.id} disabled={!validAmount || confirm.isPending}>
+              Konfirmasi pelunasan
+            </Button>
+            {confirm.isSuccess && confirm.variables.ticketID === ticket.id && (
+              <p className="text-sm text-body-muted" role="status">Pelunasan tercatat: {confirm.data.message}.</p>
+            )}
+          </form>
+        )
+      })}
     </section>
   )
 }

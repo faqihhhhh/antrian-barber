@@ -806,6 +806,63 @@ paths:
                 $ref: '#/components/schemas/MessageResponse'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/queue-sessions/{sessionID}/awaiting-settlement:
+    get:
+      operationId: listTicketsAwaitingSettlement
+      tags: [admin]
+      summary: Daftar tiket selesai yang menunggu konfirmasi pelunasan
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/SessionID'
+      responses:
+        '200':
+          description: Tiket selesai yang belum dicatat pelunasannya
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QueueTicket'
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/tickets/{ticketID}/confirm-final-payment:
+    post:
+      operationId: confirmFinalPayment
+      tags: [admin]
+      summary: Catat pelunasan akhir tiket
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - name: ticketID
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [total_amount_rupiah]
+              properties:
+                total_amount_rupiah:
+                  type: integer
+                  format: int64
+                  minimum: 1
+      responses:
+        '200':
+          description: Pelunasan dicatat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/queue-sessions/{sessionID}/kapster-states:
     get:
       operationId: listKapsterStates

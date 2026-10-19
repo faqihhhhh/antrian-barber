@@ -586,6 +586,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/awaiting-settlement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar tiket selesai yang menunggu konfirmasi pelunasan */
+        get: operations["listTicketsAwaitingSettlement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/tickets/{ticketID}/confirm-final-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Catat pelunasan akhir tiket */
+        post: operations["confirmFinalPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/kapster-states": {
         parameters: {
             query?: never;
@@ -2214,6 +2248,61 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Pembayaran dikonfirmasi */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listTicketsAwaitingSettlement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tiket selesai yang belum dicatat pelunasannya */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueTicket"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    confirmFinalPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                ticketID: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    total_amount_rupiah: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Pelunasan dicatat */
             200: {
                 headers: {
                     [name: string]: unknown;
