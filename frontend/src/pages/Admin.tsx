@@ -375,6 +375,7 @@ function OfflineTicketPanel({ membership, session }: { membership: Membership; s
 
 function PaymentPanel({ membership, session }: { membership: Membership; session: QueueSession }) {
   const queryClient = useQueryClient()
+  const outletTimezone = membership.outlets.find((outlet) => outlet.id === session.outlet_id)?.timezone
   const payments = useQuery({
     queryKey: ['admin-pending-manual-payments', membership.tenant_id, session.id],
     queryFn: async (): Promise<PendingPayment[]> => {
@@ -424,7 +425,7 @@ function PaymentPanel({ membership, session }: { membership: Membership; session
             <div><dt className="text-muted">Kode cocok</dt><dd className="font-semibold">{payment.match_code}</dd></div>
             <div><dt className="text-muted">Kode unik</dt><dd className="font-semibold">{payment.unique_code ?? '—'}</dd></div>
           </dl>
-          <p className="text-xs text-muted">Batas bayar {formatDateTime(payment.expires_at)}</p>
+          <p className="text-xs text-muted">Batas bayar {formatDateTime(payment.expires_at, outletTimezone)}</p>
           <Button
             type="button"
             loading={confirm.isPending && confirm.variables === payment.ticket_id}

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import { api, ApiError, messageOf } from '../api/client'
@@ -14,8 +14,6 @@ export default function PaymentPanel({ ticket }: { ticket: MyTicket }) {
   const queryClient = useQueryClient()
   const now = useNow(1000)
   const [imageFailed, setImageFailed] = useState(false)
-  const payment = ticket.payment
-
   const recheck = useMutation({
     mutationFn: async () => {
       const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/tickets/{ticketID}/recheck-payment', {
@@ -27,10 +25,29 @@ export default function PaymentPanel({ ticket }: { ticket: MyTicket }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: MY_TICKETS_KEY }),
   })
 
+  const payment = ticket.payment
+  const remaining = payment ? new Date(payment.expires_at).getTime() - now : 0
+  const expired = remaining <= 0
+  const paymentMethod = payment?.method
+  const paymentStatus = payment?.status
+  const paymentExpiresAt = payment?.expires_at
+  const recheckPending = recheck.isPending
+  const recheckPayment = recheck.mutate
+  useEffect(() => {
+    if (paymentMethod !== 'midtrans' || paymentStatus !== 'pending' || expired) return
+    const checkIfVisible = () => {
+      if (document.visibilityState === 'visible' && !recheckPending) recheckPayment()
+    }
+    const interval = window.setInterval(checkIfVisible, 8_000)
+    document.addEventListener('visibilitychange', checkIfVisible)
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', checkIfVisible)
+    }
+  }, [paymentMethod, paymentStatus, paymentExpiresAt, expired, recheckPending, recheckPayment])
+
   if (!payment) return <Alert tone="info">Data pembayaran tiket ini belum tersedia. Muat ulang halaman sebentar lagi.</Alert>
 
-  const remaining = new Date(payment.expires_at).getTime() - now
-  const expired = remaining <= 0
   const isManual = payment.method === 'manual'
   const qrSrc = isManual ? `/v1/me/tickets/${ticket.ticket_id}/qris-image` : payment.qr_code_url
 

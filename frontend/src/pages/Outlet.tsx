@@ -42,6 +42,7 @@ export default function Outlet() {
     return (
       <main className="mx-auto max-w-md px-5 py-10">
         <Alert>{messageOf(outlet.error)}</Alert>
+        <Button type="button" variant="secondary" onClick={() => void outlet.refetch()}>Coba lagi</Button>
       </main>
     )
   }
@@ -67,6 +68,17 @@ function OutletView({ outlet }: { outlet: OutletData }) {
         <h1 className="text-2xl font-bold">{outlet.outlet_name}</h1>
         {outlet.address && <p className="mt-1 text-sm text-body-muted">{outlet.address}</p>}
       </header>
+
+      <section className="grid grid-cols-2 gap-3 rounded-2xl border border-line bg-white p-4" aria-label="Informasi layanan">
+        <div>
+          <p className="text-xs text-body-muted">Uang muka</p>
+          <p className="mt-1 font-bold tabular-nums">{formatRupiah(outlet.dp_price_rupiah)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-body-muted">Durasi layanan</p>
+          <p className="mt-1 font-bold">± {outlet.default_duration_minutes} menit</p>
+        </div>
+      </section>
 
       <QueueNow today={today} live={stream.connected} />
 
@@ -137,7 +149,7 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
       <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="Pilih tanggal">
         {outlet.days.map((d) => {
           const isSelected = selected?.date === d.date
-          const note = !d.session_id ? 'Belum buka' : d.open ? `Sisa ${d.remaining}` : d.remaining === 0 ? 'Penuh' : 'Tutup'
+          const note = !d.session_id ? 'Belum dibuka' : d.open ? `Sisa ${d.remaining}/${d.max_quota}` : d.remaining === 0 ? 'Penuh' : 'Tutup'
           return (
             <button
               key={d.date}

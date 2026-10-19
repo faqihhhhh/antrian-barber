@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
@@ -6,6 +6,7 @@ import { useMe } from '../auth/useMe'
 import { Alert, Spinner } from '../components/ui'
 import type { components } from '../api/schema'
 import { formatLongDate } from '../lib/format'
+import { useQueueStream } from '../hooks/useQueueStream'
 
 type Membership = components['schemas']['MembershipInfo']
 type QueueSession = components['schemas']['QueueSession']
@@ -136,6 +137,18 @@ function SessionPanel({
 
 function QueuePanel({ membership, session }: { membership: Membership; session: QueueSession }) {
   const queryClient = useQueryClient()
+  const [toast, setToast] = useState('')
+  const stream = useQueueStream(session.id, () => {
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['kapster-tickets', membership.tenant_id, session.id] }),
+      queryClient.invalidateQueries({ queryKey: ['kapster-states', membership.tenant_id, session.id] }),
+    ])
+  }, () => {
+    void Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['kapster-tickets', membership.tenant_id, session.id] }),
+      queryClient.invalidateQueries({ queryKey: ['kapster-states', membership.tenant_id, session.id] }),
+    ])
+  })
   const tickets = useQuery({
     queryKey: ['kapster-tickets', membership.tenant_id, session.id],
     queryFn: async (): Promise<QueueTicket[]> => {
@@ -163,33 +176,41 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
       const params = { params: { path: { tenantID: membership.tenant_id, sessionID: session.id } } }
       switch (name) {
         case 'ready': {
-          const { error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/ready', params)
+          const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/ready', params)
           if (!response.ok) throw new ApiError(error)
-          return
+          return data && 'message' in data ? data.message : 'Pelanggan berikutnya dipanggil.'
         }
         case 'start': {
-          const { error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/start', params)
-          if (!response.ok) throw new ApiError(error)
-          return
+          const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/start', params)
+          if (!response.ok || !data) throw new ApiError(error)
+          return data.message
         }
         case 'skip': {
-          const { error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/skip', params)
+          const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/skip', params)
           if (!response.ok) throw new ApiError(error)
-          return
+          return data && 'message' in data ? data.message : 'Pelanggan berikutnya dipanggil.'
         }
         case 'complete': {
-          const { error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/complete', params)
-          if (!response.ok) throw new ApiError(error)
+          const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/complete', params)
+          if (!response.ok || !data) throw new ApiError(error)
+          return data.message
         }
       }
     },
-    onSuccess: async () => {
+    onSuccess: async (message) => {
+      setToast(message)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['kapster-tickets', membership.tenant_id, session.id] }),
         queryClient.invalidateQueries({ queryKey: ['kapster-states', membership.tenant_id, session.id] }),
       ])
     },
   })
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = window.setTimeout(() => setToast(''), 3500)
+    return () => window.clearTimeout(timer)
+  }, [toast])
 
   if (tickets.isPending || kapsterStates.isPending) {
     return <p className="py-6 text-center text-sm text-muted" role="status">Memuat kondisi antrian…</p>
@@ -224,15 +245,20 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
       </section>
 
       <section aria-label="Aksi kapster" className="space-y-3">
-        {!currentTicket && myState?.status !== 'busy' && (
+        {!currentTicket && (!myState || myState.status === 'idle') && (
           <button
             type="button"
-            disabled={action.isPending || waiting.length === 0}
+            disabled={action.isPending}
             onClick={() => action.mutate('ready')}
             className="w-full rounded-xl bg-ink px-4 py-4 text-base font-semibold text-white transition hover:bg-ink-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink disabled:opacity-60"
           >
-            {action.isPending && action.variables === 'ready' ? 'Memanggil…' : 'Panggil pelanggan berikutnya'}
+            {action.isPending && action.variables === 'ready' ? 'Memanggil…' : 'Siap'}
           </button>
+        )}
+        {!currentTicket && myState?.status === 'ready' && (
+          <p className="rounded-2xl border border-line bg-white px-4 py-4 text-center font-semibold" role="status">
+            Menunggu pelanggan berikutnya…
+          </p>
         )}
         {currentTicket?.status === 'called' && (
           <button
@@ -248,14 +274,16 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
           <button
             type="button"
             disabled={action.isPending}
-            onClick={() => action.mutate('skip')}
+            onClick={() => {
+              if (window.confirm('Ganti pelanggan ini dan panggil tiket berikutnya?')) action.mutate('skip')
+            }}
             className="w-full rounded-xl border border-line-strong bg-white px-3 py-4 text-sm font-semibold text-ink transition hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink disabled:opacity-60"
           >
-            {action.isPending && action.variables === 'skip' ? 'Melewati…' : 'Lewati pelanggan'}
+            {action.isPending && action.variables === 'skip' ? 'Mengganti…' : 'Ganti pelanggan'}
           </button>
         )}
         {currentTicket?.status === 'in_progress' && (
-          <div className="grid grid-cols-2 gap-3">
+          <div>
             <button
               type="button"
               disabled={action.isPending}
@@ -264,19 +292,16 @@ function QueuePanel({ membership, session }: { membership: Membership; session: 
             >
               {action.isPending && action.variables === 'complete' ? 'Menyelesaikan…' : 'Selesaikan'}
             </button>
-            <button
-              type="button"
-              disabled={action.isPending}
-              onClick={() => action.mutate('skip')}
-              className="rounded-xl border border-line-strong bg-white px-3 py-4 text-sm font-semibold text-ink transition hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink disabled:opacity-60"
-            >
-              {action.isPending && action.variables === 'skip' ? 'Melewati…' : 'Lewati pelanggan'}
-            </button>
           </div>
         )}
         {action.isError && <Alert>{messageOf(action.error)}</Alert>}
+        {toast && <p className="rounded-xl bg-ink px-4 py-3 text-sm text-white" role="status">{toast}</p>}
         {session.status !== 'open' && <Alert tone="info">Sesi ditutup untuk pesanan baru. Selesaikan tiket yang masih tersisa.</Alert>}
       </section>
+
+      <p className="text-right text-xs text-body-muted" role="status">
+        {stream.connected ? '● Terhubung langsung' : 'Menyambungkan ulang…'}
+      </p>
 
       <section aria-label="Antrian menunggu" className="rounded-3xl border border-line bg-white p-5">
         <div className="flex items-baseline justify-between">

@@ -22,6 +22,9 @@ export default function QueueNow({ today, live }: { today: SessionSnapshot | nul
             Diperbarui langsung
           </span>
         )}
+        {!live && !closed && (
+          <span className="text-xs text-paper-muted" role="status">Menyambungkan ulang…</span>
+        )}
         {closed && <span className="text-paper-muted">Ditutup</span>}
       </div>
       <p className="mt-4 text-7xl font-bold leading-none tabular-nums">{today.waiting_count}</p>

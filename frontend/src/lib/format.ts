@@ -30,9 +30,18 @@ export function formatMonthYear(date: string): string {
   })
 }
 
-export function formatDateTime(dateTime: string): string {
+export function timezoneLabel(timezone: string): string {
+  if (timezone === 'Asia/Jakarta') return 'WIB'
+  if (timezone === 'Asia/Makassar') return 'WITA'
+  if (timezone === 'Asia/Jayapura') return 'WIT'
+  return timezone
+}
+
+export function formatDateTime(dateTime: string, timezone?: string): string {
   const date = new Date(dateTime)
-  return `${date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}, ${date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`
+  const zone = timezone ? { timeZone: timezone } : {}
+  const formatted = `${date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', ...zone })}, ${date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', ...zone })}`
+  return timezone ? `${formatted} ${timezoneLabel(timezone)}` : formatted
 }
 
 export function weekdayShort(date: string): string {
