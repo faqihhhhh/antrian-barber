@@ -3,6 +3,7 @@
 bin/
 node_modules/
 dist/
-*.logcookies*.txt
+*.log
+cookies*.txt
 website/.astro/
 backups/
