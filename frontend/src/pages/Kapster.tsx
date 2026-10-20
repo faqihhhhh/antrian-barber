@@ -288,7 +288,7 @@ function QueuePanel({ membership, session, onStreamConnectionChange }: {
         {action.isError && <Alert>{action.error instanceof ApiError && action.error.code === 'berlangganan_diperlukan'
           ? 'Langganan bisnis ini tidak aktif. Minta owner bisnis memperbarui langganannya.'
           : messageOf(action.error)}</Alert>}
-        {toast && <p className="rounded-xl bg-ink px-4 py-3 text-sm text-white" role="status">{toast}</p>}
+        {toast && <Alert tone="success">{toast}</Alert>}
         {session.status !== 'open' && <Alert tone="info">Sesi ditutup untuk pesanan baru. Selesaikan tiket yang masih tersisa.</Alert>}
       </section>
       <ConfirmDialog

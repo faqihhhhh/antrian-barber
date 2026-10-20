@@ -92,8 +92,15 @@ try {
       }
       if (stateCase.state === 'idle') {
         await button.click()
-        await page.waitForTimeout(100)
+        const toast = page.getByText('Siap — antrian masih kosong', { exact: true })
+        await toast.waitFor({ state: 'visible' })
         check('Klik Siap mengirim permintaan API', readyRequestReceived)
+        const toastStyle = await toast.evaluate((element) => ({
+          classes: element.className,
+          background: getComputedStyle(element).backgroundColor,
+        }))
+        const successNotification = toastStyle.classes.includes('bg-emerald-50') && toastStyle.classes.includes('text-emerald-900') && toastStyle.background !== 'rgb(23, 23, 23)'
+        check('Notifikasi berhasil memakai warna sukses', successNotification, JSON.stringify(toastStyle))
       }
       await page.screenshot({ path: path.join(screenshotDirectory, `${before ? 'before' : 'after'}-${stateCase.screenshot}`), fullPage: false })
     } catch (error) {
