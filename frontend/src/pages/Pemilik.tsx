@@ -25,16 +25,8 @@ export default function Pemilik() {
 
   return (
     <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-5 py-6">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="mt-1 text-2xl font-bold">Pengaturan outlet</h1>
-        </div>
-        <Link
-          to="/"
-          className="shrink-0 rounded-xl border border-line-strong bg-white px-3 py-2 text-sm font-semibold text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
-        >
-          Beranda
-        </Link>
+      <header>
+        <h1 className="mt-1 text-2xl font-bold">Bisnis</h1>
       </header>
       <nav
         aria-label="Navigasi pengaturan bisnis"

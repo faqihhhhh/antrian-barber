@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { useParams } from 'react-router'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
@@ -81,11 +81,8 @@ export default function Admin() {
 
   return (
     <main className="mx-auto min-h-dvh max-w-4xl space-y-5 bg-paper px-5 py-6">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="mt-1 text-2xl font-bold">Meja admin</h1>
-        </div>
-        <Link to="/" className="pt-1 text-sm font-semibold underline">Beranda</Link>
+      <header>
+        <h1 className="mt-1 text-2xl font-bold">Meja admin</h1>
       </header>
 
       {outlets.length === 0 ? (

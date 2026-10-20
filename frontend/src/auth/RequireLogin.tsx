@@ -18,6 +18,9 @@ export default function RequireLogin({ children }: { children: ReactNode }) {
       </main>
     )
   }
-  if (!me.data) return <Navigate to="/masuk" replace state={{ from: location.pathname + location.search }} />
+  if (!me.data) {
+    const isCustomerRoute = location.pathname === '/pelanggan' || location.pathname.startsWith('/pelanggan/') || location.pathname === '/tiket' || location.pathname.startsWith('/tiket/')
+    return <Navigate to={isCustomerRoute ? '/pelanggan/masuk' : '/masuk'} replace state={{ from: location.pathname + location.search }} />
+  }
   return <>{children}</>
 }

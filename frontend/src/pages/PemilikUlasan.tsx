@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
@@ -37,7 +36,7 @@ export default function PemilikUlasan() {
 
   return (
     <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-5 py-6">
-      <header className="flex items-start justify-between gap-4"><div><h1 className="text-2xl font-bold">Ulasan pelanggan</h1></div><Link to="/pemilik" className="pt-1 text-sm font-semibold underline">Pengaturan outlet</Link></header>
+      <header><h1 className="text-2xl font-bold">Ulasan pelanggan</h1></header>
       {owners.length > 1 && <label className="block"><span className="mb-1 block text-sm font-medium text-body">Bisnis</span><select aria-label="Bisnis" className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base" value={tenantID} onChange={(event) => { setTenantChoice(event.target.value); setOffset(0) }}>{owners.map((item) => <option key={item.tenant_id} value={item.tenant_id}>{item.tenant_name}</option>)}</select></label>}
       {summary.isPending ? <Spinner /> : summary.isError ? <Alert>{messageOf(summary.error)}</Alert> : (
         <section className="space-y-3" aria-label="Ringkasan rating kapster">

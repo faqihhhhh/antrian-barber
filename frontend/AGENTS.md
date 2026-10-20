@@ -40,7 +40,8 @@ Rute publik: `/masuk`, `/daftar`, `/verifikasi-email`, `/lupa-password`, `/atur-
 route yang memakai `RequireLogin` dan `AppShell`; shell menyediakan logo, akun, logout, dan
 navigasi utama. `RequireLogin` menyimpan alamat tujuan (termasuk query string) agar kembali setelah
 masuk. Halaman Beranda, admin, kapster, dan pemilik dimuat dengan `React.lazy`; halaman outlet dan
-tiket pelanggan tetap berada di jalur pemuatan utama. Rute berlogin meliputi `/`, `/tiket`,
+tiket pelanggan tetap berada di jalur pemuatan utama. Rute berlogin meliputi `/`, `/pelanggan`,
+`/pelanggan/akun`, `/tiket`,
 `/tiket/:ticketId`, `/kapster`, `/kelola/:tenantId/:outletId`,
 `/kelola/:tenantId/sesi/:sessionId`, `/pemilik` dan subhalamannya, `/pemilik-saas`, serta
 `/mulai-bisnis`.

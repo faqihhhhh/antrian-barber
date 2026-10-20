@@ -314,6 +314,29 @@ paths:
                 $ref: '#/components/schemas/UsernameResponse'
         default:
           $ref: '#/components/responses/Error'
+  /v1/me/password:
+    put:
+      operationId: changeMyPassword
+      tags: [akun]
+      summary: Ganti password akun yang sedang masuk
+      description: Password saat ini wajib cocok. Password baru minimal 8 karakter.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Password berhasil diubah
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/:
     post:
       operationId: createTenant
@@ -1683,6 +1706,15 @@ components:
       properties:
         username:
           type: string
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+        new_password:
+          type: string
+          minLength: 8
     EmailRequest:
       type: object
       required: [email]

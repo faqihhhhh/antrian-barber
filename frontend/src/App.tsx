@@ -23,6 +23,8 @@ const PemilikUlasan = lazy(() => import('./pages/PemilikUlasan'))
 const PemilikLangganan = lazy(() => import('./pages/PemilikLangganan'))
 const PemilikSaaS = lazy(() => import('./pages/PemilikSaaS'))
 const PemilikMulai = lazy(() => import('./pages/PemilikMulai'))
+const Akun = lazy(() => import('./pages/Akun'))
+const PelangganBeranda = lazy(() => import('./pages/PelangganBeranda'))
 
 function NotFound() {
   return (
@@ -40,6 +42,7 @@ export default function App() {
     <Suspense fallback={<Spinner />}>
       <Routes>
         <Route path="/masuk" element={<Masuk />} />
+        <Route path="/pelanggan/masuk" element={<Masuk />} />
         <Route path="/daftar" element={<Daftar />} />
         <Route path="/verifikasi-email" element={<VerifikasiEmail />} />
         <Route path="/lupa-password" element={<LupaPassword />} />
@@ -51,8 +54,11 @@ export default function App() {
 
         <Route element={<RequireLogin><AppShell /></RequireLogin>}>
           <Route index element={<Beranda />} />
+          <Route path="pelanggan" element={<PelangganBeranda />} />
+          <Route path="pelanggan/akun" element={<Akun />} />
           <Route path="tiket" element={<TiketSaya />} />
           <Route path="tiket/:ticketId" element={<Tiket />} />
+          <Route path="akun" element={<Akun />} />
           <Route path="admin" element={<Admin />} />
           <Route path="kelola/:tenantId/:outletId" element={<Admin />} />
           <Route path="kelola/:tenantId/sesi/:sessionId" element={<Admin />} />

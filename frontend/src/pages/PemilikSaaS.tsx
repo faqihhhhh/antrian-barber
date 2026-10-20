@@ -25,9 +25,10 @@ export default function PemilikSaaS() {
 
   return (
     <main className="mx-auto min-h-dvh max-w-5xl space-y-6 bg-paper px-5 py-6">
-      <header className="flex items-start justify-between gap-4">
-        <div><p className="text-sm font-semibold tracking-wide text-muted">Panel platform</p><h1 className="mt-1 text-2xl font-bold">Ringkasan SaaS</h1><p className="mt-1 text-sm text-body-muted">Kinerja bisnis dan langganan platform.</p></div>
-        <Link to="/" className="pt-1 text-sm font-semibold underline">Beranda</Link>
+      <header>
+        <p className="text-sm font-semibold tracking-wide text-muted">Panel platform</p>
+        <h1 className="mt-1 text-2xl font-bold">Ringkasan SaaS</h1>
+        <p className="mt-1 text-sm text-body-muted">Kinerja bisnis dan langganan platform.</p>
       </header>
       {stats.isPending ? <Spinner /> : stats.isError ? <Alert>{messageOf(stats.error)}</Alert> : (
         <>

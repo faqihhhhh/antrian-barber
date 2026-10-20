@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
@@ -41,11 +40,8 @@ export default function Kapster() {
 
   return (
     <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-5 py-6">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="mt-1 text-2xl font-bold">Meja kapster</h1>
-        </div>
-        <Link to="/" className="pt-1 text-sm font-semibold underline">Beranda</Link>
+      <header>
+        <h1 className="mt-1 text-2xl font-bold">Meja kapster</h1>
       </header>
 
       {outlets.length === 0 ? (

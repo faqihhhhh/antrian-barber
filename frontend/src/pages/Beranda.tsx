@@ -92,14 +92,14 @@ export default function Beranda() {
       </div>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <Link
+        {data.memberships.length === 0 && <Link
           to="/tiket"
           className="block self-start rounded-2xl border border-ink bg-white p-4 font-semibold transition hover:bg-paper-raised"
         >
           Tiket saya
           <span className="block text-sm font-normal text-body-muted">Lihat antrian dan status pembayaran</span>
-        </Link>
-        {outlet && (
+        </Link>}
+        {data.memberships.length === 0 && outlet && (
           <Link to={`/o/${outlet}`} className="block px-1 text-sm font-semibold underline">
             Kembali ke halaman pemesanan terakhir
           </Link>

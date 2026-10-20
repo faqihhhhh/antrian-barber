@@ -243,7 +243,7 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
           ) : (
             <div className="space-y-2">
               <p className="text-sm text-body-muted">Masuk dulu supaya tiket Anda tersimpan dan bisa dilihat dari HP mana pun.</p>
-              <Button to="/masuk" state={{ from }}>
+              <Button to="/pelanggan/masuk" state={{ from }}>
                 Masuk untuk memesan
               </Button>
               <Button to="/daftar" state={{ from }} variant="secondary">

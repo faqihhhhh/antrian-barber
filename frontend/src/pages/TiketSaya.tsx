@@ -23,11 +23,8 @@ export default function TiketSaya() {
 
   return (
     <main className="mx-auto max-w-md space-y-6 px-5 py-8">
-      <header className="flex items-baseline justify-between">
+      <header>
         <h1 className="text-2xl font-bold">Tiket saya</h1>
-        <Link to="/" className="text-sm font-semibold underline">
-          Beranda
-        </Link>
       </header>
 
       {tickets.data.length === 0 && (

@@ -64,6 +64,31 @@ func (s *Service) SetUsername(ctx context.Context, userID uuid.UUID, rawUsername
 	return username, nil
 }
 
+func (s *Service) ChangePassword(ctx context.Context, userID uuid.UUID, currentPassword, newPassword string) error {
+	if len(newPassword) < 8 {
+		return httpx.BadRequest("password_terlalu_pendek", "Password baru minimal 8 karakter", nil)
+	}
+	q := s.queries(ctx)
+	user, err := q.GetUserByID(ctx, userID)
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("ambil akun untuk ganti password: %w", err))
+	}
+	if err := identity.VerifyPassword(currentPassword, user.PasswordHash); err != nil {
+		if errors.Is(err, identity.ErrPasswordMismatch) {
+			return httpx.BadRequest("password_saat_ini_salah", "Password saat ini tidak cocok", nil)
+		}
+		return httpx.Internal(fmt.Errorf("memeriksa password saat ini: %w", err))
+	}
+	hash, err := identity.HashPassword(newPassword)
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("membuat hash password baru: %w", err))
+	}
+	if err := q.UpdateUserPassword(ctx, db.UpdateUserPasswordParams{ID: userID, PasswordHash: hash}); err != nil {
+		return httpx.Internal(fmt.Errorf("menyimpan password baru: %w", err))
+	}
+	return nil
+}
+
 type OutletInfo struct {
 	ID       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`

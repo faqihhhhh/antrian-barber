@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
@@ -74,7 +73,7 @@ export default function PemilikLangganan() {
 
   return (
     <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-5 py-6">
-      <header className="flex items-start justify-between gap-4"><div><h1 className="text-2xl font-bold">Langganan</h1></div><Link to="/pemilik" className="pt-1 text-sm font-semibold underline">Pengaturan outlet</Link></header>
+      <header><h1 className="text-2xl font-bold">Langganan</h1></header>
       {owners.length > 1 && <label className="block"><span className="mb-1 block text-sm font-medium text-body">Bisnis</span><select aria-label="Bisnis" className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base" value={tenantID} onChange={(event) => setTenantChoice(event.target.value)}>{owners.map((item) => <option key={item.tenant_id} value={item.tenant_id}>{item.tenant_name}</option>)}</select></label>}
       {subscription.isPending ? <Spinner /> : subscription.isError ? <Alert>{messageOf(subscription.error)}</Alert> : (
         <article className="rounded-3xl border border-line bg-white p-5"><h2 className="font-bold">Status bisnis</h2><p className="mt-2">Langganan: <strong>{statusLabel[subscription.data.status] ?? subscription.data.status}</strong></p>{subscription.data.plan_code && <p className="mt-1 text-sm text-body-muted">Paket: {subscription.data.plan_code}</p>}{subscription.data.current_period_end && <p className="mt-1 text-sm text-body-muted">Periode berakhir: {formatDateTime(subscription.data.current_period_end)}</p>}</article>

@@ -263,6 +263,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Ganti password akun yang sedang masuk
+         * @description Password saat ini wajib cocok. Password baru minimal 8 karakter.
+         */
+        put: operations["changeMyPassword"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/": {
         parameters: {
             query?: never;
@@ -1150,6 +1170,10 @@ export interface components {
         UsernameResponse: {
             username: string;
         };
+        ChangePasswordRequest: {
+            current_password: string;
+            new_password: string;
+        };
         EmailRequest: {
             /** Format: email */
             email: string;
@@ -1732,6 +1756,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UsernameResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    changeMyPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Password berhasil diubah */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             default: components["responses"]["Error"];

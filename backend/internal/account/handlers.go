@@ -52,3 +52,24 @@ func (h *Handlers) SetUsername(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.JSON(w, http.StatusOK, map[string]string{"username": username})
 }
+
+func (h *Handlers) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	user, ok := identity.UserFromContext(r.Context())
+	if !ok {
+		httpx.Error(w, r, h.log, httpx.Unauthorized("belum_login", "Anda belum masuk", nil))
+		return
+	}
+	var req struct {
+		CurrentPassword string `json:"current_password"`
+		NewPassword     string `json:"new_password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
+		return
+	}
+	if err := h.svc.ChangePassword(r.Context(), user.ID, req.CurrentPassword, req.NewPassword); err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Password berhasil diubah"})
+}
