@@ -80,7 +80,7 @@ export default function Admin() {
   const selected = outlets.find(({ membership, outlet }) => `${membership.tenant_id}:${outlet.id}` === selectedKey)
 
   return (
-    <main className="mx-auto min-h-dvh max-w-4xl space-y-5 bg-paper px-5 py-6">
+    <main className="mx-auto min-h-dvh max-w-4xl space-y-4 bg-paper px-5 py-4 sm:space-y-5 sm:py-6">
       <header>
         <h1 className="mt-1 text-2xl font-bold">Meja admin</h1>
       </header>
@@ -89,22 +89,29 @@ export default function Admin() {
         <Alert tone="info">Akun ini belum punya akses admin ke outlet. Hubungi owner bisnis untuk mengatur penugasan.</Alert>
       ) : (
         <>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-body">Outlet</span>
-            <select
-              aria-label="Outlet"
-              className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
-              value={selectedKey}
-              onChange={(event) => { setOutletChoice(event.target.value); setSessionChoice('') }}
-            >
-              {outlets.map(({ membership, outlet }) => {
-                const key = `${membership.tenant_id}:${outlet.id}`
-                return <option key={key} value={key}>{membership.tenant_name} · {outlet.name}</option>
-              })}
-            </select>
-          </label>
-          {selected && <PublicOutletLink membership={selected.membership} outlet={selected.outlet} />}
-          {selected && <SessionPanel selected={selected} sessionChoice={routeSessionID ?? sessionChoice} onSessionChange={setSessionChoice} />}
+          <div className="grid items-end gap-2 sm:grid-cols-2 sm:gap-3">
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium text-body">Outlet</span>
+              <select
+                aria-label="Outlet"
+                className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
+                value={selectedKey}
+                onChange={(event) => { setOutletChoice(event.target.value); setSessionChoice('') }}
+              >
+                {outlets.map(({ membership, outlet }) => {
+                  const key = `${membership.tenant_id}:${outlet.id}`
+                  return <option key={key} value={key}>{membership.tenant_name} · {outlet.name}</option>
+                })}
+              </select>
+            </label>
+            {selected && <SessionPanel selected={selected} sessionChoice={routeSessionID ?? sessionChoice} onSessionChange={setSessionChoice} />}
+          </div>
+          {selected && (
+            <details className="rounded-2xl border border-line bg-white">
+              <summary className="min-h-11 cursor-pointer px-4 py-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-brand-ink">Tautan publik outlet</summary>
+              <div className="border-t border-line p-3"><PublicOutletLink membership={selected.membership} outlet={selected.outlet} /></div>
+            </details>
+          )}
         </>
       )}
     </main>
@@ -206,7 +213,7 @@ function SessionPanel({
   const validInitialQuota = Number.isInteger(Number(initialQuota)) && Number(initialQuota) > 0 && Number(initialQuota) <= 1000
 
   return (
-    <div className="space-y-5">
+    <>
       {currentSession ? (
         <>
           <label className="block">
@@ -225,15 +232,17 @@ function SessionPanel({
             </select>
           </label>
 
-          <div className="grid gap-5 lg:grid-cols-2">
-            <PaymentPanel membership={selected.membership} session={currentSession} />
-            <SettlementPanel membership={selected.membership} session={currentSession} />
-          </div>
+          <section aria-label="Perlu tindakan" className="col-span-full space-y-4 sm:space-y-5">
+            <h2 className="text-lg font-bold">Perlu tindakan</h2>
+            <div className="grid gap-5 lg:grid-cols-2">
+              <PaymentPanel membership={selected.membership} session={currentSession} />
+              <SettlementPanel membership={selected.membership} session={currentSession} />
+            </div>
+            <OfflineTicketPanel membership={selected.membership} session={currentSession} />
+          </section>
 
-          <OfflineTicketPanel membership={selected.membership} session={currentSession} />
-          {currentSession.status === 'open' ? (
-            <CloseSessionControl membership={selected.membership} session={currentSession} />
-          ) : (
+          <QueueListPanel membership={selected.membership} session={currentSession} />
+          {currentSession.status === 'open' ? <CloseSessionControl membership={selected.membership} session={currentSession} /> : (
             <Alert tone="info">Sesi sudah ditutup. Pelanggan tidak bisa membuat pesanan baru.</Alert>
           )}
         </>
@@ -241,7 +250,7 @@ function SessionPanel({
         <Alert tone="info">Belum ada sesi antrian di outlet ini. Buka sesi baru untuk mulai menerima pelanggan.</Alert>
       )}
 
-      <details className="group rounded-2xl border border-line-strong bg-white">
+      <details open={!currentSession || currentSession.status !== 'open'} className="col-span-full group rounded-2xl border border-line-strong bg-white">
         <summary className="flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-2xl px-4 py-3 font-semibold focus-visible:outline-2 focus-visible:outline-brand-ink">
           Buka sesi baru
           <span aria-hidden="true" className="text-lg text-body-muted group-open:rotate-45">+</span>
@@ -281,7 +290,7 @@ function SessionPanel({
           </Button>
         </form>
       </details>
-    </div>
+    </>
   )
 }
 
@@ -334,17 +343,6 @@ function OfflineTicketPanel({ membership, session }: { membership: Membership; s
   const [customerName, setCustomerName] = useState('')
   const [quotaBy, setQuotaBy] = useState('')
   const queryClient = useQueryClient()
-  const tickets = useQuery({
-    queryKey: ['admin-tickets', membership.tenant_id, session.id],
-    queryFn: async (): Promise<components['schemas']['QueueTicket'][]> => {
-      const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/tickets', {
-        params: { path: { tenantID: membership.tenant_id, sessionID: session.id } },
-      })
-      if (!response.ok || !data) throw new ApiError(error)
-      return data
-    },
-    refetchInterval: POLL_INTERVAL,
-  })
   const addTicket = useMutation({
     mutationFn: async (name: string) => {
       const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/tickets', {
@@ -377,12 +375,11 @@ function OfflineTicketPanel({ membership, session }: { membership: Membership; s
     },
   })
   const quotaFull = session.used_quota >= session.max_quota
-  const recentTickets = [...(tickets.data ?? [])].reverse().slice(0, 5)
   const quotaValue = Number(quotaBy)
   const validQuotaIncrease = Number.isInteger(quotaValue) && quotaValue > 0 && quotaValue <= 1000
 
   return (
-    <section aria-label="Tiket pelanggan datang langsung" className="space-y-3 border-t border-line pt-5">
+    <section aria-label="Pelanggan datang langsung" className="space-y-3 border-t border-line pt-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-bold">Pelanggan datang langsung</h2>
         <span className="text-sm text-body-muted">Sisa kuota {Math.max(0, session.max_quota - session.used_quota)}</span>
@@ -442,6 +439,30 @@ function OfflineTicketPanel({ membership, session }: { membership: Membership; s
         </Button>
       </form>
 
+    </section>
+  )
+}
+
+function QueueListPanel({ membership, session }: { membership: Membership; session: QueueSession }) {
+  const tickets = useQuery({
+    queryKey: ['admin-tickets', membership.tenant_id, session.id],
+    queryFn: async (): Promise<components['schemas']['QueueTicket'][]> => {
+      const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/tickets', {
+        params: { path: { tenantID: membership.tenant_id, sessionID: session.id } },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    refetchInterval: POLL_INTERVAL,
+  })
+  const recentTickets = [...(tickets.data ?? [])].reverse().slice(0, 5)
+
+  return (
+    <section aria-label="Daftar antrean yang sedang berjalan" className="col-span-full space-y-3 border-t border-line pt-5">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold">Antrean saat ini</h2>
+        <span className="text-sm text-body-muted">{tickets.data?.length ?? '…'} tiket</span>
+      </div>
       {tickets.isPending ? (
         <p className="py-3 text-center text-sm text-muted" role="status">Memuat tiket sesi…</p>
       ) : tickets.isError ? (
@@ -508,11 +529,14 @@ function PaymentPanel({ membership, session }: { membership: Membership; session
               <p className="text-xs font-semibold uppercase tracking-wide text-muted">Tiket #{payment.ticket_number}</p>
               <h3 className="mt-1 text-lg font-bold">{payment.customer_name || 'Pelanggan'}</h3>
             </div>
-            <p className="text-right text-lg font-bold tabular-nums">{formatRupiah(payment.amount_rupiah)}</p>
+            <div className="text-right">
+              <p className="text-lg font-bold tabular-nums">{formatRupiah(payment.amount_rupiah)}</p>
+              <p className="mt-1 text-xs text-muted">Tiga digit terakhir adalah kode unik pembayaran: {payment.unique_code ?? '—'}.</p>
+            </div>
           </div>
           <dl className="grid grid-cols-2 gap-2 rounded-xl bg-paper p-3 text-sm">
-            <div><dt className="text-muted">Kode cocok</dt><dd className="font-semibold">{payment.match_code}</dd></div>
-            <div><dt className="text-muted">Kode unik</dt><dd className="font-semibold">{payment.unique_code ?? '—'}</dd></div>
+            <div><dt className="text-muted">Kode untuk kapster</dt><dd className="font-semibold">{payment.match_code}</dd></div>
+            <div><dt className="text-muted">Kode unik pembayaran</dt><dd className="font-semibold">{payment.unique_code ?? '—'}</dd></div>
           </dl>
           <p className="text-xs text-muted">Batas bayar {formatDateTime(payment.expires_at, outletTimezone)}</p>
           <Button

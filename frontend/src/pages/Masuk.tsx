@@ -9,9 +9,7 @@ export default function Masuk() {
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
-  const [loginSpace, setLoginSpace] = useState<'mitra' | 'pelanggan'>(
-    location.pathname === '/pelanggan/masuk' ? 'pelanggan' : 'mitra',
-  )
+  const customerLogin = location.pathname === '/pelanggan/masuk'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
@@ -26,11 +24,11 @@ export default function Masuk() {
       const { data, error, response } = await api.GET('/v1/me')
       if (!response.ok || !data) throw new ApiError(error)
       queryClient.setQueryData(['me'], data)
-      if (from && isCustomerDestination(from) === (loginSpace === 'pelanggan')) {
+      if (from && isCustomerDestination(from) === customerLogin) {
         navigate(from, { replace: true })
         return
       }
-      if (loginSpace === 'pelanggan') {
+      if (customerLogin) {
         navigate('/pelanggan', { replace: true })
         return
       }
@@ -53,30 +51,12 @@ export default function Masuk() {
   const needsVerification = login.error instanceof ApiError && login.error.code === 'email_belum_verifikasi'
 
   return (
-    <AuthLayout title="Masuk ke Kapsflow" subtitle="Pilih ruang yang ingin Anda buka. Gunakan akun dan password yang sama.">
-      <div>
-        <p className="mb-2 text-sm font-medium text-body">Masuk sebagai</p>
-        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Pilih jenis akun">
-          <button
-            type="button"
-            aria-pressed={loginSpace === 'mitra'}
-            onClick={() => setLoginSpace('mitra')}
-            className={`min-h-20 rounded-xl border p-3 text-left focus-visible:outline-2 focus-visible:outline-brand-ink ${loginSpace === 'mitra' ? 'border-ink bg-paper-raised' : 'border-line bg-white'}`}
-          >
-            <span className="block font-semibold">Mitra</span>
-            <span className="mt-1 block text-xs leading-5 text-body-muted">Pemilik SaaS, owner, admin, atau kapster</span>
-          </button>
-          <button
-            type="button"
-            aria-pressed={loginSpace === 'pelanggan'}
-            onClick={() => setLoginSpace('pelanggan')}
-            className={`min-h-20 rounded-xl border p-3 text-left focus-visible:outline-2 focus-visible:outline-brand-ink ${loginSpace === 'pelanggan' ? 'border-ink bg-paper-raised' : 'border-line bg-white'}`}
-          >
-            <span className="block font-semibold">Pelanggan</span>
-            <span className="mt-1 block text-xs leading-5 text-body-muted">Pesan antrean dan lihat tiket</span>
-          </button>
-        </div>
-      </div>
+    <AuthLayout
+      title="Masuk ke Kapsflow"
+      subtitle={customerLogin
+        ? 'Masuk untuk melanjutkan pesanan dari halaman outlet.'
+        : 'Masuk untuk pemilik, admin, kapster, dan pengelola Kapsflow.'}
+    >
       <form
         className="space-y-4"
         onSubmit={(e) => {

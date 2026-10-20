@@ -171,6 +171,19 @@ export function RetryAlert({ children, onRetry }: { children: ReactNode; onRetry
   )
 }
 
+export function ConnectionStatus({ connected }: { connected: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-2 text-xs ${connected ? 'text-emerald-800' : 'text-amber-800'}`}
+      role="status"
+      data-connection-status
+    >
+      <span aria-hidden="true" className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-600' : 'bg-amber-700'}`} data-connection-dot />
+      {connected ? 'Terhubung langsung' : 'Menyambungkan ulang…'}
+    </span>
+  )
+}
+
 export type BadgeTone = 'success' | 'warning' | 'danger' | 'neutral'
 
 export function Badge({ tone = 'neutral', children }: { tone?: BadgeTone; children: ReactNode }) {

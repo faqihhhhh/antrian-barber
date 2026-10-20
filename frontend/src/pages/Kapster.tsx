@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
-import { Alert, Button, ConfirmDialog, RetryAlert, Spinner } from '../components/ui'
+import { Alert, Button, ConfirmDialog, ConnectionStatus, RetryAlert, Spinner } from '../components/ui'
 import type { components } from '../api/schema'
 import { formatLongDate } from '../lib/format'
 import { useQueueStream } from '../hooks/useQueueStream'
@@ -232,12 +232,13 @@ function QueuePanel({ membership, session, onStreamConnectionChange }: {
         <p className="text-sm text-paper-muted">Pelanggan aktif · {myState?.status === 'busy' ? 'Sedang ditangani' : 'Belum ada'}</p>
         {currentTicket ? (
           <>
-            <p className="mt-2 text-6xl font-bold tabular-nums">{currentTicket.ticket_number}</p>
-            <p className="mt-2 text-xl font-semibold">{currentTicket.customer_name || 'Pelanggan'}</p>
+            <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-paper-muted">Nomor tiket</p>
+            <p className="mt-0.5 text-base font-semibold tabular-nums">#{currentTicket.ticket_number}</p>
+            <h2 className="mt-2 text-2xl font-bold leading-tight">{currentTicket.customer_name || 'Pelanggan'}</h2>
             {currentTicket.match_code && (
               <div className="mt-4 rounded-2xl border border-white/20 bg-white/10 px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-paper-muted">Kode cocok</p>
-                <p className="mt-1 font-mono text-3xl font-bold tracking-[0.3em] tabular-nums" aria-label={`Kode cocok ${currentTicket.match_code.split('').join(' ')}`}>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-paper-muted">Kode untuk kapster</p>
+                <p className="mt-1 font-mono text-3xl font-bold tracking-[0.3em] tabular-nums" aria-label={`Kode untuk kapster ${currentTicket.match_code.split('').join(' ')}`}>
                   {currentTicket.match_code}
                 </p>
               </div>
@@ -302,9 +303,7 @@ function QueuePanel({ membership, session, onStreamConnectionChange }: {
         }}
       />
 
-      <p className="text-right text-xs text-body-muted" role="status">
-        {stream.connected ? '● Terhubung langsung' : 'Menyambungkan ulang…'}
-      </p>
+      <div className="flex justify-end"><ConnectionStatus connected={stream.connected} /></div>
 
       <section aria-label="Antrian menunggu" className="rounded-3xl border border-line bg-white p-5">
         <div className="flex items-baseline justify-between">
@@ -327,7 +326,6 @@ function QueuePanel({ membership, session, onStreamConnectionChange }: {
           </ol>
         )}
       </section>
-      {!stream.connected && <p className="text-center text-xs text-muted">Koneksi langsung terputus. Data diperbarui otomatis setiap 5 detik.</p>}
     </>
   )
 }

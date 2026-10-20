@@ -5,6 +5,9 @@ interface Props {
 }
 
 const { title, intro } = Astro.props
+const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.url.origin
+const pageUrl = new URL(Astro.url.pathname, siteUrl).href
+const socialImage = new URL('/icons/icon-512.png', siteUrl).href
 ---
 
 <!doctype html>
@@ -12,13 +15,20 @@ const { title, intro } = Astro.props
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f5f4f0" />
+    <meta name="theme-color" content="#fafafa" />
     <meta name="description" content={intro} />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <meta property="og:title" content={`${title} — Kapsflow`} />
+    <meta property="og:description" content={intro} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={pageUrl} />
+    <meta property="og:image" content={socialImage} />
+    <meta name="twitter:card" content="summary_large_image" />
     <title>{title} — Kapsflow</title>
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="/" aria-label="Kapsflow, ke beranda"><span class="brand-mark">K</span>Kapsflow</a>
+      <a class="brand" href="/" aria-label="Kapsflow, ke beranda"><svg aria-hidden="true" viewBox="0 0 32 32" class="brand-glyph" fill="none"><circle cx="7" cy="8" r="4" stroke="currentColor" stroke-width="2.5" /><circle cx="7" cy="24" r="4" stroke="currentColor" stroke-width="2.5" /><path d="m10.5 10.5 16 15M10.5 21.5l16-15M14 16h13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" /></svg>Kapsflow</a>
       <nav aria-label="Navigasi utama"><a href="/">Beranda</a><a href="/syarat">Syarat penggunaan</a><a href="/privasi">Privasi</a></nav>
     </header>
     <main>
@@ -26,23 +36,25 @@ const { title, intro } = Astro.props
       <article class="document"><slot /></article>
       <p class="legal-reference">Dokumen ini perlu diperiksa dan dilengkapi oleh operator Kapsflow sebelum digunakan sebagai ketentuan final.</p>
     </main>
-    <footer><a class="brand" href="/"><span class="brand-mark">K</span>Kapsflow</a><p>Antrean lebih tertata, layanan lebih nyaman.</p><span>© {new Date().getFullYear()} Kapsflow</span></footer>
+    <footer><a class="brand" href="/" aria-label="Kapsflow, ke beranda"><svg aria-hidden="true" viewBox="0 0 32 32" class="brand-glyph" fill="none"><circle cx="7" cy="8" r="4" stroke="currentColor" stroke-width="2.5" /><circle cx="7" cy="24" r="4" stroke="currentColor" stroke-width="2.5" /><path d="m10.5 10.5 16 15M10.5 21.5l16-15M14 16h13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" /></svg>Kapsflow</a><p>Antrian lebih tertata, layanan lebih nyaman.</p><span>© {new Date().getFullYear()} Kapsflow</span></footer>
   </body>
 </html>
 
 <style>
+  :global(:root) { --color-ink: #171717; --color-ink-hover: #303030; --color-ink-muted: #525252; --color-paper: #fafafa; --color-paper-raised: #f4f4f5; --color-paper-muted: #e4e4e7; --color-line: #e4e4e7; --color-line-soft: #f0f0f1; --color-line-strong: #c4c4c7; --color-muted: #66666b; --color-body-muted: #525257; --color-body: #3f3f46; --color-brand: #404040; --color-brand-ink: #262626; }
   :global(*) { box-sizing: border-box; }
-  :global(body) { margin: 0; background: #f5f4f0; color: #20231f; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  :global(body) { margin: 0; background: var(--color-paper); color: var(--color-ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
   :global(a) { color: inherit; }
+  :global(:where(a, button, input, select, textarea, [tabindex]):focus-visible) { outline: 2px solid var(--color-ink); outline-offset: 2px; }
   .topbar { height: 78px; max-width: 1120px; margin: auto; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; }
   .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 800; letter-spacing: -.7px; text-decoration: none; }
-  .brand-mark { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 10px 10px 10px 3px; background: #e5a15d; color: #20231f; font-size: 16px; }
-  nav { display: flex; gap: 22px; font-size: 12px; font-weight: 650; }nav a { color: #686a64; text-decoration: none; }
+  .brand-glyph { width: 32px; height: 32px; flex: none; color: var(--color-ink); }
+  nav { display: flex; gap: 22px; font-size: 12px; font-weight: 650; }nav a { color: var(--color-body-muted); text-decoration: none; }
   main { max-width: 860px; min-height: calc(100vh - 160px); margin: 0 auto; padding: 52px 30px 90px; }
-  .page-heading { padding-bottom: 28px; border-bottom: 1px solid #dfddd6; }.eyebrow { margin: 0 0 15px; color: #777970; font-size: 10px; font-weight: 800; letter-spacing: 1.7px; }
-  h1 { margin: 0; font-size: clamp(36px, 7vw, 54px); line-height: 1.05; letter-spacing: -2.5px; }.page-heading > p:not(.eyebrow) { max-width: 640px; margin: 16px 0; color: #686a64; font-size: 15px; line-height: 1.7; }.updated { display: inline-block; padding: 7px 10px; border-radius: 8px; background: #f3e9dc; color: #805c37; font-size: 11px; font-weight: 700; }
-  .document { padding-top: 8px; }.document h2 { margin: 30px 0 10px; font-size: 19px; letter-spacing: -.3px; }.document h3 { margin: 22px 0 8px; font-size: 15px; }.document p,.document li { color: #555850; font-size: 14px; line-height: 1.75; }.document ul,.document ol { padding-left: 22px; }.document li + li { margin-top: 7px; }.document a { color: #315b47; text-decoration: underline; text-underline-offset: 3px; }.document .contact-box { margin-top: 14px; padding: 16px; border: 1px solid #e3d1bd; border-radius: 12px; background: #fff9f2; color: #684c30; }
-  .legal-reference { margin-top: 35px; padding-top: 18px; border-top: 1px solid #dfddd6; color: #85877f; font-size: 11px; line-height: 1.6; }
-  footer { display: flex; align-items: center; gap: 20px; max-width: 800px; margin: auto; padding: 18px 30px 30px; border-top: 1px solid #e4e2db; }footer p,footer > span { margin: 0; color: #85877f; font-size: 11px; }footer > span { margin-left: auto; }
-  @media (max-width: 600px) { .topbar { height: 70px; padding: 0 20px; }.topbar nav { gap: 12px; font-size: 10px; }.topbar nav a:first-child { display: none; }main { padding: 38px 20px 64px; }.document h2 { margin-top: 25px; }.document p,.document li { font-size: 13px; }footer { flex-wrap: wrap; gap: 10px 16px; padding: 18px 20px 26px; }footer p { flex-basis: 100%; order: 3; }footer > span { margin-left: 0; } }
+  .page-heading { padding-bottom: 28px; border-bottom: 1px solid var(--color-line); }.eyebrow { margin: 0 0 15px; color: var(--color-muted); font-size: 12px; font-weight: 800; letter-spacing: 1.7px; }
+  h1 { margin: 0; font-size: clamp(36px, 7vw, 54px); line-height: 1.05; letter-spacing: -2.5px; }.page-heading > p:not(.eyebrow) { max-width: 640px; margin: 16px 0; color: var(--color-body-muted); font-size: 15px; line-height: 1.7; }.updated { display: inline-block; padding: 7px 10px; border-radius: 8px; background: var(--color-paper-raised); color: var(--color-body); font-size: 12px; font-weight: 700; }
+  .document { padding-top: 8px; }.document h2 { margin: 30px 0 10px; font-size: 19px; letter-spacing: -.3px; }.document h3 { margin: 22px 0 8px; font-size: 15px; }.document p,.document li { color: var(--color-body); font-size: 14px; line-height: 1.75; }.document ul,.document ol { padding-left: 22px; }.document li + li { margin-top: 7px; }.document a { color: var(--color-ink-muted); text-decoration: underline; text-underline-offset: 3px; }.document .contact-box { margin-top: 14px; padding: 16px; border: 1px solid var(--color-line-strong); border-radius: 12px; background: var(--color-paper-raised); color: var(--color-body); }
+  .legal-reference { margin-top: 35px; padding-top: 18px; border-top: 1px solid var(--color-line); color: var(--color-muted); font-size: 12px; line-height: 1.6; }
+  footer { display: flex; align-items: center; gap: 20px; max-width: 800px; margin: auto; padding: 18px 30px 30px; border-top: 1px solid var(--color-line); }footer p,footer > span { margin: 0; color: var(--color-muted); font-size: 12px; }footer > span { margin-left: auto; }
+  @media (max-width: 600px) { .topbar { height: 70px; padding: 0 20px; }.topbar nav { gap: 12px; font-size: 12px; }.topbar nav a:first-child { display: none; }main { padding: 38px 20px 64px; }.document h2 { margin-top: 25px; }.document p,.document li { font-size: 13px; }footer { flex-wrap: wrap; gap: 10px 16px; padding: 18px 20px 26px; }footer p { flex-basis: 100%; order: 3; }footer > span { margin-left: 0; } }
 </style>

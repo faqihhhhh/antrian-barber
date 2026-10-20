@@ -5,6 +5,7 @@ import { messageOf } from '../api/client'
 import PaymentPanel from '../components/PaymentPanel'
 import ReviewForm from '../components/ReviewForm'
 import TicketStub from '../components/TicketStub'
+import { ConnectionStatus } from '../components/ui'
 import { Alert, Button, Spinner } from '../components/ui'
 import { MY_TICKETS_KEY, useMyTickets, type MyTicket } from '../hooks/useMyTickets'
 import { useQueueStream } from '../hooks/useQueueStream'
@@ -84,20 +85,18 @@ export default function Tiket() {
   }
 
   return (
-    <main className="mx-auto max-w-md space-y-5 px-5 py-8">
+    <main className="mx-auto max-w-md space-y-4 px-5 pb-8 pt-4 sm:space-y-5 sm:py-8">
       <div className="flex items-center justify-between gap-3">
       <Link to="/tiket" className="inline-flex min-h-11 items-center text-sm font-semibold underline">
         Semua tiket
       </Link>
-      {live && <span className="flex items-center gap-2 text-xs text-body-muted" role="status">
-        <span aria-hidden className={`h-2 w-2 rounded-full ${stream.connected ? 'bg-emerald-600' : 'bg-amber-700'}`} />
-        {stream.connected ? 'Terhubung langsung' : 'Menyambungkan ulang…'}
-      </span>}
+      {live && <ConnectionStatus connected={stream.connected} />}
       </div>
       <TicketStub ticket={ticket} showCode={ticket.status !== 'pending_payment' && ticket.status !== 'canceled'} />
+      {(ticket.status === 'waiting' || ticket.status === 'called') && <StatusBody ticket={ticket} />}
       <StatusStepper status={ticket.status} />
       {ticket.status === 'waiting' && <PushPrompt />}
-      <StatusBody ticket={ticket} />
+      {ticket.status !== 'waiting' && ticket.status !== 'called' && <StatusBody ticket={ticket} />}
     </main>
   )
 }
@@ -111,15 +110,19 @@ function StatusStepper({ status }: { status: string }) {
     ['in_progress', 'Sedang dilayani'],
     ['completed', 'Selesai'],
   ] as const
-  const current = steps.findIndex(([key]) => key === status)
+  const current = Math.max(0, steps.findIndex(([key]) => key === status))
   return (
-    <ol aria-label="Tahapan tiket" className="grid grid-cols-5 gap-1">
-      {steps.map(([key, label], index) => (
-        <li key={key} className={`border-t-2 pt-2 text-center text-xs leading-tight ${index <= current ? 'border-brand text-brand-ink' : 'border-line text-muted'}`} aria-current={index === current ? 'step' : undefined}>
-          <span className="block font-bold">{index < current ? '✓' : index + 1}</span>
-          {label}
-        </li>
-      ))}
+    <ol aria-label="Tahapan tiket" className="rounded-2xl border border-line bg-white px-4 py-3">
+      <li aria-current="step" className="space-y-3">
+        <p data-step-label className="text-sm font-semibold text-ink">
+          Langkah {current + 1} dari {steps.length}: {steps[current][1]}
+        </p>
+        <div aria-hidden="true" className="flex gap-1.5">
+          {steps.map(([key], index) => (
+            <span key={key} className={`h-1.5 flex-1 rounded-full ${index < current ? 'bg-line-strong' : index === current ? 'bg-ink' : 'bg-line'}`} />
+          ))}
+        </div>
+      </li>
     </ol>
   )
 }
@@ -131,7 +134,7 @@ function StatusBody({ ticket }: { ticket: MyTicket }) {
 
     case 'waiting':
       return (
-        <section className="space-y-3 rounded-3xl border border-line bg-white p-6" aria-live="polite">
+        <section className="space-y-3 rounded-3xl border border-line bg-white p-4 sm:p-6" aria-live="polite">
           <h2 className="text-lg font-bold">Pembayaran diterima. Anda sudah masuk antrian.</h2>
           {ticket.estimate ? (
             <dl className="grid grid-cols-2 gap-4 text-sm">

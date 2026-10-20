@@ -1,0 +1,27 @@
+{
+  "name": "kapsflow-verification-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install:chromium": "node install-chromium.mjs",
+    "capture:baseline": "node capture-baseline.mjs",
+    "inventory": "node inventory.mjs",
+    "check:identity": "node check-identity.mjs",
+    "check:a11y": "node check-a11y.mjs",
+    "baseline": "npm run capture:baseline && npm run inventory",
+    "check:content": "node check-content.mjs",
+    "check:responsive": "node check-responsive.mjs",
+    "test:format": "node --experimental-strip-types format.test.mjs",
+    "check:invalid-date": "node check-invalid-date.mjs",
+    "check:booking": "node check-booking.mjs",
+    "check:ticket": "node check-ticket.mjs",
+    "check:staff": "node check-staff.mjs",
+    "check:admin": "node check-admin.mjs",
+    "check:nav": "node check-nav.mjs",
+    "check:login": "node check-login.mjs"
+  },
+  "devDependencies": {
+    "axe-core": "^4.14.0",
+    "playwright": "1.64.1"
+  }
+}

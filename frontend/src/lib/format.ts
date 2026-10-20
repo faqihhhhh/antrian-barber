@@ -8,12 +8,17 @@ export function formatRupiah(n: number): string {
 // Tanggal dari API berbentuk "2026-10-13" (tanggal lokal outlet, tanpa jam).
 // Dibaca sebagai UTC lalu ditampilkan sebagai UTC supaya tidak bergeser
 // ke hari lain karena zona waktu perangkat.
-function dateOnly(date: string): Date {
-  return new Date(`${date}T00:00:00Z`)
+function dateOnly(date: string): Date | '' {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return ''
+  const parsed = new Date(`${date}T00:00:00Z`)
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) return ''
+  return parsed
 }
 
 export function formatLongDate(date: string): string {
-  return dateOnly(date).toLocaleDateString('id-ID', {
+  const parsed = dateOnly(date)
+  if (!parsed) return ''
+  return parsed.toLocaleDateString('id-ID', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -23,7 +28,9 @@ export function formatLongDate(date: string): string {
 }
 
 export function formatMonthYear(date: string): string {
-  return dateOnly(date).toLocaleDateString('id-ID', {
+  const parsed = dateOnly(date)
+  if (!parsed) return ''
+  return parsed.toLocaleDateString('id-ID', {
     month: 'short',
     year: 'numeric',
     timeZone: 'UTC',
@@ -45,11 +52,15 @@ export function formatDateTime(dateTime: string, timezone?: string): string {
 }
 
 export function weekdayShort(date: string): string {
-  return dateOnly(date).toLocaleDateString('id-ID', { weekday: 'short', timeZone: 'UTC' })
+  const parsed = dateOnly(date)
+  if (!parsed) return ''
+  return parsed.toLocaleDateString('id-ID', { weekday: 'short', timeZone: 'UTC' })
 }
 
 export function dayOfMonth(date: string): string {
-  return dateOnly(date).toLocaleDateString('id-ID', { day: 'numeric', timeZone: 'UTC' })
+  const parsed = dateOnly(date)
+  if (!parsed) return ''
+  return parsed.toLocaleDateString('id-ID', { day: 'numeric', timeZone: 'UTC' })
 }
 
 // Estimasi sengaja dibulatkan ke atas per 5 menit. Angka seperti "13 menit"

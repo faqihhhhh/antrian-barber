@@ -4,13 +4,13 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 
 <LegalLayout title="Kebijakan Privasi" intro="Penjelasan awal tentang data yang diproses Kapsflow, tujuan penggunaannya, serta pilihan dan hak pengguna.">
   <h2>1. Siapa yang memproses data</h2>
-  <p>Kapsflow menyediakan perangkat lunak yang dipakai bisnis untuk mengelola antrean. Pemilik bisnis menentukan informasi outlet, staf, layanan, dan pelanggan yang dimasukkan ke sistem. Kapsflow memproses data untuk menyediakan akun, antrean, pembayaran, pemberitahuan, dan dukungan layanan. Peran dan tanggung jawab setiap pihak harus ditetapkan dalam dokumen final sesuai penggunaan dan hukum yang berlaku.</p>
+  <p>Kapsflow menyediakan perangkat lunak yang dipakai bisnis untuk mengelola antrian. Pemilik bisnis menentukan informasi outlet, staf, layanan, dan pelanggan yang dimasukkan ke sistem. Kapsflow memproses data untuk menyediakan akun, antrian, pembayaran, pemberitahuan, dan dukungan layanan. Peran dan tanggung jawab setiap pihak harus ditetapkan dalam dokumen final sesuai penggunaan dan hukum yang berlaku.</p>
 
   <h2>2. Data yang kami proses</h2>
   <ul>
     <li><strong>Akun:</strong> alamat email, kata sandi dalam bentuk hash, status verifikasi, dan data sesi masuk.</li>
     <li><strong>Informasi bisnis:</strong> nama bisnis dan outlet, alamat, zona waktu, daftar staf, peran dan penugasan outlet, pengaturan layanan, serta status langganan dan tagihan.</li>
-    <li><strong>Antrean dan transaksi:</strong> nama pelanggan, nomor dan status antrean, waktu pemesanan, nilai DP, metode dan status pembayaran, serta kode pencocokan pembayaran manual. Jika pelanggan memesan saat masuk, tiket dapat dikaitkan dengan akun pelanggan.</li>
+    <li><strong>Antrian dan transaksi:</strong> nama pelanggan, nomor dan status antrian, waktu pemesanan, nilai DP, metode dan status pembayaran, serta kode pencocokan pembayaran manual. Jika pelanggan memesan saat masuk, tiket dapat dikaitkan dengan akun pelanggan.</li>
     <li><strong>Ulasan:</strong> nilai rating dan komentar yang diberikan pelanggan setelah layanan selesai.</li>
     <li><strong>Pengaturan pembayaran bisnis:</strong> gambar QRIS yang diunggah dan, bila Midtrans diaktifkan, kunci integrasi yang disimpan terenkripsi. Kapsflow tidak meminta kata sandi perbankan pelanggan.</li>
     <li><strong>Notifikasi push:</strong> alamat endpoint dan kunci teknis yang dibuat browser setelah pengguna mengizinkan notifikasi. Izin dapat dicabut dari pengaturan browser.</li>
@@ -19,7 +19,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
   <h2>3. Tujuan pemrosesan</h2>
   <ul>
     <li>Membuat dan mengamankan akun, memverifikasi email, serta membantu pemulihan kata sandi.</li>
-    <li>Menyediakan pemesanan, urutan antrean, konfirmasi pembayaran, dan pemberitahuan giliran.</li>
+    <li>Menyediakan pemesanan, urutan antrian, konfirmasi pembayaran, dan pemberitahuan giliran.</li>
     <li>Menyediakan pengelolaan staf, laporan usaha, rating, tagihan langganan, dan dukungan.</li>
     <li>Menjaga keamanan layanan, mencegah penyalahgunaan, menyelesaikan transaksi atau sengketa, dan memenuhi kewajiban hukum.</li>
   </ul>
@@ -29,7 +29,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
 
   <h2>5. Siapa yang menerima data</h2>
   <ul>
-    <li>Pemilik bisnis dan staf yang diberi akses dapat melihat informasi yang diperlukan untuk mengelola outlet, antrean, pembayaran DP, dan layanan.</li>
+    <li>Pemilik bisnis dan staf yang diberi akses dapat melihat informasi yang diperlukan untuk mengelola outlet, antrian, pembayaran DP, dan layanan.</li>
     <li>Penyedia infrastruktur yang mengoperasikan aplikasi, database, dan pengiriman email dapat memproses data sesuai kebutuhan layanan. Nama penyedia, lokasi pemrosesan, dan ketentuan pemrosesannya akan dicantumkan setelah konfigurasi produksi diputuskan.</li>
     <li>Midtrans menerima data transaksi yang diperlukan hanya ketika bisnis mengaktifkan pembayaran Midtrans. Penyedia browser atau sistem operasi menangani pengiriman notifikasi push sesuai pengaturan perangkat.</li>
     <li>Data dapat diberikan jika diwajibkan oleh hukum atau diperlukan untuk menangani keamanan dan sengketa, dengan lingkup yang relevan.</li>
@@ -39,7 +39,7 @@ import LegalLayout from '../layouts/LegalLayout.astro'
   <p>Kami menggunakan pembatasan akses akun dan bisnis, hash untuk kata sandi serta token sesi, dan enkripsi untuk kunci integrasi Midtrans. Data disimpan selama masih dibutuhkan untuk menjalankan layanan, mencatat transaksi, menjaga keamanan, menangani sengketa, atau memenuhi kewajiban hukum. Jadwal retensi rinci, lokasi penyimpanan produksi, dan prosedur penghapusan akan ditetapkan sebelum peluncuran publik.</p>
 
   <h2>7. Hak dan permintaan terkait data</h2>
-  <p>Pengguna dapat meminta informasi mengenai data yang diproses, koreksi data yang tidak akurat, pembatasan atau penghentian pemrosesan, dan penghapusan jika memenuhi ketentuan yang berlaku. Pemilik bisnis dapat membantu permintaan terkait data antrean yang dikelolanya. Untuk data akun atau layanan Kapsflow, hubungi operator melalui kanal kontak resmi setelah dicantumkan. Kami dapat meminta informasi secukupnya untuk memverifikasi identitas pemohon dan menjelaskan jika ada data yang harus dipertahankan karena kewajiban hukum atau penyelesaian transaksi.</p>
+  <p>Pengguna dapat meminta informasi mengenai data yang diproses, koreksi data yang tidak akurat, pembatasan atau penghentian pemrosesan, dan penghapusan jika memenuhi ketentuan yang berlaku. Pemilik bisnis dapat membantu permintaan terkait data antrian yang dikelolanya. Untuk data akun atau layanan Kapsflow, hubungi operator melalui kanal kontak resmi setelah dicantumkan. Kami dapat meminta informasi secukupnya untuk memverifikasi identitas pemohon dan menjelaskan jika ada data yang harus dipertahankan karena kewajiban hukum atau penyelesaian transaksi.</p>
 
   <h2>8. Perubahan dan insiden</h2>
   <p>Kebijakan ini akan diperbarui jika cara kerja, penyedia layanan, atau kewajiban hukum berubah. Jika terjadi insiden pelindungan data, operator akan melakukan penanganan dan pemberitahuan sesuai ketentuan hukum yang berlaku.</p>

@@ -1,0 +1,198 @@
+{
+  "generatedAt": "2026-10-20T06:34:46.173Z",
+  "command": "Menjalankan semua scripts/verify/*.mjs satu per satu dengan Node.js.",
+  "results": [
+    {
+      "script": "browser-fixtures.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node browser-fixtures.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 44,
+      "stdout": "",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "capture-baseline.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node capture-baseline.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 14199,
+      "stdout": "[server] memakai server aktif http://127.0.0.1:5173/masuk\n[server] memakai server aktif http://127.0.0.1:4321/\nCAPTURE website-home 390x844 ui-review/before/before-website-home-390-baseline-20261020-2.png\nCAPTURE website-home 1440x900 ui-review/before/before-website-home-1440-baseline-20261020-2.png\nCAPTURE website-syarat 390x844 ui-review/before/before-website-syarat-390-baseline-20261020-2.png\nCAPTURE website-syarat 1440x900 ui-review/before/before-website-syarat-1440-baseline-20261020-2.png\nCAPTURE website-privasi 390x844 ui-review/before/before-website-privasi-390-baseline-20261020-2.png\nCAPTURE website-privasi 1440x900 ui-review/before/before-website-privasi-1440-baseline-20261020-2.png\nCAPTURE app-masuk 390x844 ui-review/before/before-app-masuk-390-baseline-20261020-2.png\nCAPTURE app-masuk 1440x900 ui-review/before/before-app-masuk-1440-baseline-20261020-2.png\nCAPTURE app-outlet-contoh-barber 390x844 ui-review/before/before-app-outlet-contoh-barber-390-baseline-20261020-2.png\nCAPTURE app-outlet-contoh-barber 1440x900 ui-review/before/before-app-outlet-contoh-barber-1440-baseline-20261020-2.png\nCAPTURE app-tiket-waiting 390x844 ui-review/before/before-app-tiket-waiting-390-baseline-20261020-2.png\nCAPTURE app-tiket-waiting 1440x900 ui-review/before/before-app-tiket-waiting-1440-baseline-20261020-2.png\nCAPTURE app-kapster 390x844 ui-review/before/before-app-kapster-390-baseline-20261020-2.png\nCAPTURE app-kapster 1440x900 ui-review/before/before-app-kapster-1440-baseline-20261020-2.png\nCAPTURE app-admin-kelola 390x844 ui-review/before/before-app-admin-kelola-390-baseline-20261020-2.png\nCAPTURE app-admin-kelola 1440x900 ui-review/before/before-app-admin-kelola-1440-baseline-20261020-2.png\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "capture-final.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node capture-final.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 14115,
+      "stdout": "[server] memakai server aktif http://127.0.0.1:5173/masuk\n[server] memakai server aktif http://127.0.0.1:4321/\nCAPTURE website-home 390x844 /home/muhfa/kapsflow/frontend/ui-review/after/final-website-home-390.png\nCAPTURE website-home 1440x900 /home/muhfa/kapsflow/frontend/ui-review/after/final-website-home-1440.png\nCAPTURE website-syarat 390x844 /home/muhfa/kapsflow/frontend/ui-review/after/final-website-syarat-390.png\nCAPTURE website-syarat 1440x900 /home/muhfa/kapsflow/frontend/ui-review/after/final-website-syarat-1440.png\nCAPTURE website-privasi 390x844 /home/muhfa/kapsflow/frontend/ui-review/after/final-website-privasi-390.png\nCAPTURE website-privasi 1440x900 /home/muhfa/kapsflow/frontend/ui-review/after/final-website-privasi-1440.png\nCAPTURE app-masuk 390x844 /home/muhfa/kapsflow/frontend/ui-review/after/final-app-masuk-390.png\nCAPTURE app-masuk 1440x900 /home/muhfa/kapsflow/frontend/ui-review/after/final-app-masuk-1440.png\nCAPTURE app-outlet-contoh-barber 390x844 /home/muhfa/kapsflow/frontend/ui-review/after/final-app-outlet-contoh-barber-390.png\nCAPTURE app-outlet-contoh-barber 1440x900 /home/muhfa/kapsflow/frontend/ui-review/after/final-app-outlet-contoh-barber-1440.png\nCAPTURE app-tiket-waiting 390x844 /home/muhfa/kapsflow/frontend/ui-review/after/final-app-tiket-waiting-390.png\nCAPTURE app-tiket-waiting 1440x900 /home/muhfa/kapsflow/frontend/ui-review/after/final-app-tiket-waiting-1440.png\nCAPTURE app-kapster 390x844 /home/muhfa/kapsflow/frontend/ui-review/after/final-app-kapster-390.png\nCAPTURE app-kapster 1440x900 /home/muhfa/kapsflow/frontend/ui-review/after/final-app-kapster-1440.png\nCAPTURE app-admin-kelola 390x844 /home/muhfa/kapsflow/frontend/ui-review/after/final-app-admin-kelola-390.png\nCAPTURE app-admin-kelola 1440x900 /home/muhfa/kapsflow/frontend/ui-review/after/final-app-admin-kelola-1440.png\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "check-a11y.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node check-a11y.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 4024,
+      "stdout": "[server] memakai server aktif http://127.0.0.1:5173/masuk\n[server] memakai server aktif http://127.0.0.1:4321/\nPAGE website-home: 0 pelanggaran axe berdampak serius/kritis\nPAGE app-masuk: 0 pelanggaran axe berdampak serius/kritis\nFOCUS /masuk: INPUT outline solid 2px — PASS\nPAGE app-outlet-contoh-barber: 0 pelanggaran axe berdampak serius/kritis\nPASS: 3 halaman bebas pelanggaran axe serius/kritis dan fokus /masuk terlihat.\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "check-admin.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node check-admin.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 3593,
+      "stdout": "[server] memakai server aktif http://127.0.0.1:5173/masuk\n[server] memakai server aktif http://127.0.0.1:4321/\nPASS Tombol konfirmasi DP berada di 600px pertama — top 594px\nPASS Form buka sesi tertutup saat sesi sudah dibuka — open=false\nPASS Disclosure buka sesi dapat dibuka dengan keyboard — open=true\nPASS Disclosure terbuka jika belum ada sesi — open=true\nPASS Tangkapan layar admin 390px dan 1440px tersimpan\n\nSemua pemeriksaan layar admin lulus.\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "check-booking.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node check-booking.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 2153,
+      "stdout": "[server] memakai server aktif http://127.0.0.1:5173/masuk\n[server] memakai server aktif http://127.0.0.1:4321/\nMEASURE grid 1440px {\"columns\":\"538.938px 485.062px\",\"count\":2}\nPASS Grid outlet 1440px memiliki dua kolom (538.938px 485.062px)\nPASS Nama Budi tersimpan ke localStorage sebelum pelanggan masuk\nPASS Nama Budi terisi lagi saat pelanggan kembali ke outlet\nPASS Screenshot outlet 390px dan 1440px tersimpan di frontend/ui-review/after/\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "check-content.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node check-content.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 1593,
+      "stdout": "PASS Tidak ada typo antrean yang dilarang\nPASS Placeholder paket, harga, testimoni dan komentar TODO pemilik tersedia — 4 komentar TODO\nPASS Tautan demo memakai placeholder kontak\nPASS Semua tombol daftar memakai satu label — Buat akun\nPASS Cara kerja berisi tiga langkah bernomor berurutan — 01, 02, 03\nPASS Placeholder harga/testimoni tampil di halaman\nPASS Demo mengarah ke placeholder email\n\nSemua pemeriksaan konten lulus.\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "check-identity.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node check-identity.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 3461,
+      "stdout": "PASS: warna website memakai token, favicon/og:image tersedia, dan path logo sama.\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "check-invalid-date.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node check-invalid-date.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 1334,
+      "stdout": "[server] memakai server aktif http://127.0.0.1:5173/masuk\n[server] memakai server aktif http://127.0.0.1:4321/\nPASS Tile tanggal tidak valid disembunyikan\nPASS Halaman tidak memuat teks Invalid Date atau tanggal mentah\nPASS Screenshot disimpan: frontend/ui-review/after/outlet-1440.png\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "check-login.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node check-login.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 4957,
+      "stdout": "[server] memakai server aktif http://127.0.0.1:5173/masuk\n[server] memakai server aktif http://127.0.0.1:4321/\nPASS Tidak ada toggle Mitra/Pelanggan di /masuk — ditemukan 0\nPASS Tidak ada jargon SaaS di /masuk\nPASS Redirect owner — /pemilik\nPASS Redirect admin — /kelola/11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222\nPASS Redirect kapster — /kapster\nPASS Redirect platform-admin — /pemilik-saas\nPASS Redirect pelanggan kembali ke halaman outlet dari state.from — /o/contoh-barber\nPASS Screenshot login mitra dan pelanggan 390px/1440px tersimpan\n\nSemua pemeriksaan login lulus.\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "check-nav.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node check-nav.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 7628,
+      "stdout": "[server] memakai server aktif http://127.0.0.1:5173/masuk\n[server] memakai server aktif http://127.0.0.1:4321/\nPASS owner-admin: satu bar navigasi terlihat di 390px — jumlah nav 1\nPASS owner-admin: tinggi bar bawah maksimal 4rem — 64px\nPASS owner+admin: dropdown ruang dapat dibuka dengan Enter — aria-expanded=true\nPASS owner+admin: dropdown memuat workspace yang tersedia\nPASS owner+admin: dropdown dapat ditutup dengan Esc dan fokus kembali\nPASS owner: satu bar navigasi terlihat di 390px — jumlah nav 1\nPASS owner: tinggi bar bawah maksimal 4rem — 64px\nPASS admin: satu bar navigasi terlihat di 390px — jumlah nav 1\nPASS admin: tinggi bar bawah maksimal 4rem — 64px\nPASS kapster: satu bar navigasi terlihat di 390px — jumlah nav 1\nPASS kapster: tinggi bar bawah maksimal 4rem — 64px\nPASS kapster: padding bawah shell maksimal 4rem — 64px\nPASS pelanggan: satu bar navigasi terlihat di 390px — jumlah nav 1\nPASS pelanggan: tinggi bar bawah maksimal 4rem — 64px\nPASS Tangkapan layar 390px untuk owner+admin, owner, admin, kapster, dan pelanggan tersimpan\n\nSemua pemeriksaan navigasi lulus.\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "check-responsive.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node check-responsive.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 1808,
+      "stdout": "MEASURE 390px {\"viewportWidth\":390,\"documentWidth\":390,\"bodyWidth\":390,\"bodyClientWidth\":390,\"heroHeight\":1113.25,\"heroContentHeight\":1113.25,\"heroRatio\":1,\"headingLetterSpacing\":\"-0.5px\",\"primaryButtonHeights\":[52,52]}\nMEASURE 1440px {\"viewportWidth\":1440,\"documentWidth\":1440,\"bodyWidth\":1440,\"bodyClientWidth\":1440,\"heroHeight\":788,\"heroContentHeight\":788,\"heroRatio\":1,\"headingLetterSpacing\":\"-1.5px\",\"primaryButtonHeights\":[52,52]}\nPASS Tidak ada overflow horizontal pada viewport 390px — document 390, body 390/390\nPASS Tinggi hero mobile tidak melebihi 1,25x konten — rasio 1.000\nPASS Tombol utama hero dan penutup minimal 44px pada 390px — 52px, 52px\nPASS Letter-spacing h1 mobile cukup longgar — -0.5px\nPASS Letter-spacing h1 desktop cukup longgar — -1.5px\n\nSemua pemeriksaan responsif lulus.\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "check-staff.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node check-staff.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 5356,
+      "stdout": "[server] memakai server aktif http://127.0.0.1:5173/masuk\n[server] memakai server aktif http://127.0.0.1:4321/\nPASS Nama pelanggan lebih besar dari nomor tiket — 24px vs 16px\nPASS Teks polling tidak ditampilkan di kapster — ditemukan 0\nPASS Warna indikator koneksi sama di kapster dan pelanggan — oklch(0.596 0.145 163.225) / oklch(0.596 0.145 163.225)\n\nSemua pemeriksaan layar staf lulus; tangkapan layar tersimpan.\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "check-ticket.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node check-ticket.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 2321,
+      "stdout": "[server] memakai server aktif http://127.0.0.1:5173/masuk\n[server] memakai server aktif http://127.0.0.1:4321/\nPASS waiting: label stepper minimal 12px — 14\nPASS waiting: hanya langkah aktif ditampilkan — Langkah 2 dari 5: Dalam antrian\nPASS waiting: garis langkah aktif punya warna pembeda — rgb(196, 196, 199) | rgb(23, 23, 23) | rgb(228, 228, 231) | rgb(228, 228, 231) | rgb(228, 228, 231)\nPASS waiting: label langkah tidak tertutup navigasi bawah — 746px / 780px\nPASS waiting: status posisi tampil sebelum PushPrompt — indeks status/stepper/notifikasi 2/3/4\nPASS called: label stepper minimal 12px — 14\nPASS called: hanya langkah aktif ditampilkan — Langkah 3 dari 5: Dipanggil\nPASS called: garis langkah aktif punya warna pembeda — rgb(196, 196, 199) | rgb(196, 196, 199) | rgb(23, 23, 23) | rgb(228, 228, 231) | rgb(228, 228, 231)\nPASS called: label langkah tidak tertutup navigasi bawah — 654px / 780px\nPASS called: kartu giliran tampil setelah TicketStub dan sebelum stepper — indeks tiket/status/stepper 1/2/3\nPASS called: PushPrompt disembunyikan\nPASS completed: label stepper minimal 12px — 14\nPASS completed: hanya langkah aktif ditampilkan — Langkah 5 dari 5: Selesai\nPASS completed: garis langkah aktif punya warna pembeda — rgb(196, 196, 199) | rgb(196, 196, 199) | rgb(196, 196, 199) | rgb(196, 196, 199) | rgb(23, 23, 23)\nPASS completed: label langkah tidak tertutup navigasi bawah — 500px / 780px\nPASS completed: notifikasi disembunyikan dan status selesai tampil\n\nSemua pemeriksaan tiket lulus.\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "format.test.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node --experimental-strip-types format.test.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 137,
+      "stdout": "TAP version 13\n# Subtest: format tanggal lokal menampilkan hari dan bulan dalam bahasa Indonesia\nok 1 - format tanggal lokal menampilkan hari dan bulan dalam bahasa Indonesia\n  ---\n  duration_ms: 8.159999\n  type: 'test'\n  ...\n# Subtest: format tanggal dan bulan November tidak bergeser\nok 2 - format tanggal dan bulan November tidak bergeser\n  ---\n  duration_ms: 0.586301\n  type: 'test'\n  ...\n# Subtest: tanggal dengan format salah tidak menghasilkan Invalid Date\nok 3 - tanggal dengan format salah tidak menghasilkan Invalid Date\n  ---\n  duration_ms: 0.266914\n  type: 'test'\n  ...\n# Subtest: tanggal kalender yang tidak ada ditolak\nok 4 - tanggal kalender yang tidak ada ditolak\n  ---\n  duration_ms: 0.237237\n  type: 'test'\n  ...\n1..4\n# tests 4\n# suites 0\n# pass 4\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 23.293428\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "install-chromium.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node install-chromium.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 1708,
+      "stdout": "Pustaka Chromium disiapkan lokal untuk: libnspr4.so, libnss3.so, libnssutil3.so, libsmime3.so, libasound.so.2\n",
+      "stderr": "",
+      "error": null
+    },
+    {
+      "script": "inventory.mjs",
+      "command": "/home/muhfa/.nvm/versions/node/v22.23.3/bin/node inventory.mjs",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 12880,
+      "stdout": "[server] memakai server aktif http://127.0.0.1:5173/masuk\n[server] memakai server aktif http://127.0.0.1:4321/\nPAGE website-home 390x844 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE website-home 1440x900 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE website-syarat 390x844 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE website-syarat 1440x900 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE website-privasi 390x844 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE website-privasi 1440x900 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE app-masuk 390x844 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE app-masuk 1440x900 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE app-outlet-contoh-barber 390x844 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE app-outlet-contoh-barber 1440x900 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE app-tiket-waiting 390x844 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE app-tiket-waiting 1440x900 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE app-kapster 390x844 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE app-kapster 1440x900 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE app-admin-kelola 390x844 | font < 12px: 0 | kontras < 4,5:1: 0\nPAGE app-admin-kelola 1440x900 | font < 12px: 0 | kontras < 4,5:1: 0\nSAVED out/baseline.json\n",
+      "stderr": "",
+      "error": null
+    }
+  ],
+  "packageChecks": [
+    {
+      "command": "cd website && npm run build",
+      "status": "PASS",
+      "summary": "Astro completed; 3 static pages built."
+    },
+    {
+      "command": "cd frontend && npm run build",
+      "status": "PASS",
+      "summary": "tsc -b and vite build completed."
+    },
+    {
+      "command": "cd frontend && npm run lint",
+      "status": "PASS",
+      "summary": "oxlint completed with no findings."
+    },
+    {
+      "command": "Backend tests",
+      "status": "NOT_RUN",
+      "summary": "No backend files changed in this phase."
+    }
+  ]
+}

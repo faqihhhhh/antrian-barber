@@ -7,19 +7,19 @@ export default function TicketStub({ ticket, showCode }: { ticket: MyTicket; sho
   const called = ticket.status === 'called'
   return (
     <section aria-label={`Tiket nomor ${ticket.ticket_number}`} className={`relative overflow-hidden rounded-3xl text-white ${called ? 'bg-emerald-800' : 'bg-ink'}`}>
-      <div className="px-6 pb-7 pt-6">
+      <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-7 sm:pt-6">
         <p className="text-sm text-white/90">{ticket.outlet_name}</p>
         <p className="text-sm text-white/80">{formatLongDate(ticket.session_date)} · {timezoneLabel(ticket.outlet_timezone)}</p>
-        <p className="mt-5 text-sm text-paper-muted">Nomor antrian</p>
-        <p className="text-8xl font-bold leading-none tabular-nums">{ticket.ticket_number}</p>
-        {ticket.customer_name && <p className="mt-3 text-sm text-white/90">atas nama {ticket.customer_name}</p>}
+        <p className="mt-4 text-sm text-paper-muted sm:mt-5">Nomor antrian</p>
+        <p className="text-7xl font-bold leading-none tabular-nums sm:text-8xl">{ticket.ticket_number}</p>
+        {ticket.customer_name && <p className="mt-2 text-sm text-white/90 sm:mt-3">atas nama {ticket.customer_name}</p>}
       </div>
       {showCode && ticket.match_code && (
-        <div className={`relative border-t-2 border-dashed px-6 pb-6 pt-5 ${called ? 'border-white/40' : 'border-ink-muted'}`}>
+        <div className={`relative border-t-2 border-dashed px-5 pb-5 pt-4 sm:px-6 sm:pb-6 sm:pt-5 ${called ? 'border-white/40' : 'border-ink-muted'}`}>
           <span aria-hidden className="absolute -left-3 -top-3 h-6 w-6 rounded-full bg-paper" />
           <span aria-hidden className="absolute -right-3 -top-3 h-6 w-6 rounded-full bg-paper" />
-          <p className="text-sm text-white/90">{called ? 'Giliran Anda! Tunjukkan kode ini ke kapster' : 'Kode untuk kapster'}</p>
-          <p className="mt-1 font-mono text-4xl font-bold tracking-[0.25em]">{ticket.match_code}</p>
+          <p className="text-sm text-white/90">{called ? 'Giliran Anda! Tunjukkan kode untuk kapster' : 'Kode untuk kapster'}</p>
+          <p className="mt-1 font-mono text-3xl font-bold tracking-[0.25em] sm:text-4xl">{ticket.match_code}</p>
         </div>
       )}
     </section>

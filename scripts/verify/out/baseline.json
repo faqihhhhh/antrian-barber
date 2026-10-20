@@ -1,0 +1,282 @@
+{
+  "generatedAt": "2026-10-20T06:36:07.421Z",
+  "thresholds": {
+    "fontSizeBelowPx": 12,
+    "contrastBelow": 4.5
+  },
+  "method": "Elemen dengan teks langsung yang terlihat diperiksa dari computed font-size, warna teks, dan warna latar computed yang dikompositkan terhadap putih. Gambar latar, text-shadow, dan piksel anti-alias tidak dihitung.",
+  "pages": [
+    {
+      "id": "website-home",
+      "path": "/",
+      "kind": "website",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "website-home",
+      "path": "/",
+      "kind": "website",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "website-syarat",
+      "path": "/syarat",
+      "kind": "website",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "website-syarat",
+      "path": "/syarat",
+      "kind": "website",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "website-privasi",
+      "path": "/privasi",
+      "kind": "website",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "website-privasi",
+      "path": "/privasi",
+      "kind": "website",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "app-masuk",
+      "path": "/masuk",
+      "kind": "app",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "app-masuk",
+      "path": "/masuk",
+      "kind": "app",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "app-outlet-contoh-barber",
+      "path": "/o/contoh-barber",
+      "kind": "app",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "app-outlet-contoh-barber",
+      "path": "/o/contoh-barber",
+      "kind": "app",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "app-tiket-waiting",
+      "path": "/tiket/44444444-4444-4444-8444-444444444444",
+      "kind": "app",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "app-tiket-waiting",
+      "path": "/tiket/44444444-4444-4444-8444-444444444444",
+      "kind": "app",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "app-kapster",
+      "path": "/kapster",
+      "kind": "app",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "app-kapster",
+      "path": "/kapster",
+      "kind": "app",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "app-admin-kelola",
+      "path": "/kelola/11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222",
+      "kind": "app",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    },
+    {
+      "id": "app-admin-kelola",
+      "path": "/kelola/11111111-1111-4111-8111-111111111111/22222222-2222-4222-8222-222222222222",
+      "kind": "app",
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "fontSizeBelow12px": {
+        "count": 0,
+        "elements": []
+      },
+      "contrastBelow4_5": {
+        "count": 0,
+        "elements": []
+      }
+    }
+  ]
+}

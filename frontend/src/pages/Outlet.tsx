@@ -120,10 +120,11 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
   // Tanggal terpilih: dari alamat (supaya bertahan setelah login), kalau tidak ada
   // atau tidak valid, hari pertama yang masih bisa dipesan.
   const wanted = params.get('tanggal')
-  const firstOpen = outlet.days.find((d) => d.open)
-  const selected = outlet.days.find((d) => d.open && d.date === wanted) ?? firstOpen
-  const openedDays = outlet.days.filter((day) => day.session_id !== null)
-  const notOpenedCount = outlet.days.filter((day) => day.session_id === null).length
+  const validDays = outlet.days.filter((day) => dayOfMonth(day.date) !== '')
+  const firstOpen = validDays.find((d) => d.open)
+  const selected = validDays.find((d) => d.open && d.date === wanted) ?? firstOpen
+  const openedDays = validDays.filter((day) => day.session_id !== null)
+  const notOpenedCount = validDays.filter((day) => day.session_id === null).length
 
   const book = useMutation({
     mutationFn: async () => {
@@ -159,7 +160,7 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
 
       <fieldset>
         <legend className="sr-only">Pilih tanggal antrian</legend>
-        <div className="flex gap-2 overflow-x-auto pb-2" aria-label="Tanggal yang sudah dibuka">
+        <div className="flex gap-2 overflow-x-auto pb-2" role="group" aria-label="Tanggal yang sudah dibuka">
         {openedDays.map((d) => {
           const isSelected = selected?.date === d.date
           const note = d.open ? `Sisa ${d.remaining}/${d.max_quota}` : d.remaining === 0 ? 'Penuh' : 'Tutup'
@@ -205,13 +206,20 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
           <p className="text-sm">
             <strong>{formatLongDate(selected.date)}</strong>
           </p>
+          {!loggedIn && (
+            <p className="text-sm text-body-muted">Masuk dulu supaya tiket yang Anda pesan tersimpan di akun.</p>
+          )}
           <Field
             label="Nama yang dipanggil kapster"
             name="nama"
             autoComplete="name"
             maxLength={60}
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value
+              setName(value)
+              saveName(value)
+            }}
           />
           <div className="flex items-baseline justify-between border-t border-line-soft pt-3 text-sm">
             <span className="text-body-muted">DP lewat QRIS</span>
@@ -242,7 +250,6 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
             </Button>
           ) : (
             <div className="space-y-2">
-              <p className="text-sm text-body-muted">Masuk dulu supaya tiket Anda tersimpan dan bisa dilihat dari HP mana pun.</p>
               <Button to="/pelanggan/masuk" state={{ from }}>
                 Masuk untuk memesan
               </Button>
