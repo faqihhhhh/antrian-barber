@@ -208,35 +208,34 @@ export function Spinner() {
 export function AuthLayout({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   return (
     <main className="min-h-dvh bg-paper lg:grid lg:grid-cols-2">
-      <aside className="relative hidden overflow-hidden bg-ink px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between xl:px-20">
+      <aside data-login-panel className="relative flex flex-col justify-between gap-5 overflow-hidden bg-ink px-5 py-5 text-white lg:min-h-dvh lg:px-12 lg:py-14 xl:px-20">
         <div className="absolute -right-28 -top-28 size-96 rounded-full border border-white/10" aria-hidden="true" />
         <div className="absolute -bottom-40 -left-24 size-[30rem] rounded-full border border-white/10" aria-hidden="true" />
         <div className="relative z-10"><Logo light /></div>
-        <div className="relative z-10 grid grid-cols-[1fr_auto] items-center gap-8">
+        <div className="relative z-10 grid grid-cols-[1fr_auto] items-center gap-3 lg:gap-8">
           <div className="max-w-lg">
-            <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-white/70">Rapi dari kursi pertama</p>
-            <p className="text-4xl font-bold leading-tight xl:text-5xl">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-white/70 lg:mb-4 lg:text-sm lg:tracking-[0.2em]">Rapi dari kursi pertama</p>
+            <p className="text-2xl font-bold leading-tight sm:text-3xl lg:text-4xl xl:text-5xl">
               Antrian lancar, <span data-login-accent className="text-accent-on-dark">pelanggan nyaman.</span>
             </p>
-            <p className="mt-5 max-w-md text-base leading-7 text-white/80">Atur outlet dan layanan, lalu biarkan pelanggan memantau giliran mereka dari ponsel.</p>
+            <p className="mt-2 max-w-md text-sm leading-5 text-white/80 lg:mt-5 lg:text-base lg:leading-7">Atur outlet dan layanan, lalu biarkan pelanggan memantau giliran mereka dari ponsel.</p>
           </div>
-          <svg aria-hidden="true" viewBox="0 0 132 280" className="h-56 w-28 xl:h-72 xl:w-32">
+          <svg data-login-pole aria-hidden="true" viewBox="0 0 132 280" className="h-24 w-12 sm:h-28 sm:w-14 lg:h-56 lg:w-28 xl:h-72 xl:w-32">
             <defs><clipPath id="barber-pole"><rect x="30" y="36" width="72" height="208" rx="30" /></clipPath></defs>
             <rect x="24" y="30" width="84" height="220" rx="36" fill="var(--color-paper)" />
             <g clipPath="url(#barber-pole)">
               <rect x="30" y="36" width="72" height="208" fill="var(--color-paper)" />
-              <path d="M8 206 122 92M8 258 122 144M8 154 122 40M8 102 74 36" stroke="#737373" strokeWidth="20" />
+              <path d="M8 206 122 92M8 258 122 144M8 154 122 40M8 102 74 36" stroke="var(--color-accent)" strokeWidth="20" />
             </g>
-            <path d="M24 52h84M24 228h84" stroke="#737373" strokeWidth="12" strokeLinecap="round" />
-            <circle cx="66" cy="18" r="10" fill="#737373" />
-            <circle cx="66" cy="262" r="10" fill="#737373" />
+            <path d="M24 52h84M24 228h84" stroke="var(--color-accent)" strokeWidth="12" strokeLinecap="round" />
+            <circle cx="66" cy="18" r="10" fill="var(--color-accent)" />
+            <circle cx="66" cy="262" r="10" fill="var(--color-accent)" />
           </svg>
         </div>
         <p className="relative z-10 text-xs text-white/70">Kapsflow · Antrian untuk barbershop dan salon</p>
       </aside>
-      <section className="flex min-h-dvh items-center justify-center px-5 py-10 lg:px-10" aria-labelledby="auth-title">
+      <section className="flex min-h-0 items-center justify-center px-5 py-8 lg:min-h-dvh lg:px-10 lg:py-10" aria-labelledby="auth-title">
         <div className="w-full max-w-md">
-          <div className="mb-8 lg:hidden"><Logo /></div>
           <h1 id="auth-title" className="text-2xl font-bold">{title}</h1>
           {subtitle && <p className="mt-1 text-sm text-body-muted">{subtitle}</p>}
           <div className="mt-6 space-y-4">{children}</div>

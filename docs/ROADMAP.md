@@ -58,6 +58,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 15-4 | CI GitHub Actions memeriksa Go, frontend, website, konfigurasi Compose, Caddyfile, dan build image |
 | 15-5 | Container migrator menjalankan Goose dan menyetel password role runtime sebelum API dimulai; API tidak mendapat DATABASE_URL |
 | UI-6 | Tema monokrom memakai satu aksen indigo terbatas untuk penanda, informasi, dan identitas; tombol utama dan status tetap memakai warna semantiknya |
+| UI-8 | Panel samping masuk tampil ringkas di HP dan ilustrasi barber memakai aksen indigo |
 
 ## Berikutnya (urutan wajib)
 

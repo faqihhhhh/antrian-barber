@@ -69,3 +69,7 @@ Build dan lint:
 ## Tambahan: panel samping masuk
 
 Panel samping pada `/masuk` kini memberi aksen `accent-on-dark` (`#A5B4FC`) pada frasa “pelanggan nyaman.”, sementara latar panel tetap `ink`. Pemeriksaan Playwright tambahan gagal sebelum perubahan karena elemen aksen belum ada, lalu lulus dengan computed color `rgb(165, 180, 252)`. Tangkapan layar 390×844 dan 1440×900 tersimpan sebagai `before-app-masuk-*` dan `after-app-masuk-*` di `frontend/ui-review/`.
+
+## Tambahan: ilustrasi barber dan panel masuk di HP
+
+Di kondisi awal, pemeriksaan `check-auth-layout.mjs --capture-before` gagal untuk visibilitas panel pada 390px dan untuk warna ilustrasi pada kedua ukuran. Panel sekarang tampil ringkas di atas formulir pada HP; garis dan aksesorinya memakai token indigo `#4338CA`. Pemeriksaan `node scripts/verify/check-auth-layout.mjs` lulus untuk panel, pesan utama, dan warna ilustrasi pada 390px serta 1440px. Screenshot: `frontend/ui-review/before/before-login-brand-{390,1440}.png` dan `frontend/ui-review/after/after-login-brand-{390,1440}.png`.
