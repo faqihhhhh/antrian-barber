@@ -256,7 +256,7 @@ function QueuePanel({ membership, session, onStreamConnectionChange }: {
 
       <section aria-label="Aksi kapster" className="sticky bottom-2 z-10 space-y-3 rounded-2xl border border-line bg-paper/95 p-3 shadow-lg backdrop-blur">
         {!currentTicket && (!myState || myState.status === 'idle') && (
-          <Button type="button" loading={action.isPending && action.variables === 'ready'} disabled={action.isPending} onClick={() => action.mutate('ready')} className="py-4 text-base">
+          <Button type="button" loading={action.isPending && action.variables === 'ready'} disabled={action.isPending} onClick={() => action.mutate('ready')} className="py-3 text-base">
             {action.isPending && action.variables === 'ready' ? 'Memanggil…' : 'Siap'}
           </Button>
         )}
@@ -266,21 +266,21 @@ function QueuePanel({ membership, session, onStreamConnectionChange }: {
           </p>
         )}
         {currentTicket?.status === 'called' && (
-          <Button type="button" loading={action.isPending && action.variables === 'start'} disabled={action.isPending} onClick={() => action.mutate('start')} className="py-4 text-base">
+          <Button type="button" loading={action.isPending && action.variables === 'start'} disabled={action.isPending} onClick={() => action.mutate('start')} className="py-3 text-base">
             {action.isPending && action.variables === 'start' ? 'Memulai…' : 'Mulai layanan'}
           </Button>
         )}
         {currentTicket?.status === 'called' && (
           <div className="mt-5 border-t border-line pt-3">
             <p className="mb-2 text-xs font-medium text-body-muted">Aksi lainnya</p>
-            <Button type="button" variant="secondary" disabled={action.isPending} onClick={() => setConfirmSkip(true)} className="py-4">
+            <Button type="button" variant="secondary" disabled={action.isPending} onClick={() => setConfirmSkip(true)} className="py-3">
               Ganti pelanggan
             </Button>
           </div>
         )}
         {currentTicket?.status === 'in_progress' && (
           <div className="w-full">
-            <Button type="button" loading={action.isPending && action.variables === 'complete'} disabled={action.isPending} onClick={() => action.mutate('complete')} className="w-full py-4 text-base">
+            <Button type="button" loading={action.isPending && action.variables === 'complete'} disabled={action.isPending} onClick={() => action.mutate('complete')} className="w-full py-3 text-base">
               {action.isPending && action.variables === 'complete' ? 'Menyelesaikan…' : 'Selesaikan'}
             </Button>
           </div>

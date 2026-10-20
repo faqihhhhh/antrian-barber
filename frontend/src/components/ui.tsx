@@ -18,20 +18,16 @@ const buttonStyles: Record<ButtonStyle, string> = {
 }
 
 export function Button(props: ButtonProps) {
-  const { variant = 'primary', className = '', children } = props
-  const classes = `${buttonBase} ${buttonStyles[variant]} ${className}`
-
   if ('to' in props) {
-    return (
-      <Link to={props.to} state={props.state} className={classes}>
-        {children}
-      </Link>
-    )
+    const { variant = 'primary', className = '', children, to, state } = props
+    const classes = `${buttonBase} ${buttonStyles[variant]} ${className}`
+    return <Link to={to} state={state} className={classes}>{children}</Link>
   }
 
-  const { loading, disabled, ...rest } = props
+  const { variant = 'primary', className = '', children, loading, disabled, ...rest } = props
+  const classes = `${buttonBase} ${buttonStyles[variant]} ${className}`
   return (
-    <button className={classes} disabled={disabled || loading} {...rest}>
+    <button {...rest} className={classes} disabled={disabled || loading}>
       {loading ? 'Memproses…' : children}
     </button>
   )
