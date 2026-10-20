@@ -65,6 +65,11 @@ try {
     check(`${roleCase.id}: satu bar navigasi terlihat di 390px`, navPassed, `jumlah nav ${visibleWorkspaceNavCount}`)
     allPassed &&= navPassed
 
+    const navLabels = await page.locator('nav[aria-label="Menu ruang"]').last().locator('a').allTextContents()
+    const accountLastPassed = navLabels.at(-1)?.trim() === 'Akun'
+    check(`${roleCase.id}: Akun berada paling kanan`, accountLastPassed, navLabels.map((label) => label.trim()).join(' → '))
+    allPassed &&= accountLastPassed
+
     const dockHeight = await page.locator('nav[aria-label="Menu ruang"]').last().evaluate((nav) => nav.parentElement.getBoundingClientRect().height)
     const dockHeightPassed = dockHeight <= 64
     check(`${roleCase.id}: tinggi bar bawah maksimal 4rem`, dockHeightPassed, `${dockHeight}px`)
