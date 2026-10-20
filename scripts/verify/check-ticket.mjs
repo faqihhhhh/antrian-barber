@@ -101,9 +101,14 @@ try {
     const stepName = { waiting: 'Dalam antrian', called: 'Dipanggil', completed: 'Selesai' }[status]
     check(`${status}: label stepper minimal 12px`, layout.labelFontSizes.length > 0 && layout.labelFontSizes.every((size) => size >= 12), layout.labelFontSizes.join(', '))
     check(`${status}: hanya langkah aktif ditampilkan`, layout.activeLabel === `Langkah ${stepNumber} dari 5: ${stepName}`, String(layout.activeLabel))
-    const activeColor = layout.progressColors[stepNumber - 1]
-    const neighboringColors = [layout.progressColors[stepNumber - 2], layout.progressColors[stepNumber]].filter(Boolean)
-    check(`${status}: garis langkah aktif punya warna pembeda`, !!activeColor && neighboringColors.every((color) => color !== activeColor), layout.progressColors.join(' | '))
+    if (status === 'completed') {
+      check('completed: semua langkah selesai tetap ink', layout.progressColors.every((color) => color === 'rgb(23, 23, 23)'), layout.progressColors.join(' | '))
+    } else {
+      const activeColor = layout.progressColors[stepNumber - 1]
+      const completedColors = layout.progressColors.slice(0, stepNumber - 1)
+      const upcomingColors = layout.progressColors.slice(stepNumber)
+      check(`${status}: langkah aktif indigo, selesai ink, dan berikutnya muted`, activeColor === 'rgb(67, 56, 202)' && completedColors.every((color) => color === 'rgb(23, 23, 23)') && upcomingColors.every((color) => color === 'rgb(228, 228, 231)'), layout.progressColors.join(' | '))
+    }
     check(`${status}: label langkah tidak tertutup navigasi bawah`, layout.activeLabelBottom !== null && (layout.mobileNavTop === null || layout.activeLabelBottom <= layout.mobileNavTop), `${layout.activeLabelBottom}px / ${layout.mobileNavTop}px`)
 
     if (status === 'waiting') {

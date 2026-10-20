@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
-import { Alert, Button, ConfirmDialog, ConnectionStatus, RetryAlert, Spinner } from '../components/ui'
+import { Alert, Badge, Button, ConfirmDialog, ConnectionStatus, RetryAlert, Spinner } from '../components/ui'
 import type { components } from '../api/schema'
 import { formatLongDate } from '../lib/format'
 import { useQueueStream } from '../hooks/useQueueStream'
@@ -308,7 +308,7 @@ function QueuePanel({ membership, session, onStreamConnectionChange }: {
       <section aria-label="Antrian menunggu" className="rounded-3xl border border-line bg-white p-5">
         <div className="flex items-baseline justify-between">
           <h2 className="text-lg font-bold">Menunggu</h2>
-          <span className="text-sm text-muted">{waiting.length} pelanggan</span>
+          <span className="inline-flex items-center gap-2 text-sm text-muted"><Badge tone="accent">{waiting.length}</Badge> pelanggan</span>
         </div>
         {waiting.length === 0 ? (
           <p className="mt-3 text-sm text-body-muted">Belum ada pelanggan yang menunggu.</p>

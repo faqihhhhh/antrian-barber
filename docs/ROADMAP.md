@@ -57,6 +57,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 15-3 | Caddy otomatis HTTPS untuk frontend dan API satu origin serta website profil di domain terpisah |
 | 15-4 | CI GitHub Actions memeriksa Go, frontend, website, konfigurasi Compose, Caddyfile, dan build image |
 | 15-5 | Container migrator menjalankan Goose dan menyetel password role runtime sebelum API dimulai; API tidak mendapat DATABASE_URL |
+| UI-6 | Tema monokrom memakai satu aksen indigo terbatas untuk penanda, informasi, dan identitas; tombol utama dan status tetap memakai warna semantiknya |
 
 ## Berikutnya (urutan wajib)
 

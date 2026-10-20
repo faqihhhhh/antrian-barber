@@ -152,7 +152,7 @@ export function Alert({ tone = 'error', children }: { tone?: AlertTone; children
   const tones: Record<AlertTone, string> = {
     error: 'border-red-200 bg-red-50 text-red-800',
     success: 'border-emerald-200 bg-emerald-50 text-emerald-900',
-    info: 'border-line bg-paper-raised text-body',
+    info: 'border border-accent/20 bg-accent-soft text-body',
     warning: 'border-amber-300 bg-amber-50 text-amber-900',
   }
   return (
@@ -184,7 +184,7 @@ export function ConnectionStatus({ connected }: { connected: boolean }) {
   )
 }
 
-export type BadgeTone = 'success' | 'warning' | 'danger' | 'neutral'
+export type BadgeTone = 'success' | 'warning' | 'danger' | 'neutral' | 'accent'
 
 export function Badge({ tone = 'neutral', children }: { tone?: BadgeTone; children: ReactNode }) {
   const tones: Record<BadgeTone, string> = {
@@ -192,6 +192,7 @@ export function Badge({ tone = 'neutral', children }: { tone?: BadgeTone; childr
     warning: 'bg-amber-100 text-amber-950',
     danger: 'bg-red-100 text-red-900',
     neutral: 'bg-paper-raised text-body',
+    accent: 'bg-accent-soft text-accent-ink',
   }
   return <span className={`inline-flex min-h-6 items-center rounded-full px-2.5 py-1 text-xs font-semibold ${tones[tone]}`}>{children}</span>
 }
@@ -219,9 +220,9 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
           </div>
           <svg aria-hidden="true" viewBox="0 0 132 280" className="h-56 w-28 xl:h-72 xl:w-32">
             <defs><clipPath id="barber-pole"><rect x="30" y="36" width="72" height="208" rx="30" /></clipPath></defs>
-            <rect x="24" y="30" width="84" height="220" rx="36" fill="#fafafa" />
+            <rect x="24" y="30" width="84" height="220" rx="36" fill="var(--color-paper)" />
             <g clipPath="url(#barber-pole)">
-              <rect x="30" y="36" width="72" height="208" fill="#fafafa" />
+              <rect x="30" y="36" width="72" height="208" fill="var(--color-paper)" />
               <path d="M8 206 122 92M8 258 122 144M8 154 122 40M8 102 74 36" stroke="#737373" strokeWidth="20" />
             </g>
             <path d="M24 52h84M24 228h84" stroke="#737373" strokeWidth="12" strokeLinecap="round" />

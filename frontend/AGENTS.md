@@ -62,11 +62,12 @@ tiket pelanggan tetap berada di jalur pemuatan utama. Rute berlogin meliputi `/`
 
 ## Desain
 
-Mobile first (pelanggan dan staf memakai HP). Tema utama monokrom memakai token semantik di
-`src/index.css` (`ink`, `paper`, `line`, `body`); jangan menambahkan warna `stone-*` langsung di
-halaman. Hijau dipakai untuk "giliran Anda" dan indikator langsung, amber untuk peringatan dan
-penilaian. Sudut membulat besar (`rounded-3xl` kartu, `rounded-xl` tombol dan input). Fokus keyboard
-harus terlihat. Gerak hanya sebagai jawaban atas aksi pengguna.
+Mobile first (pelanggan dan staf memakai HP). Tema utama monokrom dengan satu aksen indigo
+(`accent`, `accent-ink`, `accent-soft`, `accent-on-dark`). Aksen dipakai untuk penanda kecil dan
+identitas, tidak pernah untuk status atau peringatan. Tombol utama tetap `ink`. Jangan menambahkan
+warna `stone-*` langsung di halaman. Hijau dipakai untuk "giliran Anda" dan indikator langsung,
+amber untuk peringatan dan penilaian. Sudut membulat besar (`rounded-3xl` kartu, `rounded-xl` tombol
+dan input). Fokus keyboard harus terlihat. Gerak hanya sebagai jawaban atas aksi pengguna.
 
 Teks antarmuka: bahasa Indonesia sederhana, kalimat aktif, tombol berisi kata kerja ("Pesan dan
 bayar DP", bukan "Kirim"). Pesan error menjelaskan apa yang salah dan apa yang bisa dilakukan, tanpa

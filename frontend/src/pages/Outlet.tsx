@@ -66,7 +66,7 @@ function OutletView({ outlet }: { outlet: OutletData }) {
     <main className="mx-auto min-h-dvh max-w-6xl px-5 pb-12 pt-4 sm:px-8 lg:px-10">
       <header className="mb-8 flex items-center justify-between border-b border-line pb-4">
         <Logo />
-        <Link to="/tiket" className="inline-flex min-h-11 items-center px-2 text-sm font-semibold underline focus-visible:outline-2 focus-visible:outline-brand-ink">
+        <Link to="/tiket" className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-accent-ink underline focus-visible:outline-2 focus-visible:outline-brand-ink">
           Tiket saya
         </Link>
       </header>
@@ -183,7 +183,7 @@ function BookingSection({ outlet }: { outlet: OutletData }) {
                     : 'border-line bg-paper-raised text-muted cursor-not-allowed'
               }`}
               >
-                <span className="block text-xs">{d.date === outlet.local_today ? 'Hari ini' : weekdayShort(d.date)}</span>
+                <span className={`block text-xs ${d.date === outlet.local_today && !isSelected ? 'text-accent' : ''}`}>{d.date === outlet.local_today ? 'Hari ini' : weekdayShort(d.date)}</span>
                 <span className="block text-xl font-bold tabular-nums">{dayOfMonth(d.date)}</span>
                 <span className="block text-xs">{formatMonthYear(d.date)}</span>
                 <span className="block text-xs">{note}</span>

@@ -114,12 +114,12 @@ function StatusStepper({ status }: { status: string }) {
   return (
     <ol aria-label="Tahapan tiket" className="rounded-2xl border border-line bg-white px-4 py-3">
       <li aria-current="step" className="space-y-3">
-        <p data-step-label className="text-sm font-semibold text-ink">
+        <p data-step-label className={`text-sm font-semibold ${status === 'completed' ? 'text-ink' : 'text-accent'}`}>
           Langkah {current + 1} dari {steps.length}: {steps[current][1]}
         </p>
         <div aria-hidden="true" className="flex gap-1.5">
           {steps.map(([key], index) => (
-            <span key={key} className={`h-1.5 flex-1 rounded-full ${index < current ? 'bg-line-strong' : index === current ? 'bg-ink' : 'bg-line'}`} />
+            <span key={key} className={`h-1.5 flex-1 rounded-full ${index < current || (index === current && status === 'completed') ? 'bg-ink' : index === current ? 'bg-accent' : 'bg-line'}`} />
           ))}
         </div>
       </li>

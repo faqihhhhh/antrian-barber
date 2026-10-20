@@ -3,7 +3,7 @@ import { useParams } from 'react-router'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
-import { Alert, Button, ConfirmDialog, Field, RetryAlert, Spinner } from '../components/ui'
+import { Alert, Badge, Button, ConfirmDialog, Field, RetryAlert, Spinner } from '../components/ui'
 import type { components } from '../api/schema'
 import { formatDateTime, formatLongDate, formatRupiah } from '../lib/format'
 
@@ -517,7 +517,7 @@ function PaymentPanel({ membership, session }: { membership: Membership; session
     <section aria-label="DP menunggu konfirmasi" className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold">DP menunggu konfirmasi</h2>
-        <span className="rounded-full bg-paper-raised px-3 py-1 text-sm font-semibold">{payments.data.length}</span>
+        <Badge tone="accent">{payments.data.length}</Badge>
       </div>
       {confirm.isError && <Alert>{messageOf(confirm.error)}</Alert>}
       {payments.data.length === 0 ? (
@@ -594,7 +594,7 @@ function SettlementPanel({ membership, session }: { membership: Membership; sess
     <section aria-label="Pelunasan menunggu konfirmasi" className="space-y-3 border-t border-line pt-5">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-bold">Konfirmasi pelunasan</h2>
-        <span className="rounded-full bg-paper-raised px-3 py-1 text-sm font-semibold">{tickets.data.length}</span>
+        <Badge tone="accent">{tickets.data.length}</Badge>
       </div>
       {confirm.isError && <Alert>{messageOf(confirm.error)}</Alert>}
       {tickets.data.length === 0 ? (

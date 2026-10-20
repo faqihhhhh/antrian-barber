@@ -5,7 +5,8 @@
   --color-ink: #171717;
   --color-ink-hover: #303030;
   --color-ink-muted: #525252;
-  --color-paper: #fafafa;
+  --color-ink-brand: #1C1917;
+  --color-paper: #FAF7F2;
   --color-paper-raised: #f4f4f5;
   --color-paper-muted: #e4e4e7;
   --color-line: #e4e4e7;
@@ -16,6 +17,10 @@
   --color-body: #3f3f46;
   --color-brand: #404040;
   --color-brand-ink: #262626;
+  --color-accent: #4338CA;
+  --color-accent-ink: #3730A3;
+  --color-accent-soft: #EEF2FF;
+  --color-accent-on-dark: #A5B4FC;
   --font-sans: "Inter Variable", system-ui, sans-serif;
 }
 
