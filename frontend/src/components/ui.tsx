@@ -215,7 +215,9 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
         <div className="relative z-10 grid grid-cols-[1fr_auto] items-center gap-8">
           <div className="max-w-lg">
             <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-white/70">Rapi dari kursi pertama</p>
-            <p className="text-4xl font-bold leading-tight xl:text-5xl">Antrian lancar, pelanggan nyaman.</p>
+            <p className="text-4xl font-bold leading-tight xl:text-5xl">
+              Antrian lancar, <span data-login-accent className="text-accent-on-dark">pelanggan nyaman.</span>
+            </p>
             <p className="mt-5 max-w-md text-base leading-7 text-white/80">Atur outlet dan layanan, lalu biarkan pelanggan memantau giliran mereka dari ponsel.</p>
           </div>
           <svg aria-hidden="true" viewBox="0 0 132 280" className="h-56 w-28 xl:h-72 xl:w-32">

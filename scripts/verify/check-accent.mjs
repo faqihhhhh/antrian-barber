@@ -64,6 +64,7 @@ try {
   }
 
   const screenshots = [
+    { id: 'app-masuk', file: 'app-masuk' },
     { id: 'app-outlet-contoh-barber', file: 'app-outlet-contoh-barber' },
     { id: 'app-admin-kelola', file: 'app-admin-kelola' },
   ]
@@ -79,6 +80,25 @@ try {
       } finally {
         await context.close()
       }
+    }
+
+    if (viewport.width === 1440) {
+      const loginScenario = SCENARIOS.find(({ id }) => id === 'app-masuk')
+      const { context, page } = await openScenario(browser, loginScenario, viewport)
+      try {
+        await page.goto(scenarioUrl(loginScenario), { waitUntil: 'domcontentloaded' })
+        await waitForScenario(page, loginScenario)
+        const accent = page.locator('[data-login-accent]')
+        const result = await accent.count()
+          ? await accent.evaluate((element) => ({ visible: element.getBoundingClientRect().width > 0, color: getComputedStyle(element).color }))
+          : { visible: false, color: 'tidak ditemukan' }
+        check('Panel samping login memakai aksen on-dark', result.visible && result.color === 'rgb(165, 180, 252)', `${result.color}; terlihat=${result.visible}`)
+      } catch (error) {
+        check('Panel samping login memakai aksen on-dark', false, error.message)
+      }
+      const name = `${before ? 'before' : 'after'}-app-masuk-${viewport.width}.png`
+      await page.screenshot({ path: path.join(screenshotDirectory, name), animations: 'disabled', fullPage: false })
+      await context.close()
     }
 
     const ticketScenario = { id: 'app-tiket-in-progress', kind: 'app', path: `/tiket/${'44444444-4444-4444-8444-444444444444'}`, role: 'customer' }

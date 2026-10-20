@@ -65,3 +65,7 @@ Build dan lint:
 - Screenshot dan interaksi dijalankan di Chromium desktop dengan fixture API tiruan. Tampilan di perangkat fisik, browser lain, dan skema warna paksa sistem operasi belum diuji.
 - Perubahan ini tidak menguji alur API/database; tidak ada backend atau kontrak API yang diubah.
 - Warna merah/hijau/amber yang ada untuk status dan peringatan tetap utuh; cakupan visual regressi untuk seluruh layar di luar halaman yang disebutkan tidak dijalankan.
+
+## Tambahan: panel samping masuk
+
+Panel samping pada `/masuk` kini memberi aksen `accent-on-dark` (`#A5B4FC`) pada frasa “pelanggan nyaman.”, sementara latar panel tetap `ink`. Pemeriksaan Playwright tambahan gagal sebelum perubahan karena elemen aksen belum ada, lalu lulus dengan computed color `rgb(165, 180, 252)`. Tangkapan layar 390×844 dan 1440×900 tersimpan sebagai `before-app-masuk-*` dan `after-app-masuk-*` di `frontend/ui-review/`.
