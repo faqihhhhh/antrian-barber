@@ -129,6 +129,39 @@ func (q *Queries) ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) (
 	return items, nil
 }
 
+const listPublicOutletDirectory = `-- name: ListPublicOutletDirectory :many
+SELECT t.name AS business_name, o.name AS outlet_name, o.slug
+FROM outlets o
+JOIN tenants t ON t.id = o.tenant_id
+ORDER BY t.name, o.name
+`
+
+type ListPublicOutletDirectoryRow struct {
+	BusinessName string `json:"business_name"`
+	OutletName   string `json:"outlet_name"`
+	Slug         string `json:"slug"`
+}
+
+func (q *Queries) ListPublicOutletDirectory(ctx context.Context) ([]ListPublicOutletDirectoryRow, error) {
+	rows, err := q.db.Query(ctx, listPublicOutletDirectory)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPublicOutletDirectoryRow
+	for rows.Next() {
+		var i ListPublicOutletDirectoryRow
+		if err := rows.Scan(&i.BusinessName, &i.OutletName, &i.Slug); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const slugExists = `-- name: SlugExists :one
 SELECT EXISTS(SELECT 1 FROM outlets WHERE slug = $1)
 `

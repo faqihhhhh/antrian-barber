@@ -494,6 +494,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/public/outlets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar outlet yang dapat dikunjungi pelanggan */
+        get: operations["listPublicOutlets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/public/queue-sessions/{sessionID}/stream": {
         parameters: {
             query?: never;
@@ -1083,6 +1100,11 @@ export interface components {
             unavailable_reason: "langganan_tidak_aktif" | "harga_dp_belum_diatur" | "pembayaran_belum_diatur" | null;
             days: components["schemas"]["DayInfo"][];
             today: components["schemas"]["SessionSnapshot"] | null;
+        };
+        PublicOutletDirectoryEntry: {
+            business_name: string;
+            outlet_name: string;
+            slug: string;
         };
         BookRequest: {
             /** Format: date */
@@ -2125,6 +2147,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OutletPage"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listPublicOutlets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar outlet publik dengan nama bisnis dan tautannya */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicOutletDirectoryEntry"][];
                 };
             };
             default: components["responses"]["Error"];

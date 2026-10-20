@@ -632,6 +632,21 @@ paths:
                 $ref: '#/components/schemas/OutletPage'
         default:
           $ref: '#/components/responses/Error'
+  /v1/public/outlets:
+    get:
+      operationId: listPublicOutlets
+      tags: [publik]
+      summary: Daftar outlet yang dapat dikunjungi pelanggan
+      responses:
+        '200':
+          description: Daftar outlet publik dengan nama bisnis dan tautannya
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PublicOutletDirectoryEntry' }
+        default:
+          $ref: '#/components/responses/Error'
   /v1/public/queue-sessions/{sessionID}/stream:
     get:
       operationId: streamQueueSession
@@ -1531,6 +1546,16 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/SessionSnapshot'
+    PublicOutletDirectoryEntry:
+      type: object
+      required: [business_name, outlet_name, slug]
+      properties:
+        business_name:
+          type: string
+        outlet_name:
+          type: string
+        slug:
+          type: string
     BookRequest:
       type: object
       required: [session_date]

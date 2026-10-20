@@ -1,11 +1,24 @@
-import { Link } from 'react-router'
+import { useQuery } from '@tanstack/react-query'
+import { Link, useNavigate } from 'react-router'
+import { api, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
+import { Alert, Spinner } from '../components/ui'
 import { lastOutlet } from '../lib/storage'
 
 export default function PelangganBeranda() {
   const me = useMe()
+  const navigate = useNavigate()
   const outlet = lastOutlet()
   const username = me.data?.user.username
+  const directory = useQuery({
+    queryKey: ['public-outlet-directory'],
+    queryFn: async () => {
+      const { data, error } = await api.GET('/v1/public/outlets')
+      if (error) throw new Error(messageOf(error))
+      return data
+    },
+    staleTime: 60_000,
+  })
 
   return (
     <main className="mx-auto min-h-[70dvh] max-w-2xl space-y-6 px-5 py-8">
@@ -20,6 +33,31 @@ export default function PelangganBeranda() {
         <Link to="/tiket" className="inline-flex min-h-11 items-center rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink">
           Lihat tiket saya
         </Link>
+      </section>
+
+      <section className="space-y-3 rounded-3xl border border-line bg-white p-5">
+        <h2 className="text-lg font-semibold">Pilih barbershop atau salon</h2>
+        <p className="text-sm leading-6 text-body-muted">Pilih bisnis dan outlet untuk melihat jadwal antreannya.</p>
+        {directory.isPending ? <Spinner /> : directory.isError ? <Alert>{directory.error.message}</Alert> : directory.data.length === 0 ? (
+          <p className="text-sm text-body-muted">Belum ada outlet yang terdaftar.</p>
+        ) : (
+          <label className="block">
+            <span className="sr-only">Pilih barbershop atau salon</span>
+            <select
+              aria-label="Pilih barbershop atau salon"
+              className="min-h-11 w-full rounded-xl border border-line-strong bg-white px-4 py-2.5 text-base text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink"
+              value=""
+              onChange={(event) => {
+                if (event.target.value) navigate(`/o/${event.target.value}`)
+              }}
+            >
+              <option value="" disabled>Pilih bisnis atau outlet</option>
+              {directory.data.map((item) => (
+                <option key={item.slug} value={item.slug}>{item.business_name} — {item.outlet_name}</option>
+              ))}
+            </select>
+          </label>
+        )}
       </section>
 
       {outlet ? (

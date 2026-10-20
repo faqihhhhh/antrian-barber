@@ -149,6 +149,12 @@ export async function mockApi(route, scenario) {
   if (method === 'GET' && pathname === '/v1/public/outlets/contoh-barber') {
     return jsonResponse(route, outletPage())
   }
+  if (method === 'GET' && pathname === '/v1/public/outlets') {
+    return jsonResponse(route, [
+      { business_name: 'Salon Cantik Selalu', outlet_name: 'Salon Cabang Utama', slug: 'contoh-barber' },
+      { business_name: 'Barber Contoh', outlet_name: 'Cabang Selatan', slug: 'barber-contoh-selatan' },
+    ])
+  }
   if (method === 'GET' && /\/outlets\/[0-9a-f-]+\/queue-sessions$/.test(pathname)) {
     return jsonResponse(route, [queueSession])
   }

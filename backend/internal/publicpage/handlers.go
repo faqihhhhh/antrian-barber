@@ -29,3 +29,13 @@ func (h *Handlers) GetOutlet(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	httpx.JSON(w, http.StatusOK, page)
 }
+
+func (h *Handlers) ListOutletDirectory(w http.ResponseWriter, r *http.Request) {
+	entries, err := h.svc.ListOutletDirectory(r.Context())
+	if err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	w.Header().Set("Cache-Control", "public, max-age=60")
+	httpx.JSON(w, http.StatusOK, entries)
+}

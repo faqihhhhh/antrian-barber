@@ -60,6 +60,38 @@ type OutletPage struct {
 	Today                  *queue.SessionSnapshot `json:"today"`
 }
 
+type OutletDirectoryEntry struct {
+	BusinessName string `json:"business_name"`
+	OutletName   string `json:"outlet_name"`
+	Slug         string `json:"slug"`
+}
+
+// ListOutletDirectory mengembalikan outlet yang memiliki tautan publik.
+func (s *Service) ListOutletDirectory(ctx context.Context) ([]OutletDirectoryEntry, error) {
+	var rows []db.ListPublicOutletDirectoryRow
+	err := rls.RunAsSystem(ctx, s.pool, func(c context.Context) error {
+		tx, ok := rls.TxFromContext(c)
+		if !ok {
+			return errors.New("transaksi sistem tidak tersedia")
+		}
+		var err error
+		rows, err = db.New(tx).ListPublicOutletDirectory(c)
+		return err
+	})
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("daftar outlet publik: %w", err))
+	}
+	entries := make([]OutletDirectoryEntry, 0, len(rows))
+	for _, row := range rows {
+		entries = append(entries, OutletDirectoryEntry{
+			BusinessName: row.BusinessName,
+			OutletName:   row.OutletName,
+			Slug:         row.Slug,
+		})
+	}
+	return entries, nil
+}
+
 // GetOutletPage melayani halaman yang dibuka pelanggan dari tautan atau QR
 // outlet, tanpa login. Seluruh pembacaan lewat jalur sistem karena pengunjung
 // bukan anggota bisnis; yang dikembalikan hanya informasi yang memang untuk umum.

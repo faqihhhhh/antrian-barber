@@ -18,7 +18,8 @@
     "check:staff": "node check-staff.mjs",
     "check:admin": "node check-admin.mjs",
     "check:nav": "node check-nav.mjs",
-    "check:login": "node check-login.mjs"
+    "check:login": "node check-login.mjs",
+    "check:customer-directory": "node check-customer-directory.mjs"
   },
   "devDependencies": {
     "axe-core": "^4.14.0",

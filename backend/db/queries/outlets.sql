@@ -18,3 +18,9 @@ WHERE id = $1 AND tenant_id = $2 RETURNING *;
 
 -- name: GetOutletByID :one
 SELECT * FROM outlets WHERE id = $1;
+
+-- name: ListPublicOutletDirectory :many
+SELECT t.name AS business_name, o.name AS outlet_name, o.slug
+FROM outlets o
+JOIN tenants t ON t.id = o.tenant_id
+ORDER BY t.name, o.name;
