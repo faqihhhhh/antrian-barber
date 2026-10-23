@@ -1,4 +1,4 @@
-# Kapsflow: panduan untuk agen coding
+# Trimwait: panduan untuk agen coding
 
 Baca file ini sebelum mengubah apa pun. Aturan yang hanya berlaku di satu bagian kode ada di
 `backend/AGENTS.md` dan `frontend/AGENTS.md`. Aturan bisnis ada di `docs/DOMAIN.md`, cara menguji
@@ -6,7 +6,7 @@ di `docs/TESTING.md`, status pekerjaan di `docs/ROADMAP.md`. Buka file itu saat 
 
 ## Produk
 
-Kapsflow adalah SaaS antrian untuk barbershop dan salon, dijual ke pemilik usaha (tenant).
+Trimwait adalah SaaS antrian untuk barbershop dan salon, dijual ke pemilik usaha (tenant).
 
 - Pemilik SaaS (platform admin): mengelola tenant, langganan, dan melihat MRR/ARR.
 - Owner: pemilik barbershop. Mengatur outlet, staf, harga DP, pembayaran, dan melihat statistik.

@@ -1,6 +1,6 @@
-# Website profil Kapsflow
+# Website profil Trimwait
 
-Website statis berbasis Astro untuk profil produk Kapsflow. Aplikasi operasional tetap berada di
+Website statis berbasis Astro untuk profil produk Trimwait. Aplikasi operasional tetap berada di
 `frontend/` (React + Vite); CTA website diarahkan ke `PUBLIC_APP_URL`.
 
 Jalankan frontend aplikasi dan website profil di dua terminal WSL. Pratinjau di halaman utama

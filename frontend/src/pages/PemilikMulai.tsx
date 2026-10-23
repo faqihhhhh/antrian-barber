@@ -36,7 +36,7 @@ export default function PemilikMulai() {
         <Link to="/" className="text-sm font-semibold underline">← Beranda</Link>
         <p className="mt-8 text-sm font-semibold tracking-wide text-muted">MULAI DENGAN BISNISMU</p>
         <h1 className="mt-2 text-3xl font-bold">Buat bisnis pertama</h1>
-        <p className="mt-2 text-sm leading-6 text-body-muted">Nama ini digunakan untuk mengenali akun usahamu di Kapsflow. Setelah bisnis dibuat, lanjutkan dengan menambahkan outlet.</p>
+        <p className="mt-2 text-sm leading-6 text-body-muted">Nama ini digunakan untuk mengenali akun usahamu di Trimwait. Setelah bisnis dibuat, lanjutkan dengan menambahkan outlet.</p>
       </header>
 
       <form className="space-y-4 rounded-3xl border border-line bg-white p-5" onSubmit={submit}>

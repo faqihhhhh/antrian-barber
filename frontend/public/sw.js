@@ -5,7 +5,7 @@ self.addEventListener('push', (event) => {
   } catch {
     payload = { body: event.data?.text() || '' }
   }
-  event.waitUntil(self.registration.showNotification(payload.title || 'Kapsflow', {
+  event.waitUntil(self.registration.showNotification(payload.title || 'Trimwait', {
     body: payload.body || 'Ada kabar terbaru tentang antrian Anda.',
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',

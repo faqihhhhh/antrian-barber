@@ -30,7 +30,7 @@ const STATUS: Record<string, { label: string; tone: 'success' | 'warning' | 'dan
   belum_berlangganan: {
     label: 'Belum berlangganan',
     tone: 'neutral',
-    explanation: 'Pilih paket untuk mulai memakai Kapsflow untuk bisnis ini.',
+    explanation: 'Pilih paket untuk mulai memakai Trimwait untuk bisnis ini.',
     action: 'Pilih paket',
   },
 }

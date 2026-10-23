@@ -26,7 +26,7 @@ try {
         await page.goto(scenarioUrl(scenario), { waitUntil: 'domcontentloaded', timeout: 30_000 })
         await waitForScenario(page, scenario)
         if (scenario.id === 'website-home') {
-          await page.frameLocator('iframe').getByText('Masuk ke Kapsflow', { exact: false }).waitFor({ state: 'visible', timeout: 20_000 })
+          await page.frameLocator('iframe').getByText('Masuk ke Trimwait', { exact: false }).waitFor({ state: 'visible', timeout: 20_000 })
         }
         const screenshotPath = await uniqueBaselinePath(scenario, viewport.width)
         await page.screenshot({ path: screenshotPath, animations: 'disabled', fullPage: false })

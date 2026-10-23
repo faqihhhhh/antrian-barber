@@ -28,19 +28,19 @@ const features = [
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#FAF7F2" />
-    <meta name="description" content="Kapsflow membantu barbershop dan salon mengelola antrian pelanggan secara online." />
-    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-    <meta property="og:title" content="Kapsflow — Antrian salon lebih tertata" />
-    <meta property="og:description" content="Kapsflow membantu barbershop dan salon mengelola antrian pelanggan secara online." />
+    <meta name="description" content="Trimwait membantu barbershop dan salon mengelola antrian pelanggan secara online." />
+    <link rel="icon" href="/icons/icon-512.png" type="image/png" />
+    <meta property="og:title" content="Trimwait — Antrian salon lebih tertata" />
+    <meta property="og:description" content="Trimwait membantu barbershop dan salon mengelola antrian pelanggan secara online." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={pageUrl} />
     <meta property="og:image" content={socialImage} />
     <meta name="twitter:card" content="summary_large_image" />
-    <title>Kapsflow — Antrian salon lebih tertata</title>
+    <title>Trimwait — Antrian salon lebih tertata</title>
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="#beranda" aria-label="Kapsflow, ke beranda"><svg aria-hidden="true" viewBox="0 0 32 32" class="brand-glyph" fill="none"><circle class="brand-accent-circle" cx="7" cy="8" r="4" stroke="currentColor" stroke-width="2.5" /><circle cx="7" cy="24" r="4" stroke="currentColor" stroke-width="2.5" /><path d="m10.5 10.5 16 15M10.5 21.5l16-15M14 16h13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" /></svg>Kapsflow</a>
+      <a class="brand" href="#beranda" aria-label="Trimwait, ke beranda"><img src="/trimwait-logo.png" alt="" /></a>
       <nav aria-label="Navigasi utama">
         <a href="#cara-kerja">Cara kerja</a>
         <a class="nav-login" href={`${appUrl}/masuk`}>Masuk</a>
@@ -66,21 +66,21 @@ const features = [
           <div class="app-window">
             <div class="window-bar" aria-hidden="true">
               <span class="window-dots"><i></i><i></i><i></i></span>
-              <span class="window-address">Kapsflow · aplikasi</span>
+              <span class="window-address">Trimwait · aplikasi</span>
               <span class="window-lock">●</span>
             </div>
             <iframe
               src={`${appUrl}/pelanggan/masuk`}
-              title="Pratinjau aplikasi Kapsflow"
+              title="Pratinjau aplikasi Trimwait"
               loading="lazy"
               referrerpolicy="strict-origin-when-cross-origin"
             ></iframe>
           </div>
-          <div class="floating-note"><span class="check">↗</span><span><b>Tampilan aplikasi asli</b><small>Pratinjau langsung dari Kapsflow</small></span></div>
+          <div class="floating-note"><span class="check">↗</span><span><b>Tampilan aplikasi asli</b><small>Pratinjau langsung dari Trimwait</small></span></div>
         </div>
       </section>
 
-      <section class="trust-strip" aria-label="Manfaat Kapsflow">
+      <section class="trust-strip" aria-label="Manfaat Trimwait">
         <p>Lebih teratur dari awal sampai selesai</p>
         <div><span>01</span> Pesan online</div><div><span>02</span> Pantau giliran</div><div><span>03</span> Kelola dari satu layar</div>
       </section>
@@ -117,7 +117,7 @@ const features = [
       </section>
 
       <section class="demo-section" aria-labelledby="demo-title">
-        <div><p class="eyebrow">LIHAT LANGSUNG</p><h2 id="demo-title">Minta demo</h2><p>Lihat alur Kapsflow sebelum memilih.</p></div>
+        <div><p class="eyebrow">LIHAT LANGSUNG</p><h2 id="demo-title">Minta demo</h2><p>Lihat alur Trimwait sebelum memilih.</p></div>
         <!-- TODO pemilik: isi email kontak untuk permintaan demo --><a class="button" href="mailto:[EMAIL: isi oleh pemilik]">Minta demo <span aria-hidden="true">↗</span></a>
       </section>
 
@@ -127,7 +127,7 @@ const features = [
       </section>
     </main>
 
-    <footer><a class="brand" href="#beranda" aria-label="Kapsflow, ke beranda"><svg aria-hidden="true" viewBox="0 0 32 32" class="brand-glyph" fill="none"><circle class="brand-accent-circle" cx="7" cy="8" r="4" stroke="currentColor" stroke-width="2.5" /><circle cx="7" cy="24" r="4" stroke="currentColor" stroke-width="2.5" /><path d="m10.5 10.5 16 15M10.5 21.5l16-15M14 16h13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" /></svg>Kapsflow</a><p>Antrian lebih tertata, layanan lebih nyaman.</p><nav aria-label="Informasi hukum"><a href="/syarat">Syarat penggunaan</a><a href="/privasi">Privasi</a></nav><span>© {new Date().getFullYear()} Kapsflow</span></footer>
+    <footer><a class="brand" href="#beranda" aria-label="Trimwait, ke beranda"><img src="/trimwait-logo.png" alt="" /></a><p>Antrian lebih tertata, layanan lebih nyaman.</p><nav aria-label="Informasi hukum"><a href="/syarat">Syarat penggunaan</a><a href="/privasi">Privasi</a></nav><span>© {new Date().getFullYear()} Trimwait</span></footer>
   </body>
 </html>
 
@@ -139,8 +139,8 @@ const features = [
   :global(a) { color: inherit; text-decoration: none; }
   :global(:where(a, button, input, select, textarea, [tabindex]):focus-visible) { outline: 2px solid var(--color-ink); outline-offset: 2px; }
   .topbar { height: 82px; max-width: 1240px; margin: auto; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; }
-  .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--color-ink-brand); font-size: 20px; font-weight: 800; letter-spacing: -.7px; }
-  .brand-glyph { width: 32px; height: 32px; flex: none; color: var(--color-ink-brand); }.brand-accent-circle { color: var(--color-accent); }
+  .brand { display: inline-flex; align-items: center; color: var(--color-ink-brand); }
+  .brand img { display: block; width: 156px; height: 32px; object-fit: contain; }
   nav { display: flex; align-items: center; gap: 30px; font-size: 13px; font-weight: 600; }
   nav a:not(.button) { color: var(--color-body-muted); }
   .button { display: inline-flex; align-items: center; justify-content: center; gap: 16px; min-height: 52px; padding: 0 22px; border-radius: 12px; background: var(--color-ink); color: var(--color-paper); font-size: 14px; font-weight: 700; transition: transform .2s, background .2s; }

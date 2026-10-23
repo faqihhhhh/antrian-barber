@@ -75,7 +75,7 @@ func (s *Service) sendReminder(ctx context.Context, row db.ListSubscriptionsEndi
 	}
 
 	daysLeft := int(math.Ceil(time.Until(periodEnd).Hours() / 24))
-	subject := fmt.Sprintf("Langganan Kapsflow %s berakhir %d hari lagi", row.TenantName, daysLeft)
+	subject := fmt.Sprintf("Langganan Trimwait %s berakhir %d hari lagi", row.TenantName, daysLeft)
 	body := renewalReminderHTML(row.TenantName, row.PlanName, row.PriceRupiah, periodEnd, daysLeft)
 
 	delivered := 0
@@ -103,11 +103,11 @@ func (s *Service) sendReminder(ctx context.Context, row db.ListSubscriptionsEndi
 
 func renewalReminderHTML(tenantName, planName string, price int64, periodEnd time.Time, daysLeft int) string {
 	return fmt.Sprintf(`<div style="font-family:sans-serif;max-width:480px;margin:auto">
-		<h2>Langganan Kapsflow hampir berakhir</h2>
+		<h2>Langganan Trimwait hampir berakhir</h2>
 		<p>Langganan <b>%s</b> (paket %s) akan berakhir pada <b>%s</b>, sekitar %d hari lagi.</p>
 		<p>Perpanjang sebelum tanggal itu supaya antrian tetap berjalan. Biaya perpanjangan: <b>%s</b>.</p>
 		<p>Setelah berakhir ada masa tenggang 3 hari. Sesudahnya akun masuk mode baca saja: data tetap aman dan bisa dilihat, tetapi pemesanan baru dan operasional antrian terkunci.</p>
-		<p>Masuk ke aplikasi Kapsflow, buka menu Langganan, lalu buat tagihan perpanjangan.</p>
+		<p>Masuk ke aplikasi Trimwait, buka menu Langganan, lalu buat tagihan perpanjangan.</p>
 	</div>`, html.EscapeString(tenantName), html.EscapeString(planName), formatDateID(periodEnd), daysLeft, formatRupiah(price))
 }
 

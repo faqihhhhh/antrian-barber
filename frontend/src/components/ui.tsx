@@ -228,7 +228,7 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
             <circle cx="66" cy="262" r="10" fill="var(--color-accent)" />
           </svg>
         </div>
-        <p className="relative z-10 text-xs text-white/70">Kapsflow · Antrian untuk barbershop dan salon</p>
+        <p className="relative z-10 text-xs text-white/70">Trimwait · Antrian untuk barbershop dan salon</p>
       </aside>
       <section className="flex min-h-0 items-center justify-center px-5 py-8 lg:min-h-dvh lg:px-10 lg:py-10" aria-labelledby="auth-title">
         <div className="w-full max-w-md">

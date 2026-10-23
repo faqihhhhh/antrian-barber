@@ -16,8 +16,8 @@ function write(key: string, value: string) {
   }
 }
 
-const NAME_KEY = 'kapsflow.nama'
-const OUTLET_KEY = 'kapsflow.outlet'
+const NAME_KEY = 'trimwait.nama'
+const OUTLET_KEY = 'trimwait.outlet'
 
 export const savedName = () => read(NAME_KEY) ?? ''
 export const saveName = (name: string) => write(NAME_KEY, name)

@@ -95,7 +95,7 @@ func (s *Service) InviteStaff(ctx context.Context, tenantID uuid.UUID, in Invite
 	}
 
 	if _, err := q.GetUserByEmail(ctx, in.Email); err == nil {
-		return Member{}, httpx.Conflict("email_sudah_terdaftar", "Email ini sudah dipakai akun Kapsflow lain", nil)
+		return Member{}, httpx.Conflict("email_sudah_terdaftar", "Email ini sudah dipakai akun Trimwait lain", nil)
 	} else if !errors.Is(err, pgx.ErrNoRows) {
 		return Member{}, httpx.Internal(fmt.Errorf("cek email staf: %w", err))
 	}

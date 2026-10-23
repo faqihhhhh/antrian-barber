@@ -51,7 +51,7 @@ try {
 
       if (scenario.kind === 'app') {
         const labels = await page.evaluate(() => ({
-          logos: [...document.querySelectorAll('[aria-label="Kapsflow"]')].map((element) => ({ tag: element.tagName, role: element.getAttribute('role') })),
+          logos: [...document.querySelectorAll('[aria-label="Trimwait"]')].map((element) => ({ tag: element.tagName, role: element.getAttribute('role') })),
           dateGroupRole: document.querySelector('[aria-label="Tanggal yang sudah dibuka"]')?.getAttribute('role') ?? null,
         }))
         if (labels.logos.some((logo) => logo.role !== 'img')) {

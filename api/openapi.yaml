@@ -1,12 +1,12 @@
 openapi: 3.0.3
 info:
-  title: Kapsflow API
+  title: Trimwait API
   version: 0.1.0
   description: |
-    Kontrak API Kapsflow, ditulis bertahap per layar. Endpoint yang belum ada
+    Kontrak API Trimwait, ditulis bertahap per layar. Endpoint yang belum ada
     di sini belum didokumentasikan, bukan berarti tidak ada.
 
-    Autentikasi memakai cookie sesi httpOnly (`kapsflow_session`) yang dipasang
+    Autentikasi memakai cookie sesi httpOnly (`trimwait_session`) yang dipasang
     oleh `POST /v1/auth/login`. Semua error memakai bentuk `ErrorResponse`.
 servers:
   - url: /
@@ -1221,7 +1221,7 @@ components:
     cookieAuth:
       type: apiKey
       in: cookie
-      name: kapsflow_session
+      name: trimwait_session
   parameters:
     TenantID:
       name: tenantID

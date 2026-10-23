@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Kapsflow — Antrian barbershop",
-  "short_name": "Kapsflow",
+  "name": "Trimwait — Antrian barbershop",
+  "short_name": "Trimwait",
   "description": "Pesan dan pantau antrian barbershop atau salon.",
   "start_url": "/",
   "scope": "/",

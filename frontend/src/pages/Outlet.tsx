@@ -102,7 +102,7 @@ function OutletView({ outlet }: { outlet: OutletData }) {
                 'Outlet ini belum menerima pemesanan online.'}
             </Alert>
           )}
-          <p className="text-center text-xs text-body-muted">Dikelola dengan Kapsflow</p>
+          <p className="text-center text-xs text-body-muted">Dikelola dengan Trimwait</p>
         </div>
       </div>
     </main>

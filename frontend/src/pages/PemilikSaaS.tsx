@@ -20,7 +20,7 @@ export default function PemilikSaaS() {
   if (me.isPending) return <Spinner />
   if (me.isError) return <main className="mx-auto max-w-3xl px-5 py-10"><Alert>{messageOf(me.error)}</Alert></main>
   if (!me.data?.is_platform_admin) {
-    return <main className="mx-auto max-w-3xl space-y-4 px-5 py-10"><Alert>Akses halaman ini hanya untuk pemilik Kapsflow.</Alert><Link to="/" className="text-sm font-semibold underline">Kembali ke beranda</Link></main>
+    return <main className="mx-auto max-w-3xl space-y-4 px-5 py-10"><Alert>Akses halaman ini hanya untuk pemilik Trimwait.</Alert><Link to="/" className="text-sm font-semibold underline">Kembali ke beranda</Link></main>
   }
 
   return (

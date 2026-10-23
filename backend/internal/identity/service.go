@@ -21,7 +21,7 @@ const (
 	emailVerificationTTL = 24 * time.Hour
 	passwordResetTTL     = 1 * time.Hour
 	sessionTTL           = 30 * 24 * time.Hour
-	SessionCookieName    = "kapsflow_session"
+	SessionCookieName    = "trimwait_session"
 )
 
 type Service struct {
@@ -130,7 +130,7 @@ func (s *Service) sendVerificationEmail(ctx context.Context, userID uuid.UUID, e
 		return httpx.Internal(fmt.Errorf("menyimpan token verifikasi: %w", err))
 	}
 	verifyURL := fmt.Sprintf("%s/verifikasi-email?token=%s", s.baseURL, rawToken)
-	if err := s.mailer.Send(ctx, email, "Verifikasi email Kapsflow Anda", verificationEmailHTML(verifyURL)); err != nil {
+	if err := s.mailer.Send(ctx, email, "Verifikasi email Trimwait Anda", verificationEmailHTML(verifyURL)); err != nil {
 		return httpx.Internal(fmt.Errorf("mengirim email verifikasi: %w", err))
 	}
 	return nil
@@ -233,7 +233,7 @@ func (s *Service) RequestPasswordReset(ctx context.Context, email string) error 
 	}
 
 	resetURL := fmt.Sprintf("%s/v1/auth/reset-password?token=%s", s.baseURL, rawToken)
-	if err := s.mailer.Send(ctx, user.Email, "Atur ulang password Kapsflow Anda", passwordResetEmailHTML(resetURL)); err != nil {
+	if err := s.mailer.Send(ctx, user.Email, "Atur ulang password Trimwait Anda", passwordResetEmailHTML(resetURL)); err != nil {
 		return httpx.Internal(fmt.Errorf("mengirim email reset: %w", err))
 	}
 	return nil
@@ -300,7 +300,7 @@ func (s *Service) SendVerificationEmailUsing(ctx context.Context, q Querier, use
 	}
 
 	verifyURL := fmt.Sprintf("%s/verifikasi-email?token=%s", s.baseURL, rawToken)
-	if err := s.mailer.Send(ctx, email, "Verifikasi email Kapsflow Anda", verificationEmailHTML(verifyURL)); err != nil {
+	if err := s.mailer.Send(ctx, email, "Verifikasi email Trimwait Anda", verificationEmailHTML(verifyURL)); err != nil {
 		return httpx.Internal(fmt.Errorf("mengirim email verifikasi: %w", err))
 	}
 	return nil

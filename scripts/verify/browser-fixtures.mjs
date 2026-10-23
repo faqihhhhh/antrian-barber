@@ -300,7 +300,7 @@ export async function waitForScenario(page, scenario) {
     'website-home': 'Antrian rapi.',
     'website-syarat': 'Syarat',
     'website-privasi': 'Privasi',
-    'app-masuk': 'Masuk ke Kapsflow',
+    'app-masuk': 'Masuk ke Trimwait',
     'app-outlet-contoh-barber': 'Salon Cabang Utama',
     'app-tiket-waiting': 'Pembayaran diterima. Anda sudah masuk antrian.',
     'app-kapster': 'Meja kapster',

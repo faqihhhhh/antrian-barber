@@ -1,4 +1,4 @@
-# Perbandingan UI Kapsflow
+# Perbandingan UI Trimwait
 
 Tangkapan layar dibuat dengan API tiruan yang sama, pada lebar 390 px dan 1440 px. `before/` memakai frontend pada commit `6785348`; `after/` memakai perubahan Tahap UI 1–5.
 

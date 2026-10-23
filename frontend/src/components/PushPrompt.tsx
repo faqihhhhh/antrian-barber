@@ -19,7 +19,7 @@ export default function PushPrompt() {
     <section className="space-y-3 rounded-2xl border border-line bg-white p-4">
       <div>
         <h2 className="font-semibold">Dapatkan kabar saat giliran mendekat</h2>
-        <p className="mt-1 text-sm text-body-muted">Notifikasi tetap bisa muncul saat halaman Kapsflow tidak sedang dibuka.</p>
+        <p className="mt-1 text-sm text-body-muted">Notifikasi tetap bisa muncul saat halaman Trimwait tidak sedang dibuka.</p>
       </div>
       {push.enable.isError && <Alert>{push.enable.error.message}</Alert>}
       <Button type="button" loading={push.enable.isPending} onClick={() => push.enable.mutate()}>

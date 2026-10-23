@@ -74,7 +74,7 @@ async function openLogin(browser, path, roleCase, from) {
     }, from)
   }
   await page.goto(scenarioUrl(scenario), { waitUntil: 'domcontentloaded', timeout: 45_000 })
-  await page.getByRole('heading', { name: 'Masuk ke Kapsflow' }).waitFor({ state: 'visible', timeout: 20_000 })
+  await page.getByRole('heading', { name: 'Masuk ke Trimwait' }).waitFor({ state: 'visible', timeout: 20_000 })
   return { context, page }
 }
 

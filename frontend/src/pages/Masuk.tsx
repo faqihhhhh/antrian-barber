@@ -52,10 +52,10 @@ export default function Masuk() {
 
   return (
     <AuthLayout
-      title="Masuk ke Kapsflow"
+      title="Masuk ke Trimwait"
       subtitle={customerLogin
         ? 'Masuk untuk melanjutkan pesanan dari halaman outlet.'
-        : 'Masuk untuk pemilik, admin, kapster, dan pengelola Kapsflow.'}
+        : 'Masuk untuk pemilik, admin, kapster, dan pengelola Trimwait.'}
     >
       <form
         className="space-y-4"

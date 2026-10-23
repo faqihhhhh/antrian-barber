@@ -93,7 +93,7 @@ export default function AppShell() {
     <div className="min-h-dvh bg-paper pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
       <header className="sticky top-0 z-30 border-b border-line bg-paper/95 px-4 backdrop-blur sm:px-6">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4">
-          <Link to={customerContext ? '/pelanggan' : '/'} aria-label="Kapsflow, beranda" className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-brand-ink">
+          <Link to={customerContext ? '/pelanggan' : '/'} aria-label="Trimwait, beranda" className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-brand-ink">
             <Logo />
           </Link>
           {hasWorkspaceSwitcher && <nav aria-label="Pindah ruang" className="hidden min-w-0 flex-1 justify-center gap-1 overflow-x-auto md:flex">

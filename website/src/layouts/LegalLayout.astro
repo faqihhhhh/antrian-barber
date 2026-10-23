@@ -17,26 +17,26 @@ const socialImage = new URL('/icons/icon-512.png', siteUrl).href
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#FAF7F2" />
     <meta name="description" content={intro} />
-    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
-    <meta property="og:title" content={`${title} — Kapsflow`} />
+    <link rel="icon" href="/icons/icon-512.png" type="image/png" />
+    <meta property="og:title" content={`${title} — Trimwait`} />
     <meta property="og:description" content={intro} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={pageUrl} />
     <meta property="og:image" content={socialImage} />
     <meta name="twitter:card" content="summary_large_image" />
-    <title>{title} — Kapsflow</title>
+    <title>{title} — Trimwait</title>
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="/" aria-label="Kapsflow, ke beranda"><svg aria-hidden="true" viewBox="0 0 32 32" class="brand-glyph" fill="none"><circle class="brand-accent-circle" cx="7" cy="8" r="4" stroke="currentColor" stroke-width="2.5" /><circle cx="7" cy="24" r="4" stroke="currentColor" stroke-width="2.5" /><path d="m10.5 10.5 16 15M10.5 21.5l16-15M14 16h13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" /></svg>Kapsflow</a>
+      <a class="brand" href="/" aria-label="Trimwait, ke beranda"><img src="/trimwait-logo.png" alt="" /></a>
       <nav aria-label="Navigasi utama"><a href="/">Beranda</a><a href="/syarat">Syarat penggunaan</a><a href="/privasi">Privasi</a></nav>
     </header>
     <main>
-      <header class="page-heading"><p class="eyebrow">INFORMASI KAPSFLOW</p><h1>{title}</h1><p>{intro}</p><span class="updated">Draf untuk ditinjau sebelum peluncuran publik</span></header>
+      <header class="page-heading"><p class="eyebrow">INFORMASI TRIMWAIT</p><h1>{title}</h1><p>{intro}</p><span class="updated">Draf untuk ditinjau sebelum peluncuran publik</span></header>
       <article class="document"><slot /></article>
-      <p class="legal-reference">Dokumen ini perlu diperiksa dan dilengkapi oleh operator Kapsflow sebelum digunakan sebagai ketentuan final.</p>
+      <p class="legal-reference">Dokumen ini perlu diperiksa dan dilengkapi oleh operator Trimwait sebelum digunakan sebagai ketentuan final.</p>
     </main>
-    <footer><a class="brand" href="/" aria-label="Kapsflow, ke beranda"><svg aria-hidden="true" viewBox="0 0 32 32" class="brand-glyph" fill="none"><circle class="brand-accent-circle" cx="7" cy="8" r="4" stroke="currentColor" stroke-width="2.5" /><circle cx="7" cy="24" r="4" stroke="currentColor" stroke-width="2.5" /><path d="m10.5 10.5 16 15M10.5 21.5l16-15M14 16h13" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" /></svg>Kapsflow</a><p>Antrian lebih tertata, layanan lebih nyaman.</p><span>© {new Date().getFullYear()} Kapsflow</span></footer>
+    <footer><a class="brand" href="/" aria-label="Trimwait, ke beranda"><img src="/trimwait-logo.png" alt="" /></a><p>Antrian lebih tertata, layanan lebih nyaman.</p><span>© {new Date().getFullYear()} Trimwait</span></footer>
   </body>
 </html>
 
@@ -48,7 +48,7 @@ const socialImage = new URL('/icons/icon-512.png', siteUrl).href
   :global(:where(a, button, input, select, textarea, [tabindex]):focus-visible) { outline: 2px solid var(--color-ink); outline-offset: 2px; }
   .topbar { height: 78px; max-width: 1120px; margin: auto; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; }
   .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 800; letter-spacing: -.7px; text-decoration: none; }
-  .brand { color: var(--color-ink-brand); }.brand-glyph { width: 32px; height: 32px; flex: none; color: var(--color-ink-brand); }.brand-accent-circle { color: var(--color-accent); }
+  .brand { color: var(--color-ink-brand); }.brand img { display: block; width: 156px; height: 32px; object-fit: contain; }
   nav { display: flex; gap: 22px; font-size: 12px; font-weight: 650; }nav a { color: var(--color-body-muted); text-decoration: none; }
   main { max-width: 860px; min-height: calc(100vh - 160px); margin: 0 auto; padding: 52px 30px 90px; }
   .page-heading { padding-bottom: 28px; border-bottom: 1px solid var(--color-line); }.eyebrow { margin: 0 0 15px; color: var(--color-muted); font-size: 12px; font-weight: 800; letter-spacing: 1.7px; }

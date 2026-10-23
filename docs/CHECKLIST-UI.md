@@ -1,12 +1,12 @@
-# Checklist UI Kapsflow untuk pemilik
+# Checklist UI Trimwait untuk pemilik
 
 Jalankan API (`make dev`), frontend (`cd frontend && npm run dev`), dan website (`cd website && npm run dev`). Buka `http://localhost:5173` untuk aplikasi dan `http://localhost:4321` untuk website. Gunakan akun uji lokal dari `docs/TESTING.md`; jangan masukkan kata sandi produksi ke lingkungan uji.
 
 ## Website
 
 - [ ] Buka `http://localhost:4321/` di HP dan pastikan judul, tombol **Buat akun**, tiga langkah pemesanan, bukti dan harga, serta blok demo dapat dibaca.
-- [ ] Buka `http://localhost:4321/syarat` dan pastikan halaman syarat tampil dengan logo Kapsflow.
-- [ ] Buka `http://localhost:4321/privasi` dan pastikan halaman privasi tampil dengan logo Kapsflow.
+- [ ] Buka `http://localhost:4321/syarat` dan pastikan halaman syarat tampil dengan logo Trimwait.
+- [ ] Buka `http://localhost:4321/privasi` dan pastikan halaman privasi tampil dengan logo Trimwait.
 - [ ] Buka halaman utama website dengan keyboard dan tekan Tab; pastikan elemen aktif memiliki outline fokus yang terlihat.
 
 ## Masuk dan pemisahan ruang
