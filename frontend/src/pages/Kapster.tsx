@@ -16,7 +16,6 @@ const POLL_INTERVAL = 5_000
 export default function Kapster() {
   const me = useMe()
   const [outletChoice, setOutletChoice] = useState('')
-  const [sessionChoice, setSessionChoice] = useState('')
 
   if (me.isPending) return <Spinner />
   if (me.isError) {
@@ -54,10 +53,7 @@ export default function Kapster() {
               aria-label="Outlet tugas"
               className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
               value={selectedOutletKey}
-              onChange={(event) => {
-                setOutletChoice(event.target.value)
-                setSessionChoice('')
-              }}
+              onChange={(event) => setOutletChoice(event.target.value)}
             >
               {outlets.map(({ membership, outlet }) => {
                 const key = `${membership.tenant_id}:${outlet.id}`
@@ -66,21 +62,15 @@ export default function Kapster() {
             </select>
           </label>
 
-          {selected && <SessionPanel selected={selected} sessionChoice={sessionChoice} onSessionChange={setSessionChoice} />}
+          {selected && <SessionPanel selected={selected} />}
         </>
       )}
     </main>
   )
 }
 
-function SessionPanel({
-  selected,
-  sessionChoice,
-  onSessionChange,
-}: {
+function SessionPanel({ selected }: {
   selected: { membership: Membership; outlet: Membership['outlets'][number] }
-  sessionChoice: string
-  onSessionChange: (sessionID: string) => void
 }) {
   const [streamConnected, setStreamConnected] = useState(false)
   const sessions = useQuery({
@@ -95,40 +85,36 @@ function SessionPanel({
     refetchInterval: streamConnected ? false : POLL_INTERVAL,
   })
 
-  const selectedSession = sessions.data?.find((session) => session.id === sessionChoice)
-    ?? sessions.data?.find((session) => session.status === 'open')
-    ?? sessions.data?.[0]
+  const today = dateInTimezone(selected.outlet.timezone)
+  const todaySession = sessions.data?.find((session) => session.session_date === today)
 
   if (sessions.isPending) return <p className="py-6 text-center text-sm text-muted" role="status">Memuat sesi antrian…</p>
   if (sessions.isError) return <RetryAlert onRetry={() => void sessions.refetch()}>{messageOf(sessions.error)}</RetryAlert>
-  if (!selectedSession) {
+  if (!todaySession) {
     return (
       <Alert tone="info">
-        Belum ada sesi antrian di outlet ini. Sesi akan muncul otomatis setelah admin membukanya.
+        Belum ada sesi antrian untuk hari ini. Kapster hanya dapat melayani antrean pada tanggal layanan hari ini.
       </Alert>
     )
   }
 
   return (
     <>
-      <label className="block">
-        <span className="mb-1 block text-sm font-medium text-body">Sesi antrian</span>
-        <select
-          aria-label="Sesi antrian"
-          className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
-          value={selectedSession.id}
-          onChange={(event) => onSessionChange(event.target.value)}
-        >
-          {sessions.data.map((session) => (
-            <option key={session.id} value={session.id}>
-              {formatLongDate(session.session_date)} · {session.status === 'open' ? 'Dibuka' : 'Ditutup'}
-            </option>
-          ))}
-        </select>
-      </label>
-      <QueuePanel membership={selected.membership} session={selectedSession} onStreamConnectionChange={setStreamConnected} />
+      <p className="text-sm text-body-muted">Sesi hari ini · {formatLongDate(todaySession.session_date)}</p>
+      <QueuePanel membership={selected.membership} session={todaySession} onStreamConnectionChange={setStreamConnected} />
     </>
   )
+}
+
+function dateInTimezone(timeZone: string): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date())
+  const part = (type: string) => parts.find((value) => value.type === type)?.value ?? ''
+  return `${part('year')}-${part('month')}-${part('day')}`
 }
 
 function QueuePanel({ membership, session, onStreamConnectionChange }: {

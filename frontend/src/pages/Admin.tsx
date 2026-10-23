@@ -43,7 +43,6 @@ async function loadQueueSessions(tenantID: string, outletID: string): Promise<Qu
 export default function Admin() {
   const me = useMe()
   const [outletChoice, setOutletChoice] = useState('')
-  const [sessionChoice, setSessionChoice] = useState('')
   const { tenantId: routeTenantID, outletId: routeOutletID, sessionId: routeSessionID } = useParams()
 
   const memberships = (me.data?.memberships ?? []).filter((item) => item.roles.includes('owner') || item.roles.includes('admin'))
@@ -96,7 +95,7 @@ export default function Admin() {
                 aria-label="Outlet"
                 className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
                 value={selectedKey}
-                onChange={(event) => { setOutletChoice(event.target.value); setSessionChoice('') }}
+                onChange={(event) => setOutletChoice(event.target.value)}
               >
                 {outlets.map(({ membership, outlet }) => {
                   const key = `${membership.tenant_id}:${outlet.id}`
@@ -104,7 +103,7 @@ export default function Admin() {
                 })}
               </select>
             </label>
-            {selected && <SessionPanel selected={selected} sessionChoice={routeSessionID ?? sessionChoice} onSessionChange={setSessionChoice} />}
+            {selected && <SessionPanel key={`${selectedKey}:${routeSessionID ?? ''}`} selected={selected} routeSessionID={routeSessionID} />}
           </div>
           {selected && (
             <details className="rounded-2xl border border-line bg-white">
@@ -171,15 +170,16 @@ function PublicOutletLink({ membership, outlet }: { membership: Membership; outl
 
 function SessionPanel({
   selected,
-  sessionChoice,
-  onSessionChange,
+  routeSessionID,
 }: {
   selected: { membership: Membership; outlet: Membership['outlets'][number] }
-  sessionChoice: string
-  onSessionChange: (sessionID: string) => void
+  routeSessionID?: string
 }) {
   const queryClient = useQueryClient()
-  const [sessionDate, setSessionDate] = useState(() => dateInTimezone(selected.outlet.timezone))
+  const today = dateInTimezone(selected.outlet.timezone)
+  const [dateChoice, setDateChoice] = useState('')
+  const [sessionDate, setSessionDate] = useState(today)
+  const [monthChoice, setMonthChoice] = useState('')
   const [initialQuota, setInitialQuota] = useState('10')
   const sessions = useQuery({
     queryKey: ['admin-sessions', selected.membership.tenant_id, selected.outlet.id],
@@ -197,41 +197,52 @@ function SessionPanel({
       return data
     },
     onSuccess: async (createdSession) => {
-      onSessionChange(createdSession.id)
+      setDateChoice(createdSession.session_date)
+      setSessionDate(createdSession.session_date)
+      setMonthChoice(monthStart(createdSession.session_date))
       await queryClient.invalidateQueries({ queryKey: ['admin-sessions', selected.membership.tenant_id, selected.outlet.id] })
     },
   })
 
-  const currentSession = sessions.data?.find((session) => session.id === sessionChoice)
-    ?? sessions.data?.find((session) => session.status === 'open')
-    ?? sessions.data?.[0]
+  const routedSession = sessions.data?.find((session) => session.id === routeSessionID)
+  const selectedDate = dateChoice || routedSession?.session_date || today
+  const visibleMonth = monthChoice || monthStart(routedSession && !dateChoice ? routedSession.session_date : selectedDate)
+  const currentSession = sessions.data?.find((session) => session.session_date === selectedDate)
 
   if (sessions.isPending) return <p className="py-6 text-center text-sm text-muted" role="status">Memuat sesi antrian…</p>
   if (sessions.isError) return <RetryAlert onRetry={() => void sessions.refetch()}>{messageOf(sessions.error)}</RetryAlert>
 
-  const outletToday = dateInTimezone(selected.outlet.timezone)
   const validInitialQuota = Number.isInteger(Number(initialQuota)) && Number(initialQuota) > 0 && Number(initialQuota) <= 1000
 
   return (
     <>
+      <section className="col-span-full space-y-3 rounded-2xl border border-line bg-white p-4" aria-label="Kalender sesi antrian">
+        <div>
+          <h2 className="font-bold">Pilih tanggal sesi</h2>
+          <p className="mt-1 text-sm text-body-muted">Titik menandai tanggal yang sudah memiliki sesi. Pilih tanggal untuk melihat antreannya.</p>
+        </div>
+        <SessionCalendar
+          sessions={sessions.data}
+          selectedDate={selectedDate}
+          visibleMonth={visibleMonth}
+          onMonthChange={setMonthChoice}
+          onDateSelect={(date) => {
+            setDateChoice(date)
+            setSessionDate(date)
+            setMonthChoice(monthStart(date))
+          }}
+        />
+      </section>
+
       {currentSession ? (
         <>
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-body">Sesi antrian</span>
-            <select
-              aria-label="Sesi antrian"
-              className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
-              value={currentSession.id}
-              onChange={(event) => onSessionChange(event.target.value)}
-            >
-              {sessions.data.map((session) => (
-                <option key={session.id} value={session.id}>
-                  {formatLongDate(session.session_date)} · Kuota {session.used_quota}/{session.max_quota} · {session.status === 'open' ? 'Dibuka' : 'Ditutup'}
-                </option>
-              ))}
-            </select>
-          </label>
-
+          <section className="col-span-full flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white p-4" aria-label="Ringkasan sesi terpilih">
+            <div>
+              <h2 className="font-bold">{formatLongDate(currentSession.session_date)}</h2>
+              <p className="mt-1 text-sm text-body-muted">Kuota terpakai {currentSession.used_quota} dari {currentSession.max_quota}</p>
+            </div>
+            <Badge tone={currentSession.status === 'open' ? 'success' : 'neutral'}>{currentSession.status === 'open' ? 'Dibuka' : 'Ditutup'}</Badge>
+          </section>
           <section aria-label="Perlu tindakan" className="col-span-full space-y-4 sm:space-y-5">
             <h2 className="text-lg font-bold">Perlu tindakan</h2>
             <div className="grid gap-5 lg:grid-cols-2">
@@ -247,7 +258,7 @@ function SessionPanel({
           )}
         </>
       ) : (
-        <Alert tone="info">Belum ada sesi antrian di outlet ini. Buka sesi baru untuk mulai menerima pelanggan.</Alert>
+        <div className="col-span-full"><Alert tone="info">Belum ada sesi pada {formatLongDate(selectedDate)}. Pilih tanggal lain atau buka sesi baru untuk tanggal ini.</Alert></div>
       )}
 
       <details open={!currentSession || currentSession.status !== 'open'} className="col-span-full group rounded-2xl border border-line-strong bg-white">
@@ -267,7 +278,7 @@ function SessionPanel({
             label="Tanggal sesi"
             name="new-session-date"
             type="date"
-            min={outletToday}
+            min={today}
             value={sessionDate}
             onChange={(event) => setSessionDate(event.target.value)}
           />
@@ -291,6 +302,83 @@ function SessionPanel({
         </form>
       </details>
     </>
+  )
+}
+
+const WEEKDAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+
+function monthStart(date: string): string {
+  return `${date.slice(0, 7)}-01`
+}
+
+function shiftMonth(date: string, amount: number): string {
+  const parsed = new Date(`${monthStart(date)}T00:00:00Z`)
+  parsed.setUTCMonth(parsed.getUTCMonth() + amount)
+  return parsed.toISOString().slice(0, 10)
+}
+
+function SessionCalendar({
+  sessions,
+  selectedDate,
+  visibleMonth,
+  onMonthChange,
+  onDateSelect,
+}: {
+  sessions: QueueSession[]
+  selectedDate: string
+  visibleMonth: string
+  onMonthChange: (month: string) => void
+  onDateSelect: (date: string) => void
+}) {
+  const firstDay = new Date(`${monthStart(visibleMonth)}T00:00:00Z`)
+  const year = firstDay.getUTCFullYear()
+  const month = firstDay.getUTCMonth()
+  const dayCount = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+  const leadingDays = (firstDay.getUTCDay() + 6) % 7
+  const monthLabel = firstDay.toLocaleDateString('id-ID', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+  const sessionsByDate = new Map(sessions.map((session) => [session.session_date, session]))
+  const days = [
+    ...Array.from({ length: leadingDays }, (_, index) => ({ key: `empty-${index}`, date: '', day: 0 })),
+    ...Array.from({ length: dayCount }, (_, index) => {
+      const day = index + 1
+      const date = `${visibleMonth.slice(0, 7)}-${String(day).padStart(2, '0')}`
+      return { key: date, date, day }
+    }),
+  ]
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <Button type="button" variant="secondary" className="w-11 px-0" aria-label="Bulan sebelumnya" onClick={() => onMonthChange(shiftMonth(visibleMonth, -1))}>‹</Button>
+        <h3 className="text-sm font-semibold capitalize" aria-live="polite">{monthLabel}</h3>
+        <Button type="button" variant="secondary" className="w-11 px-0" aria-label="Bulan berikutnya" onClick={() => onMonthChange(shiftMonth(visibleMonth, 1))}>›</Button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center">
+        {WEEKDAYS.map((weekday) => <span key={weekday} className="py-2 text-xs font-medium text-body-muted">{weekday}</span>)}
+        {days.map(({ key, date, day }) => {
+          if (!date) return <span key={key} aria-hidden="true" />
+          const session = sessionsByDate.get(date)
+          const selected = date === selectedDate
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-label={`${day} ${monthLabel}${session ? `, sesi ${session.status === 'open' ? 'dibuka' : 'ditutup'}, kuota ${session.used_quota} dari ${session.max_quota}` : ', belum ada sesi'}`}
+              aria-pressed={selected}
+              onClick={() => onDateSelect(date)}
+              className={`relative mx-auto flex min-h-11 w-full max-w-12 flex-col items-center justify-center rounded-xl text-sm focus-visible:outline-2 focus-visible:outline-brand-ink ${selected ? 'bg-ink font-semibold text-white' : 'text-ink hover:bg-paper-raised'}`}
+            >
+              {day}
+              {session && <span aria-hidden="true" className={`mt-0.5 h-1.5 w-1.5 rounded-full ${selected ? 'bg-white' : session.status === 'open' ? 'bg-emerald-600' : 'bg-muted'}`} />}
+            </button>
+          )
+        })}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-body-muted">
+        <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-600" /> Sesi dibuka</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-muted" /> Sesi ditutup</span>
+      </div>
+    </div>
   )
 }
 
