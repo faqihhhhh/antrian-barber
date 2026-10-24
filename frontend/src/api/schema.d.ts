@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/plans/{planCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Ubah harga paket bulanan atau tahunan */
+        put: operations["updatePlatformPlanPrice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/push/public-key": {
         parameters: {
             query?: never;
@@ -1382,6 +1399,8 @@ export interface components {
             period_start: string | null;
             /** Format: date-time */
             period_end: string | null;
+            /** Format: uri */
+            qr_code_url: string | null;
             /** Format: date-time */
             created_at: string;
         };
@@ -1476,6 +1495,36 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlatformStats"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    updatePlatformPlanPrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                planCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    price_rupiah: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Harga paket diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPlan"];
                 };
             };
             default: components["responses"]["Error"];

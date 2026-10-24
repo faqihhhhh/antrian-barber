@@ -1,8 +1,13 @@
 -- name: UpsertSubscription :one
 INSERT INTO subscriptions (tenant_id, plan_id)
 VALUES ($1, $2)
-ON CONFLICT (tenant_id) DO UPDATE SET plan_id = EXCLUDED.plan_id, updated_at = now()
+ON CONFLICT (tenant_id) DO UPDATE SET
+    plan_id = CASE WHEN subscriptions.current_period_end IS NULL THEN EXCLUDED.plan_id ELSE subscriptions.plan_id END,
+    updated_at = now()
 RETURNING *;
+
+-- name: SetSubscriptionPlan :execrows
+UPDATE subscriptions SET plan_id = $2, updated_at = now() WHERE tenant_id = $1;
 
 -- name: GetSubscriptionByTenant :one
 SELECT * FROM subscriptions WHERE tenant_id = $1;

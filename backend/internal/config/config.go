@@ -6,42 +6,49 @@ import (
 )
 
 type Config struct {
-	AppEnv             string
-	Port               string
-	AppDatabaseURL     string
-	ResendAPIKey       string
-	EmailFrom          string
-	PublicBaseURL      string
-	EncryptionKey      string
-	DevAutoVerifyEmail bool
-	VAPIDPublicKey     string
-	VAPIDPrivateKey    string
-	VAPIDSubject       string
-	AppBaseURL         string
-	SentryDSN          string
+	AppEnv                       string
+	Port                         string
+	AppDatabaseURL               string
+	ResendAPIKey                 string
+	EmailFrom                    string
+	PublicBaseURL                string
+	EncryptionKey                string
+	DevAutoVerifyEmail           bool
+	VAPIDPublicKey               string
+	VAPIDPrivateKey              string
+	VAPIDSubject                 string
+	AppBaseURL                   string
+	SentryDSN                    string
+	PlatformMidtransServerKey    string
+	PlatformMidtransIsProduction bool
 }
 
 func Load() (Config, error) {
 	cfg := Config{
-		AppEnv:             getenv("APP_ENV", "development"),
-		Port:               getenv("PORT", "8080"),
-		AppDatabaseURL:     os.Getenv("APP_DATABASE_URL"),
-		ResendAPIKey:       os.Getenv("RESEND_API_KEY"),
-		EmailFrom:          getenv("EMAIL_FROM", "onboarding@resend.dev"),
-		PublicBaseURL:      getenv("PUBLIC_BASE_URL", "http://localhost:8080"),
-		EncryptionKey:      os.Getenv("ENCRYPTION_KEY"),
-		DevAutoVerifyEmail: os.Getenv("DEV_AUTO_VERIFY") == "true",
-		VAPIDPublicKey:     os.Getenv("VAPID_PUBLIC_KEY"),
-		VAPIDPrivateKey:    os.Getenv("VAPID_PRIVATE_KEY"),
-		VAPIDSubject:       getenv("VAPID_SUBJECT", "mailto:admin@kapsflow.com"),
-		AppBaseURL:         getenv("APP_BASE_URL", "http://localhost:5173"),
-		SentryDSN:          os.Getenv("SENTRY_DSN"),
+		AppEnv:                       getenv("APP_ENV", "development"),
+		Port:                         getenv("PORT", "8080"),
+		AppDatabaseURL:               os.Getenv("APP_DATABASE_URL"),
+		ResendAPIKey:                 os.Getenv("RESEND_API_KEY"),
+		EmailFrom:                    getenv("EMAIL_FROM", "onboarding@resend.dev"),
+		PublicBaseURL:                getenv("PUBLIC_BASE_URL", "http://localhost:8080"),
+		EncryptionKey:                os.Getenv("ENCRYPTION_KEY"),
+		DevAutoVerifyEmail:           os.Getenv("DEV_AUTO_VERIFY") == "true",
+		VAPIDPublicKey:               os.Getenv("VAPID_PUBLIC_KEY"),
+		VAPIDPrivateKey:              os.Getenv("VAPID_PRIVATE_KEY"),
+		VAPIDSubject:                 getenv("VAPID_SUBJECT", "mailto:admin@kapsflow.com"),
+		AppBaseURL:                   getenv("APP_BASE_URL", "http://localhost:5173"),
+		SentryDSN:                    os.Getenv("SENTRY_DSN"),
+		PlatformMidtransServerKey:    os.Getenv("PLATFORM_MIDTRANS_SERVER_KEY"),
+		PlatformMidtransIsProduction: os.Getenv("PLATFORM_MIDTRANS_IS_PRODUCTION") == "true",
 	}
 	if cfg.AppEnv != "development" && cfg.AppEnv != "test" && cfg.AppEnv != "production" {
 		return Config{}, fmt.Errorf("APP_ENV harus development, test, atau production")
 	}
 	if cfg.AppEnv == "production" && cfg.DevAutoVerifyEmail {
 		return Config{}, fmt.Errorf("DEV_AUTO_VERIFY tidak boleh true saat APP_ENV=production")
+	}
+	if cfg.AppEnv == "production" && os.Getenv("MIDTRANS_BASE_URL_OVERRIDE") != "" {
+		return Config{}, fmt.Errorf("MIDTRANS_BASE_URL_OVERRIDE tidak boleh diisi saat APP_ENV=production")
 	}
 	if cfg.AppDatabaseURL == "" {
 		return Config{}, fmt.Errorf("APP_DATABASE_URL wajib diisi")

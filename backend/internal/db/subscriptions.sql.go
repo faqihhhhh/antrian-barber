@@ -79,10 +79,29 @@ func (q *Queries) GetSubscriptionByTenant(ctx context.Context, tenantID uuid.UUI
 	return i, err
 }
 
+const setSubscriptionPlan = `-- name: SetSubscriptionPlan :execrows
+UPDATE subscriptions SET plan_id = $2, updated_at = now() WHERE tenant_id = $1
+`
+
+type SetSubscriptionPlanParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	PlanID   uuid.UUID `json:"plan_id"`
+}
+
+func (q *Queries) SetSubscriptionPlan(ctx context.Context, arg SetSubscriptionPlanParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setSubscriptionPlan, arg.TenantID, arg.PlanID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const upsertSubscription = `-- name: UpsertSubscription :one
 INSERT INTO subscriptions (tenant_id, plan_id)
 VALUES ($1, $2)
-ON CONFLICT (tenant_id) DO UPDATE SET plan_id = EXCLUDED.plan_id, updated_at = now()
+ON CONFLICT (tenant_id) DO UPDATE SET
+    plan_id = CASE WHEN subscriptions.current_period_end IS NULL THEN EXCLUDED.plan_id ELSE subscriptions.plan_id END,
+    updated_at = now()
 RETURNING id, tenant_id, plan_id, current_period_end, created_at, updated_at
 `
 

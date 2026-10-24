@@ -42,6 +42,35 @@ paths:
                 $ref: '#/components/schemas/PlatformStats'
         default:
           $ref: '#/components/responses/Error'
+  /v1/admin/plans/{planCode}:
+    put:
+      operationId: updatePlatformPlanPrice
+      tags: [platform]
+      summary: Ubah harga paket bulanan atau tahunan
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: planCode
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [price_rupiah]
+              properties:
+                price_rupiah: { type: integer, format: int64, minimum: 1 }
+      responses:
+        '200':
+          description: Harga paket diperbarui
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicPlan' }
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/push/public-key:
     get:
       operationId: getPushPublicKey
@@ -1987,7 +2016,7 @@ components:
         plan_code: { type: string }
     OwnerInvoice:
       type: object
-      required: [id, amount_rupiah, unique_code, status, expires_at, paid_at, period_start, period_end, created_at]
+      required: [id, amount_rupiah, unique_code, status, expires_at, paid_at, period_start, period_end, created_at, qr_code_url]
       properties:
         id: { type: string, format: uuid }
         amount_rupiah: { type: integer, format: int64 }
@@ -1997,6 +2026,7 @@ components:
         paid_at: { type: string, format: date-time, nullable: true }
         period_start: { type: string, format: date-time, nullable: true }
         period_end: { type: string, format: date-time, nullable: true }
+        qr_code_url: { type: string, format: uri, nullable: true }
         created_at: { type: string, format: date-time }
     MembershipInfo:
       type: object

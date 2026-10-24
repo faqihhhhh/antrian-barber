@@ -15,6 +15,7 @@ type Querier interface {
 	ActivateSubscriptionPeriodFromPayment(ctx context.Context, arg ActivateSubscriptionPeriodFromPaymentParams) (ActivateSubscriptionPeriodFromPaymentRow, error)
 	AddMembershipOutlet(ctx context.Context, arg AddMembershipOutletParams) error
 	CanCreateRenewalInvoice(ctx context.Context, tenantID uuid.UUID) (pgtype.Bool, error)
+	CancelInvoice(ctx context.Context, id uuid.UUID) (int64, error)
 	CancelPendingTicket(ctx context.Context, pTicketID uuid.UUID) (bool, error)
 	ClaimNextTicketNumber(ctx context.Context, id uuid.UUID) (int32, error)
 	ClaimNextWaitingTicket(ctx context.Context, queueSessionID uuid.UUID) (Ticket, error)
@@ -50,6 +51,7 @@ type Querier interface {
 	ExpireTenantInvoices(ctx context.Context, tenantID uuid.UUID) (int64, error)
 	GetAverageCallIntervalMinutes(ctx context.Context, outletID uuid.UUID) (float64, error)
 	GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, error)
+	GetInvoiceByMidtransOrderID(ctx context.Context, midtransOrderID pgtype.Text) (Invoice, error)
 	GetKapsterSessionState(ctx context.Context, arg GetKapsterSessionStateParams) (KapsterSessionState, error)
 	GetManualQRIS(ctx context.Context, tenantID uuid.UUID) (GetManualQRISRow, error)
 	GetMembershipForUserAndTenant(ctx context.Context, arg GetMembershipForUserAndTenantParams) (Membership, error)
@@ -104,6 +106,7 @@ type Querier interface {
 	ListTicketsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	ListUpcomingWaitingTickets(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	MarkEmailVerificationTokenUsed(ctx context.Context, id uuid.UUID) error
+	MarkInvoiceMidtransPaid(ctx context.Context, arg MarkInvoiceMidtransPaidParams) (MarkInvoiceMidtransPaidRow, error)
 	MarkInvoicePaid(ctx context.Context, arg MarkInvoicePaidParams) (MarkInvoicePaidRow, error)
 	MarkOnboardingSkippedMidtrans(ctx context.Context, tenantID uuid.UUID) error
 	MarkPasswordResetTokenUsed(ctx context.Context, id uuid.UUID) error
@@ -125,7 +128,9 @@ type Querier interface {
 	RecordInvoiceSubscriptionPeriod(ctx context.Context, arg RecordInvoiceSubscriptionPeriodParams) (int64, error)
 	RecordSubscriptionReminder(ctx context.Context, arg RecordSubscriptionReminderParams) error
 	RequeueTicketAtEnd(ctx context.Context, arg RequeueTicketAtEndParams) error
+	SetInvoiceMidtransPayment(ctx context.Context, arg SetInvoiceMidtransPaymentParams) (int64, error)
 	SetManualQRIS(ctx context.Context, arg SetManualQRISParams) error
+	SetSubscriptionPlan(ctx context.Context, arg SetSubscriptionPlanParams) (int64, error)
 	SlugExists(ctx context.Context, slug string) (bool, error)
 	StatsDailyByOutlet(ctx context.Context, arg StatsDailyByOutletParams) ([]StatsDailyByOutletRow, error)
 	StatsKapsterPerformance(ctx context.Context, arg StatsKapsterPerformanceParams) ([]StatsKapsterPerformanceRow, error)
@@ -133,6 +138,7 @@ type Querier interface {
 	StatsTimingByOutlet(ctx context.Context, arg StatsTimingByOutletParams) ([]StatsTimingByOutletRow, error)
 	TouchSession(ctx context.Context, id uuid.UUID) error
 	UpdateOutletSettings(ctx context.Context, arg UpdateOutletSettingsParams) (Outlet, error)
+	UpdatePlanPrice(ctx context.Context, arg UpdatePlanPriceParams) (Plan, error)
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpdateUserUsername(ctx context.Context, arg UpdateUserUsernameParams) error
 	UpsertKapsterSessionState(ctx context.Context, arg UpsertKapsterSessionStateParams) (KapsterSessionState, error)

@@ -1,6 +1,6 @@
 -- name: CreateInvoice :one
 INSERT INTO invoices (tenant_id, plan_id, amount_rupiah, unique_code, expires_at)
-VALUES ($1, $2, $3, $4, now() + interval '24 hours')
+VALUES ($1, $2, $3, $4, now() + interval '30 minutes')
 ON CONFLICT DO NOTHING
 RETURNING *;
 
@@ -13,6 +13,22 @@ SELECT * FROM invoices WHERE tenant_id = $1 AND status = 'pending';
 
 -- name: GetInvoiceByID :one
 SELECT * FROM invoices WHERE id = $1;
+
+-- name: GetInvoiceByMidtransOrderID :one
+SELECT * FROM invoices WHERE midtrans_order_id = $1;
+
+-- name: SetInvoiceMidtransPayment :execrows
+UPDATE invoices SET midtrans_order_id = $2, qr_code_url = $3, updated_at = now()
+WHERE id = $1 AND status = 'pending';
+
+-- name: CancelInvoice :execrows
+UPDATE invoices SET status = 'canceled', updated_at = now()
+WHERE id = $1 AND status = 'pending';
+
+-- name: MarkInvoiceMidtransPaid :one
+UPDATE invoices SET status = 'paid', paid_at = now(), updated_at = now()
+WHERE id = $1 AND status = 'pending' AND amount_rupiah = $2
+RETURNING tenant_id, plan_id, paid_at;
 
 -- name: ListInvoicesByTenant :many
 SELECT * FROM invoices WHERE tenant_id = $1 ORDER BY created_at DESC;

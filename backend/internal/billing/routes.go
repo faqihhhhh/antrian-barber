@@ -20,6 +20,7 @@ func RegisterTenantRoutes(r chi.Router, svc *Service, log *slog.Logger) {
 
 func RegisterAdminRoutes(r chi.Router, svc *Service, log *slog.Logger) {
 	h := NewHandlers(svc, log)
+	r.Put("/plans/{planCode}", h.UpdatePlanPrice)
 	r.Get("/invoices", h.ListPendingInvoicesAdmin)
 	r.Post("/invoices/{invoiceID}/confirm", h.ConfirmInvoice)
 }

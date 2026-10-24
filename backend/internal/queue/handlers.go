@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -12,6 +13,7 @@ import (
 
 	"context"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"kapsflow/internal/billing"
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/identity"
 	"kapsflow/internal/rls"
@@ -418,13 +420,14 @@ func (h *Handlers) ConfirmFinalPayment(w http.ResponseWriter, r *http.Request) {
 // --- Webhook publik (tanpa autentikasi pengguna) ---
 
 type WebhookHandlers struct {
-	svc  *Service
-	log  *slog.Logger
-	pool *pgxpool.Pool
+	svc        *Service
+	billingSvc *billing.Service
+	log        *slog.Logger
+	pool       *pgxpool.Pool
 }
 
-func NewWebhookHandlers(svc *Service, log *slog.Logger, pool *pgxpool.Pool) *WebhookHandlers {
-	return &WebhookHandlers{svc: svc, log: log, pool: pool}
+func NewWebhookHandlers(svc *Service, billingSvc *billing.Service, log *slog.Logger, pool *pgxpool.Pool) *WebhookHandlers {
+	return &WebhookHandlers{svc: svc, billingSvc: billingSvc, log: log, pool: pool}
 }
 
 type midtransNotification struct {
@@ -444,6 +447,9 @@ func (h *WebhookHandlers) Midtrans(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := rls.RunAsSystem(r.Context(), h.pool, func(ctx context.Context) error {
+		if strings.HasPrefix(payload.OrderID, "tw-sub-") {
+			return h.billingSvc.ProcessMidtransWebhook(ctx, payload.OrderID, payload.StatusCode, payload.GrossAmount, payload.SignatureKey, payload.TransactionStatus, payload.FraudStatus)
+		}
 		return h.svc.ProcessMidtransWebhook(ctx, payload.OrderID, payload.StatusCode, payload.GrossAmount, payload.SignatureKey, payload.TransactionStatus, payload.FraudStatus)
 	})
 	if err != nil {

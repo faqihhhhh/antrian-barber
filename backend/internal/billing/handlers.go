@@ -30,6 +30,22 @@ func (h *Handlers) ListPlans(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, plans)
 }
 
+func (h *Handlers) UpdatePlanPrice(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		PriceRupiah int64 `json:"price_rupiah"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
+		return
+	}
+	plan, err := h.svc.UpdatePlanPrice(r.Context(), chi.URLParam(r, "planCode"), req.PriceRupiah)
+	if err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, plan)
+}
+
 type subscribeRequest struct {
 	PlanCode string `json:"plan_code"`
 }

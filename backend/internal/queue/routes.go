@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"kapsflow/internal/billing"
 
 	"kapsflow/internal/ratelimit"
 )
@@ -41,8 +42,8 @@ func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger, pool *pgxpool.
 // RegisterWebhookRoutes dipasang di luar grup /v1/tenants (tanpa
 // identity.RequireAuth atau rls.Middleware) — Midtrans bukan pengguna yang
 // login, otorisasinya lewat tanda tangan di dalam body, bukan cookie sesi.
-func RegisterWebhookRoutes(r chi.Router, svc *Service, log *slog.Logger, pool *pgxpool.Pool) {
-	h := NewWebhookHandlers(svc, log, pool)
+func RegisterWebhookRoutes(r chi.Router, svc *Service, billingSvc *billing.Service, log *slog.Logger, pool *pgxpool.Pool) {
+	h := NewWebhookHandlers(svc, billingSvc, log, pool)
 	r.Post("/midtrans", h.Midtrans)
 }
 

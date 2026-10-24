@@ -40,12 +40,14 @@ Hak per peran **harus diperiksa di service**, RLS hanya memastikan keanggotaan t
 Status: `belum_berlangganan`, `aktif`, `masa_tenggang`, `baca_saja`. Endpoint menulis milik tenant
 dijaga middleware `requireActive`. Pelanggan tidak dihukum oleh status langganan owner, kecuali
 pemesanan online baru ditutup (`accepting_bookings=false`, alasan `langganan_tidak_aktif`).
-Tagihan langganan dibayar manual ke platform dan dikonfirmasi pemilik SaaS
-(`POST /invoices/{invoiceID}/confirm`). Nominal tagihan unik supaya bisa dicocokkan.
+Tagihan langganan memakai QRIS dinamis Midtrans milik platform dan aktif otomatis setelah
+webhook Midtrans tervalidasi. Kredensialnya memakai `PLATFORM_MIDTRANS_SERVER_KEY` dan
+`PLATFORM_MIDTRANS_IS_PRODUCTION`, terpisah dari kunci Midtrans milik tenant untuk DP pelanggan.
+Harga paket bulanan dan tahunan dapat diubah pemilik SaaS, dan invoice memakai harga paket persis.
 Owner hanya bisa membuat satu tagihan pending per bisnis. Tagihan perpanjangan baru boleh dibuat
-dalam 7 hari sebelum akhir periode aktif. Tagihan berlaku 24 jam, dihitung memakai waktu database.
-Tagihan yang sudah dikonfirmasi menyimpan rentang periode yang ditambahkan untuk audit.
-Saat konfirmasi, periode mulai dari waktu pembayaran database atau akhir periode aktif (mana yang
+dalam 7 hari sebelum akhir periode aktif. QR berlaku 30 menit, dihitung memakai waktu database.
+Invoice lunas menyimpan rentang periode yang ditambahkan untuk audit. Saat pembayaran tervalidasi,
+periode mulai dari waktu pembayaran database atau akhir periode aktif (mana yang
 lebih akhir), lalu ditambah satu bulan atau satu tahun. Rentang yang diberikan dicatat di invoice
 agar riwayat perpanjangan bisa diaudit.
 Pengingat perpanjangan dikirim sekali per periode (`subscription_reminders`).

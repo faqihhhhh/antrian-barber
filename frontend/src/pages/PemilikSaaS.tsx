@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
@@ -32,6 +33,7 @@ export default function PemilikSaaS() {
       </header>
       {stats.isPending ? <Spinner /> : stats.isError ? <Alert>{messageOf(stats.error)}</Alert> : (
         <>
+          <PlanPricing />
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Pendapatan langganan">
             <Metric label="MRR" value={formatRupiah(stats.data.revenue.mrr_rupiah)} hint="Pendapatan langganan bulanan aktif" dark />
             <Metric label="ARR" value={formatRupiah(stats.data.revenue.arr_rupiah)} hint="Perkiraan MRR dikali 12" />
@@ -81,6 +83,52 @@ export default function PemilikSaaS() {
       )}
     </main>
   )
+}
+
+function PlanPricing() {
+  const queryClient = useQueryClient()
+  const plans = useQuery({
+    queryKey: ['platform-plans'],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET('/v1/plans/')
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+  })
+  const save = useMutation({
+    mutationFn: async ({ code, price }: { code: string; price: number }) => {
+      const { data, error, response } = await api.PUT('/v1/admin/plans/{planCode}', {
+        params: { path: { planCode: code } }, body: { price_rupiah: price },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['platform-plans'] })
+      await queryClient.invalidateQueries({ queryKey: ['plans'] })
+    },
+  })
+  if (plans.isPending) return <Spinner />
+  if (plans.isError) return <Alert>{messageOf(plans.error)}</Alert>
+  return <section className="space-y-3" aria-label="Harga paket langganan">
+    <h2 className="text-lg font-bold">Harga langganan</h2>
+    <div className="grid gap-3 sm:grid-cols-2">
+      {plans.data.map((plan) => <PlanPrice key={`${plan.code}-${plan.price_rupiah}`} plan={plan} saving={save.isPending} onSave={(price) => save.mutate({ code: plan.code, price })} error={save.isError ? messageOf(save.error) : null} />)}
+    </div>
+    {save.isSuccess && <Alert tone="success">Harga paket diperbarui. Tagihan baru memakai harga ini; tagihan yang sudah dibuat tetap.</Alert>}
+  </section>
+}
+
+function PlanPrice({ plan, saving, onSave, error }: { plan: { code: string; name: string; billing_interval: string; price_rupiah: number }; saving: boolean; onSave: (price: number) => void; error: string | null }) {
+  const [price, setPrice] = useState(String(plan.price_rupiah))
+  return <form className="space-y-3 rounded-2xl border border-line bg-white p-4" onSubmit={(event) => { event.preventDefault(); const value = Number(price); if (Number.isSafeInteger(value) && value > 0) onSave(value) }}>
+    <h3 className="font-semibold">{plan.name} · {plan.billing_interval === 'yearly' ? 'Tahunan' : 'Bulanan'}</h3>
+    <label className="block text-sm font-medium">Harga (rupiah)
+      <input className="mt-1 w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base" type="number" min="1" step="1" required value={price} onChange={(event) => setPrice(event.target.value)} />
+    </label>
+    {error && <Alert>{error}</Alert>}
+    <button className="w-full rounded-xl bg-ink px-4 py-3 font-semibold text-white disabled:opacity-50" disabled={saving || Number(price) === plan.price_rupiah}>Simpan harga</button>
+  </form>
 }
 
 function Metric({ label, value, hint, dark = false }: { label: string; value: string; hint?: string; dark?: boolean }) {

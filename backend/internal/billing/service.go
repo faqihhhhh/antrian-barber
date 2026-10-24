@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand/v2"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"kapsflow/internal/authorization"
@@ -17,6 +18,7 @@ import (
 	"kapsflow/internal/dbx"
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/identity"
+	"kapsflow/internal/midtrans"
 	"kapsflow/internal/rls"
 	"log/slog"
 )
@@ -41,14 +43,17 @@ type SubscriptionInfo struct {
 }
 
 type Service struct {
-	fallback *db.Queries
-	pool     *pgxpool.Pool
-	mailer   identity.Mailer
-	log      *slog.Logger
+	fallback           *db.Queries
+	pool               *pgxpool.Pool
+	mailer             identity.Mailer
+	log                *slog.Logger
+	midtrans           *midtrans.Client
+	platformServerKey  string
+	platformProduction bool
 }
 
-func NewService(pool *pgxpool.Pool, mailer identity.Mailer, log *slog.Logger) *Service {
-	return &Service{fallback: db.New(pool), pool: pool, mailer: mailer, log: log}
+func NewService(pool *pgxpool.Pool, mailer identity.Mailer, log *slog.Logger, client *midtrans.Client, platformServerKey string, platformProduction bool) *Service {
+	return &Service{fallback: db.New(pool), pool: pool, mailer: mailer, log: log, midtrans: client, platformServerKey: platformServerKey, platformProduction: platformProduction}
 }
 
 func (s *Service) queries(ctx context.Context) *db.Queries {
@@ -79,10 +84,28 @@ func (s *Service) ListPlans(ctx context.Context) ([]PublicPlan, error) {
 	return result, nil
 }
 
-// Subscribe membuat/memperbarui baris subscription lalu invoice baru dengan
-// nominal unik. Kalau nominal bentrok dengan invoice pending lain (jarang,
-// tapi mungkin), coba lagi dengan kode acak lain sampai 10 kali.
+// UpdatePlanPrice hanya dipanggil dari rute admin yang sudah dilindungi
+// RequirePlatformAdmin. Kode paket dan periode tetap; admin hanya mengubah harga.
+func (s *Service) UpdatePlanPrice(ctx context.Context, code string, price int64) (PublicPlan, error) {
+	if price < 1 {
+		return PublicPlan{}, httpx.BadRequest("harga_tidak_valid", "Harga paket harus lebih dari Rp0", nil)
+	}
+	plan, err := s.fallback.UpdatePlanPrice(ctx, db.UpdatePlanPriceParams{Code: code, PriceRupiah: price})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return PublicPlan{}, httpx.NotFound("paket_tidak_ditemukan", "Paket langganan tidak ditemukan", nil)
+		}
+		return PublicPlan{}, httpx.Internal(fmt.Errorf("mengubah harga paket: %w", err))
+	}
+	return PublicPlan{Code: plan.Code, Name: plan.Name, PriceRupiah: plan.PriceRupiah, BillingInterval: plan.BillingInterval}, nil
+}
+
+// Subscribe membuat invoice QR dengan harga paket persis, lalu meminta Midtrans
+// membuat QR dinamis atas nama platform.
 func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode string) (OwnerInvoice, error) {
+	if s.platformServerKey == "" {
+		return OwnerInvoice{}, httpx.Conflict("pembayaran_platform_belum_diatur", "Pembayaran langganan belum tersedia. Pemilik Trimwait perlu mengatur akun pembayaran platform.", nil)
+	}
 	q := s.queries(ctx)
 	user, ok := identity.UserFromContext(ctx)
 	if !ok {
@@ -118,39 +141,33 @@ func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode st
 		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("upsert subscription: %w", err))
 	}
 
-	const maxAttempts = 10
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		code := int16(1 + rand.IntN(998))
-		amount := plan.PriceRupiah + int64(code)
-
-		invoice, err := q.CreateInvoice(ctx, db.CreateInvoiceParams{
-			TenantID:     tenantID,
-			PlanID:       plan.ID,
-			AmountRupiah: amount,
-			UniqueCode:   code,
-		})
-		if err == nil {
-			return ownerInvoiceFromDB(invoice), nil
-		}
+	invoice, err := q.CreateInvoice(ctx, db.CreateInvoiceParams{
+		TenantID: tenantID, PlanID: plan.ID, AmountRupiah: plan.PriceRupiah, UniqueCode: 0,
+	})
+	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			if _, pendingErr := q.GetPendingInvoiceByTenant(ctx, tenantID); pendingErr == nil {
-				return OwnerInvoice{}, httpx.Conflict("tagihan_masih_pending", "Masih ada tagihan yang belum diproses untuk bisnis ini", nil)
-			} else if !errors.Is(pendingErr, pgx.ErrNoRows) {
-				return OwnerInvoice{}, httpx.Internal(fmt.Errorf("cek tagihan aktif setelah konflik: %w", pendingErr))
-			}
-			continue // nominal bentrok; ON CONFLICT DO NOTHING tidak membatalkan transaksi
+			return OwnerInvoice{}, httpx.Conflict("tagihan_masih_pending", "Masih ada tagihan yang belum diproses untuk bisnis ini", nil)
 		}
 		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("membuat invoice: %w", err))
 	}
-	return OwnerInvoice{}, httpx.Internal(fmt.Errorf("gagal menemukan nominal unik setelah %d percobaan", maxAttempts))
-}
-
-func isUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) {
-		return pgErr.Code == "23505"
+	orderID := "tw-sub-" + invoice.ID.String()
+	charge, chargeErr := s.midtrans.ChargeQRIS(ctx, s.platformServerKey, s.platformProduction, orderID, plan.PriceRupiah)
+	if chargeErr != nil {
+		_, _ = q.CancelInvoice(ctx, invoice.ID)
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("membuat pembayaran QR langganan: %w", chargeErr))
 	}
-	return false
+	if charge.QRCodeURL == "" {
+		_, _ = q.CancelInvoice(ctx, invoice.ID)
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("midtrans tidak mengembalikan QR untuk invoice %s", invoice.ID))
+	}
+	rows, saveErr := q.SetInvoiceMidtransPayment(ctx, db.SetInvoiceMidtransPaymentParams{ID: invoice.ID, MidtransOrderID: pgtype.Text{String: orderID, Valid: true}, QrCodeUrl: pgtype.Text{String: charge.QRCodeURL, Valid: true}})
+	if saveErr != nil || rows != 1 {
+		_, _ = q.CancelInvoice(ctx, invoice.ID)
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("menyimpan pembayaran QR langganan: rows=%d err=%w", rows, saveErr))
+	}
+	invoice.MidtransOrderID = pgtype.Text{String: orderID, Valid: true}
+	invoice.QrCodeUrl = pgtype.Text{String: charge.QRCodeURL, Valid: true}
+	return ownerInvoiceFromDB(invoice), nil
 }
 
 func computeStatus(currentPeriodEnd *time.Time) SubscriptionStatus {
@@ -216,6 +233,7 @@ type OwnerInvoice struct {
 	PaidAt       *time.Time `json:"paid_at"`
 	PeriodStart  *time.Time `json:"period_start"`
 	PeriodEnd    *time.Time `json:"period_end"`
+	QRCodeURL    *string    `json:"qr_code_url"`
 	CreatedAt    time.Time  `json:"created_at"`
 }
 
@@ -239,6 +257,10 @@ func ownerInvoiceFromDB(invoice db.Invoice) OwnerInvoice {
 	if invoice.PeriodEnd.Valid {
 		value := invoice.PeriodEnd.Time
 		item.PeriodEnd = &value
+	}
+	if invoice.QrCodeUrl.Valid {
+		value := invoice.QrCodeUrl.String
+		item.QRCodeURL = &value
 	}
 	return item
 }
@@ -301,6 +323,9 @@ func (s *Service) ConfirmInvoicePayment(ctx context.Context, invoiceID, adminUse
 	if err != nil {
 		return httpx.Internal(fmt.Errorf("ambil plan: %w", err))
 	}
+	if _, err := q.SetSubscriptionPlan(ctx, db.SetSubscriptionPlanParams{TenantID: inv.TenantID, PlanID: plan.ID}); err != nil {
+		return httpx.Internal(fmt.Errorf("memperbarui paket langganan: %w", err))
+	}
 	paid, err := q.MarkInvoicePaid(ctx, db.MarkInvoicePaidParams{ID: invoiceID, ConfirmedBy: dbx.UUID(adminUserID)})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -322,6 +347,56 @@ func (s *Service) ConfirmInvoicePayment(ctx context.Context, invoiceID, adminUse
 	}
 	if updated != 1 {
 		return httpx.Internal(fmt.Errorf("mencatat periode invoice: jumlah baris berubah %d", updated))
+	}
+	return nil
+}
+
+// ProcessMidtransWebhook mengaktifkan langganan hanya setelah tanda tangan
+// Midtrans valid dan nominal notifikasi sama persis dengan invoice.
+func (s *Service) ProcessMidtransWebhook(ctx context.Context, orderID, statusCode, grossAmount, signature, txStatus, fraudStatus string) error {
+	if !strings.HasPrefix(orderID, "tw-sub-") || s.platformServerKey == "" {
+		return httpx.NotFound("tagihan_tidak_ditemukan", "Tagihan langganan tidak ditemukan", nil)
+	}
+	if !midtrans.VerifySignature(orderID, statusCode, grossAmount, s.platformServerKey, signature) {
+		return httpx.Unauthorized("tanda_tangan_tidak_valid", "Tanda tangan notifikasi tidak valid", nil)
+	}
+	invoice, err := s.queries(ctx).GetInvoiceByMidtransOrderID(ctx, pgtype.Text{String: orderID, Valid: true})
+	if err != nil {
+		return httpx.NotFound("tagihan_tidak_ditemukan", "Tagihan langganan tidak ditemukan", nil)
+	}
+	if invoice.Status == "paid" {
+		return nil
+	}
+	if !midtrans.IsPaid(txStatus, fraudStatus) {
+		return nil
+	}
+	amountText := strings.TrimSuffix(grossAmount, ".00")
+	amount, parseErr := strconv.ParseInt(amountText, 10, 64)
+	if parseErr != nil || amount != invoice.AmountRupiah {
+		return httpx.BadRequest("nominal_pembayaran_tidak_cocok", "Nominal pembayaran tidak cocok dengan tagihan", parseErr)
+	}
+	q := s.queries(ctx)
+	paid, err := q.MarkInvoiceMidtransPaid(ctx, db.MarkInvoiceMidtransPaidParams{ID: invoice.ID, AmountRupiah: amount})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil // webhook duplikat atau status invoice sudah berubah
+		}
+		return httpx.Internal(fmt.Errorf("menandai tagihan QR lunas: %w", err))
+	}
+	plan, err := q.GetPlanByID(ctx, paid.PlanID)
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("ambil paket langganan: %w", err))
+	}
+	if _, err := q.SetSubscriptionPlan(ctx, db.SetSubscriptionPlanParams{TenantID: paid.TenantID, PlanID: plan.ID}); err != nil {
+		return httpx.Internal(fmt.Errorf("memperbarui paket langganan: %w", err))
+	}
+	period, err := q.ActivateSubscriptionPeriodFromPayment(ctx, db.ActivateSubscriptionPeriodFromPaymentParams{TenantID: paid.TenantID, PaidAt: paid.PaidAt, BillingInterval: plan.BillingInterval})
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("mengaktifkan periode langganan: %w", err))
+	}
+	updated, err := q.RecordInvoiceSubscriptionPeriod(ctx, db.RecordInvoiceSubscriptionPeriodParams{ID: invoice.ID, PeriodStart: period.PeriodStart, PeriodEnd: period.PeriodEnd})
+	if err != nil || updated != 1 {
+		return httpx.Internal(fmt.Errorf("mencatat periode tagihan QR: rows=%d err=%w", updated, err))
 	}
 	return nil
 }

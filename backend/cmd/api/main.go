@@ -13,24 +13,24 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"kapsflow/internal/account"
+	"kapsflow/internal/analytics"
 	"kapsflow/internal/api"
 	"kapsflow/internal/billing"
 	"kapsflow/internal/config"
 	"kapsflow/internal/cryptox"
 	"kapsflow/internal/identity"
+	"kapsflow/internal/jobs"
+	"kapsflow/internal/midtrans"
+	"kapsflow/internal/notification"
 	"kapsflow/internal/profile"
+	"kapsflow/internal/publicpage"
+	"kapsflow/internal/queue"
+	"kapsflow/internal/realtime"
+	"kapsflow/internal/review"
 	"kapsflow/internal/staff"
 	"kapsflow/internal/tenant"
-	"kapsflow/internal/queue"
-	"kapsflow/internal/midtrans"
-	"kapsflow/internal/realtime"
-	"kapsflow/internal/notification"
 	"kapsflow/internal/webpush"
-	"kapsflow/internal/review"
-	"kapsflow/internal/jobs"
-	"kapsflow/internal/analytics"
-	"kapsflow/internal/account"
-	"kapsflow/internal/publicpage"
 	_ "time/tzdata"
 )
 
@@ -85,7 +85,7 @@ func run(log *slog.Logger) error {
 	mailer := identity.NewMailer(cfg.ResendAPIKey, cfg.EmailFrom, log)
 	identitySvc := identity.NewService(pool, mailer, log, cfg.AppBaseURL, cfg.DevAutoVerifyEmail)
 	tenantSvc := tenant.NewService(pool)
-	billingSvc := billing.NewService(pool, mailer, log)
+	billingSvc := billing.NewService(pool, mailer, log, midtrans.NewClient(), cfg.PlatformMidtransServerKey, cfg.PlatformMidtransIsProduction)
 	profileSvc := profile.NewService(pool, box)
 	staffSvc := staff.NewService(pool, identitySvc)
 	midtransClient := midtrans.NewClient()
@@ -97,7 +97,6 @@ func run(log *slog.Logger) error {
 	reviewSvc := review.NewService(pool)
 	analyticsSvc := analytics.NewService(pool)
 	accountSvc := account.NewService(pool, billingSvc)
-	
 
 	jobClient, err := jobs.NewClient(pool, log, queueSvc, billingSvc)
 	if err != nil {

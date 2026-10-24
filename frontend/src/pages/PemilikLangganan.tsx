@@ -24,6 +24,7 @@ export default function PemilikLangganan() {
   const subscription = useQuery({
     queryKey: ['owner-subscription', tenantID],
     enabled: !!tenantID,
+    refetchInterval: (query) => query.state.data?.status === 'aktif' ? false : 15_000,
     queryFn: async (): Promise<Subscription> => {
       const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/subscription', { params: { path: { tenantID } } })
       if (!response.ok || !data) throw new ApiError(error)
@@ -33,6 +34,7 @@ export default function PemilikLangganan() {
   const invoices = useQuery({
     queryKey: ['owner-invoices', tenantID],
     enabled: !!tenantID,
+    refetchInterval: (query) => query.state.data?.some((invoice) => invoice.status === 'pending') ? 10_000 : false,
     queryFn: async (): Promise<Invoice[]> => {
       const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/invoices', { params: { path: { tenantID } } })
       if (!response.ok || !data) throw new ApiError(error)
@@ -90,8 +92,8 @@ export default function PemilikLangganan() {
           </>
         )}
       </section>
-      <section className="space-y-3"><h2 className="font-bold">Riwayat tagihan</h2>{invoices.isPending ? <Spinner /> : invoices.isError ? <Alert>{messageOf(invoices.error)}</Alert> : invoices.data.length === 0 ? <Alert tone="info">Belum ada tagihan.</Alert> : invoices.data.map((invoice) => <article key={invoice.id} className="space-y-1 rounded-2xl border border-line bg-white p-4"><div className="flex items-start justify-between gap-3"><strong>{formatRupiah(invoice.amount_rupiah)}</strong><span className="text-right text-sm">{invoiceLabel[invoice.status] ?? invoice.status}</span></div><p className="text-sm text-body-muted">Dibuat: {formatDateTime(invoice.created_at)}</p>{invoice.expires_at && <p className="text-sm text-body-muted">Batas tagihan: {formatDateTime(invoice.expires_at)}</p>}{invoice.paid_at && <p className="text-sm text-body-muted">Dibayar: {formatDateTime(invoice.paid_at)}</p>}{invoice.period_start && invoice.period_end ? <p className="text-sm text-body-muted">Periode langganan: {formatDateTime(invoice.period_start)} – {formatDateTime(invoice.period_end)}</p> : invoice.status === 'paid' && <p className="text-sm text-muted">Periode invoice lama belum tercatat.</p>}<p className="break-all text-xs text-muted">ID tagihan: {invoice.id}</p></article>)}</section>
-      <p className="text-xs text-muted">Pembayaran langganan diproses manual dan dikonfirmasi oleh pemilik Trimwait. Hubungi pemilik Trimwait untuk mendapatkan rekening atau QR pembayaran. Tagihan berlaku 24 jam.</p>
+      <section className="space-y-3"><h2 className="font-bold">Riwayat tagihan</h2>{invoices.isPending ? <Spinner /> : invoices.isError ? <Alert>{messageOf(invoices.error)}</Alert> : invoices.data.length === 0 ? <Alert tone="info">Belum ada tagihan.</Alert> : invoices.data.map((invoice) => <article key={invoice.id} className="space-y-2 rounded-2xl border border-line bg-white p-4"><div className="flex items-start justify-between gap-3"><strong>{formatRupiah(invoice.amount_rupiah)}</strong><span className="text-right text-sm">{invoiceLabel[invoice.status] ?? invoice.status}</span></div><p className="text-sm text-body-muted">Dibuat: {formatDateTime(invoice.created_at)}</p>{invoice.expires_at && <p className="text-sm text-body-muted">Batas pembayaran QR: {formatDateTime(invoice.expires_at)}</p>}{invoice.status === 'pending' && invoice.qr_code_url && <div className="space-y-2 rounded-xl bg-paper p-3 text-center"><p className="text-sm font-semibold">Pindai QRIS untuk membayar langganan</p><img src={invoice.qr_code_url} alt="QRIS pembayaran langganan Trimwait" className="mx-auto size-56 object-contain" /><p className="text-xs text-body-muted">Halaman ini memeriksa status pembayaran otomatis.</p></div>}{invoice.paid_at && <p className="text-sm text-body-muted">Dibayar: {formatDateTime(invoice.paid_at)}</p>}{invoice.period_start && invoice.period_end && <p className="text-sm text-body-muted">Periode langganan: {formatDateTime(invoice.period_start)} – {formatDateTime(invoice.period_end)}</p>}{invoice.status === 'paid' && !invoice.period_start && <p className="text-sm text-muted">Periode invoice lama belum tercatat.</p>}<p className="break-all text-xs text-muted">ID tagihan: {invoice.id}</p></article>)}</section>
+      <p className="text-xs text-muted">Bayar dengan memindai QRIS pada tagihan. Langganan aktif otomatis setelah pembayaran dikonfirmasi oleh Midtrans. QR berlaku 30 menit.</p>
     </main>
   )
 }

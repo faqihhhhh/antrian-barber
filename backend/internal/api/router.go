@@ -10,37 +10,36 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"kapsflow/internal/account"
+	"kapsflow/internal/analytics"
 	"kapsflow/internal/billing"
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/identity"
+	"kapsflow/internal/notification"
 	"kapsflow/internal/profile"
+	"kapsflow/internal/publicpage"
+	"kapsflow/internal/queue"
+	"kapsflow/internal/review"
 	"kapsflow/internal/rls"
 	"kapsflow/internal/staff"
 	"kapsflow/internal/tenant"
-	"kapsflow/internal/queue"
-	"kapsflow/internal/notification"
-	"kapsflow/internal/review"
-	"kapsflow/internal/analytics"
-	"kapsflow/internal/account"
-	"kapsflow/internal/publicpage"
 )
 
-
 func New(
-	log *slog.Logger, 
-	pool *pgxpool.Pool, 
-	identitySvc *identity.Service, 
-	tenantSvc *tenant.Service, 
-	billingSvc *billing.Service, 
-	profileSvc *profile.Service, 
-	staffSvc *staff.Service, 
-	queueSvc *queue.Service, 
+	log *slog.Logger,
+	pool *pgxpool.Pool,
+	identitySvc *identity.Service,
+	tenantSvc *tenant.Service,
+	billingSvc *billing.Service,
+	profileSvc *profile.Service,
+	staffSvc *staff.Service,
+	queueSvc *queue.Service,
 	notifySvc *notification.Service,
 	reviewSvc *review.Service,
 	analyticsSvc *analytics.Service,
 	accountSvc *account.Service,
 	publicSvc *publicpage.Service,
-	) http.Handler {
+) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(securityHeaders)
@@ -59,7 +58,7 @@ func New(
 	r.Get("/healthz", healthHandler(log, pool))
 	r.Mount("/v1/auth", identity.Routes(identitySvc, log))
 	r.Route("/v1/webhooks", func(wr chi.Router) {
-		queue.RegisterWebhookRoutes(wr, queueSvc, log, pool)
+		queue.RegisterWebhookRoutes(wr, queueSvc, billingSvc, log, pool)
 	})
 
 	r.Route("/v1/public", func(pr chi.Router) {
@@ -99,7 +98,7 @@ func New(
 		account.RegisterRoutes(mr, accountSvc, log)
 		queue.RegisterMeRoutes(mr, queueSvc, log)
 	})
-	
+
 	return r
 }
 
@@ -114,4 +113,3 @@ func healthHandler(log *slog.Logger, pool *pgxpool.Pool) http.HandlerFunc {
 		httpx.JSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	}
 }
-

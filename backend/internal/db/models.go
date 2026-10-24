@@ -19,19 +19,21 @@ type EmailVerificationToken struct {
 }
 
 type Invoice struct {
-	ID           uuid.UUID          `json:"id"`
-	TenantID     uuid.UUID          `json:"tenant_id"`
-	PlanID       uuid.UUID          `json:"plan_id"`
-	AmountRupiah int64              `json:"amount_rupiah"`
-	UniqueCode   int16              `json:"unique_code"`
-	Status       string             `json:"status"`
-	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
-	PaidAt       pgtype.Timestamptz `json:"paid_at"`
-	ConfirmedBy  pgtype.UUID        `json:"confirmed_by"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	PeriodStart  pgtype.Timestamptz `json:"period_start"`
-	PeriodEnd    pgtype.Timestamptz `json:"period_end"`
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	PlanID          uuid.UUID          `json:"plan_id"`
+	AmountRupiah    int64              `json:"amount_rupiah"`
+	UniqueCode      int16              `json:"unique_code"`
+	Status          string             `json:"status"`
+	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
+	PaidAt          pgtype.Timestamptz `json:"paid_at"`
+	ConfirmedBy     pgtype.UUID        `json:"confirmed_by"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	PeriodStart     pgtype.Timestamptz `json:"period_start"`
+	PeriodEnd       pgtype.Timestamptz `json:"period_end"`
+	MidtransOrderID pgtype.Text        `json:"midtrans_order_id"`
+	QrCodeUrl       pgtype.Text        `json:"qr_code_url"`
 }
 
 type KapsterSessionState struct {

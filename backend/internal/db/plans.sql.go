@@ -83,3 +83,30 @@ func (q *Queries) ListActivePlans(ctx context.Context) ([]Plan, error) {
 	}
 	return items, nil
 }
+
+const updatePlanPrice = `-- name: UpdatePlanPrice :one
+UPDATE plans SET price_rupiah = $2, updated_at = now()
+WHERE code = $1 AND is_active = true
+RETURNING id, code, name, price_rupiah, billing_interval, is_active, created_at, updated_at
+`
+
+type UpdatePlanPriceParams struct {
+	Code        string `json:"code"`
+	PriceRupiah int64  `json:"price_rupiah"`
+}
+
+func (q *Queries) UpdatePlanPrice(ctx context.Context, arg UpdatePlanPriceParams) (Plan, error) {
+	row := q.db.QueryRow(ctx, updatePlanPrice, arg.Code, arg.PriceRupiah)
+	var i Plan
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.PriceRupiah,
+		&i.BillingInterval,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

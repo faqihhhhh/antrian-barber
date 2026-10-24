@@ -192,7 +192,7 @@ terbaru tampil, komentar kosong diberi keterangan, serta tombol halaman berikutn
 20 ulasan. Admin/kapster tidak boleh bisa membaca daftar ulasan.
 
 Untuk langganan owner: buka **Langganan**. Pastikan status, tanggal akhir periode, dan riwayat tagihan
-tampil. Tagihan dibayar manual dan dikonfirmasi pemilik Trimwait; layar ini hanya menampilkan status.
+tampil. Invoice pending menampilkan QRIS platform dan statusnya diperbarui otomatis setelah pembayaran.
 Untuk invoice yang dikonfirmasi setelah migrasi periode audit, pastikan rentang periode yang diberikan
 tampil. Invoice lama menampilkan keterangan periode belum tercatat karena datanya tidak bisa dipastikan.
 Pastikan owner tidak bisa membuat tagihan saat periode aktif masih lebih dari 7 hari dan hanya ada
@@ -225,9 +225,14 @@ DP manual, mengonfirmasi pembayaran sebagai simulasi lokal, memastikan tiket ber
 pelanggan, lalu menghapus sesi uji beserta tiket terkait. Tidak ada transfer uang.
 
 Untuk alur tagihan owner: buka **Langganan**, pilih paket, lalu buat tagihan saat bisnis belum aktif
-atau periode aktif tinggal 7 hari. Pastikan nominal dan masa berlaku 24 jam muncul di riwayat, invoice
-pending kedua ditolak, dan layar mengarahkan owner menghubungi pemilik Trimwait untuk detail pembayaran.
-Jangan mengirim pembayaran sungguhan selama rekening/QR pembayaran platform belum tersedia.
+atau periode aktif tinggal 7 hari. Pastikan QRIS tampil, nominal sama dengan harga paket, masa berlaku
+30 menit terlihat, pembayaran Midtrans mengaktifkan periode otomatis, dan invoice pending kedua ditolak.
+Di panel pemilik SaaS, ubah harga paket bulanan dan tahunan lalu pastikan pilihan owner memakai harga baru;
+invoice yang sudah dibuat harus tetap pada nominal awal.
+Di Render, set `PLATFORM_MIDTRANS_SERVER_KEY` ke Server Key akun merchant Trimwait dan
+`PLATFORM_MIDTRANS_IS_PRODUCTION=true` untuk akun produksi (`false` untuk Sandbox). Daftarkan
+notifikasi pembayaran Midtrans ke `https://<domain-api>/v1/webhooks/midtrans`. Jangan memakai Server Key
+milik tenant; pembayaran langganan masuk ke merchant platform.
 
 Untuk website profil, dari `~/kapsflow/website` jalankan `npm run dev`, lalu buka
 `http://localhost:4321`. Periksa tampilan desktop dan lebar ponsel: menu, judul, ilustrasi antrean,

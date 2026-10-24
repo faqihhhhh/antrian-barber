@@ -12,11 +12,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const cancelInvoice = `-- name: CancelInvoice :execrows
+UPDATE invoices SET status = 'canceled', updated_at = now()
+WHERE id = $1 AND status = 'pending'
+`
+
+func (q *Queries) CancelInvoice(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, cancelInvoice, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const createInvoice = `-- name: CreateInvoice :one
 INSERT INTO invoices (tenant_id, plan_id, amount_rupiah, unique_code, expires_at)
-VALUES ($1, $2, $3, $4, now() + interval '24 hours')
+VALUES ($1, $2, $3, $4, now() + interval '30 minutes')
 ON CONFLICT DO NOTHING
-RETURNING id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end
+RETURNING id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url
 `
 
 type CreateInvoiceParams struct {
@@ -48,6 +61,8 @@ func (q *Queries) CreateInvoice(ctx context.Context, arg CreateInvoiceParams) (I
 		&i.UpdatedAt,
 		&i.PeriodStart,
 		&i.PeriodEnd,
+		&i.MidtransOrderID,
+		&i.QrCodeUrl,
 	)
 	return i, err
 }
@@ -79,7 +94,7 @@ func (q *Queries) ExpireTenantInvoices(ctx context.Context, tenantID uuid.UUID) 
 }
 
 const getInvoiceByID = `-- name: GetInvoiceByID :one
-SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end FROM invoices WHERE id = $1
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url FROM invoices WHERE id = $1
 `
 
 func (q *Queries) GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, error) {
@@ -99,12 +114,41 @@ func (q *Queries) GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, er
 		&i.UpdatedAt,
 		&i.PeriodStart,
 		&i.PeriodEnd,
+		&i.MidtransOrderID,
+		&i.QrCodeUrl,
+	)
+	return i, err
+}
+
+const getInvoiceByMidtransOrderID = `-- name: GetInvoiceByMidtransOrderID :one
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url FROM invoices WHERE midtrans_order_id = $1
+`
+
+func (q *Queries) GetInvoiceByMidtransOrderID(ctx context.Context, midtransOrderID pgtype.Text) (Invoice, error) {
+	row := q.db.QueryRow(ctx, getInvoiceByMidtransOrderID, midtransOrderID)
+	var i Invoice
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.PlanID,
+		&i.AmountRupiah,
+		&i.UniqueCode,
+		&i.Status,
+		&i.ExpiresAt,
+		&i.PaidAt,
+		&i.ConfirmedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.PeriodStart,
+		&i.PeriodEnd,
+		&i.MidtransOrderID,
+		&i.QrCodeUrl,
 	)
 	return i, err
 }
 
 const getPendingInvoiceByTenant = `-- name: GetPendingInvoiceByTenant :one
-SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end FROM invoices WHERE tenant_id = $1 AND status = 'pending'
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url FROM invoices WHERE tenant_id = $1 AND status = 'pending'
 `
 
 func (q *Queries) GetPendingInvoiceByTenant(ctx context.Context, tenantID uuid.UUID) (Invoice, error) {
@@ -124,12 +168,14 @@ func (q *Queries) GetPendingInvoiceByTenant(ctx context.Context, tenantID uuid.U
 		&i.UpdatedAt,
 		&i.PeriodStart,
 		&i.PeriodEnd,
+		&i.MidtransOrderID,
+		&i.QrCodeUrl,
 	)
 	return i, err
 }
 
 const listInvoicesByTenant = `-- name: ListInvoicesByTenant :many
-SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end FROM invoices WHERE tenant_id = $1 ORDER BY created_at DESC
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url FROM invoices WHERE tenant_id = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) ([]Invoice, error) {
@@ -155,6 +201,8 @@ func (q *Queries) ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) 
 			&i.UpdatedAt,
 			&i.PeriodStart,
 			&i.PeriodEnd,
+			&i.MidtransOrderID,
+			&i.QrCodeUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -167,7 +215,7 @@ func (q *Queries) ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) 
 }
 
 const listPendingInvoices = `-- name: ListPendingInvoices :many
-SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end FROM invoices
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url FROM invoices
 WHERE status = 'pending' OR (status = 'expired' AND expires_at > now() - interval '14 days')
 ORDER BY created_at
 `
@@ -195,6 +243,8 @@ func (q *Queries) ListPendingInvoices(ctx context.Context) ([]Invoice, error) {
 			&i.UpdatedAt,
 			&i.PeriodStart,
 			&i.PeriodEnd,
+			&i.MidtransOrderID,
+			&i.QrCodeUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -204,6 +254,30 @@ func (q *Queries) ListPendingInvoices(ctx context.Context) ([]Invoice, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const markInvoiceMidtransPaid = `-- name: MarkInvoiceMidtransPaid :one
+UPDATE invoices SET status = 'paid', paid_at = now(), updated_at = now()
+WHERE id = $1 AND status = 'pending' AND amount_rupiah = $2
+RETURNING tenant_id, plan_id, paid_at
+`
+
+type MarkInvoiceMidtransPaidParams struct {
+	ID           uuid.UUID `json:"id"`
+	AmountRupiah int64     `json:"amount_rupiah"`
+}
+
+type MarkInvoiceMidtransPaidRow struct {
+	TenantID uuid.UUID          `json:"tenant_id"`
+	PlanID   uuid.UUID          `json:"plan_id"`
+	PaidAt   pgtype.Timestamptz `json:"paid_at"`
+}
+
+func (q *Queries) MarkInvoiceMidtransPaid(ctx context.Context, arg MarkInvoiceMidtransPaidParams) (MarkInvoiceMidtransPaidRow, error) {
+	row := q.db.QueryRow(ctx, markInvoiceMidtransPaid, arg.ID, arg.AmountRupiah)
+	var i MarkInvoiceMidtransPaidRow
+	err := row.Scan(&i.TenantID, &i.PlanID, &i.PaidAt)
+	return i, err
 }
 
 const markInvoicePaid = `-- name: MarkInvoicePaid :one
@@ -243,6 +317,25 @@ type RecordInvoiceSubscriptionPeriodParams struct {
 
 func (q *Queries) RecordInvoiceSubscriptionPeriod(ctx context.Context, arg RecordInvoiceSubscriptionPeriodParams) (int64, error) {
 	result, err := q.db.Exec(ctx, recordInvoiceSubscriptionPeriod, arg.ID, arg.PeriodStart, arg.PeriodEnd)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setInvoiceMidtransPayment = `-- name: SetInvoiceMidtransPayment :execrows
+UPDATE invoices SET midtrans_order_id = $2, qr_code_url = $3, updated_at = now()
+WHERE id = $1 AND status = 'pending'
+`
+
+type SetInvoiceMidtransPaymentParams struct {
+	ID              uuid.UUID   `json:"id"`
+	MidtransOrderID pgtype.Text `json:"midtrans_order_id"`
+	QrCodeUrl       pgtype.Text `json:"qr_code_url"`
+}
+
+func (q *Queries) SetInvoiceMidtransPayment(ctx context.Context, arg SetInvoiceMidtransPaymentParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setInvoiceMidtransPayment, arg.ID, arg.MidtransOrderID, arg.QrCodeUrl)
 	if err != nil {
 		return 0, err
 	}
