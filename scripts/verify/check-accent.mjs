@@ -43,8 +43,8 @@ check('Token --color-accent tersedia', /--color-accent:\s*#4338ca\b/i.test(css))
 check('Tombol utama tetap memakai bg-ink', /primary:\s*'bg-ink\s+text-white\s+hover:bg-ink-hover'/.test(ui))
 check('Website tidak memakai amber lama', !/#(?:d29357|d58f4e|df9a57|e5a15d|e7ac72)\b/i.test(website))
 
-const lightContrast = contrast('#4338CA', '#FAF7F2')
-const darkContrast = contrast('#A5B4FC', '#1C1917')
+const lightContrast = contrast('#4338CA', '#F8FAFC')
+const darkContrast = contrast('#A5B4FC', '#1E293B')
 check('Kontras aksen pada paper minimal 4,5:1', lightContrast >= 4.5, `${lightContrast.toFixed(2)}:1`)
 check('Kontras aksen-on-dark pada ink minimal 4,5:1', darkContrast >= 4.5, `${darkContrast.toFixed(2)}:1`)
 

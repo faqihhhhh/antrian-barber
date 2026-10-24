@@ -48,7 +48,7 @@ try {
     for (const property of ['ogTitle', 'ogDescription', 'ogType', 'ogUrl', 'twitterCard']) {
       if (!head[property]) failures.push(`${route}: ${property} tidak ditemukan`)
     }
-    if (head.themeColor?.toLowerCase() !== '#faf7f2') failures.push(`${route}: theme-color bukan #faf7f2`)
+    if (head.themeColor?.toLowerCase() !== '#f8fafc') failures.push(`${route}: theme-color bukan #f8fafc`)
     if (head.icon) {
       const iconResponse = await page.request.get(new URL(head.icon, websiteUrl).toString())
       if (!iconResponse.ok()) failures.push(`${route}: favicon tidak dapat dimuat (${iconResponse.status()})`)
