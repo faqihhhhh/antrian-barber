@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -24,7 +26,8 @@ import (
 )
 
 const (
-	GracePeriod = 3 * 24 * time.Hour
+	GracePeriod          = 3 * 24 * time.Hour
+	maxPlatformQRISBytes = 512 * 1024
 )
 
 type SubscriptionStatus string
@@ -70,6 +73,29 @@ type PublicPlan struct {
 	BillingInterval string `json:"billing_interval"`
 }
 
+type PaymentOptions struct {
+	ManualQRISConfigured bool `json:"manual_qris_configured"`
+	MidtransConfigured   bool `json:"midtrans_configured"`
+}
+
+type AdminInvoice struct {
+	ID            uuid.UUID  `json:"id"`
+	TenantID      uuid.UUID  `json:"tenant_id"`
+	TenantName    string     `json:"tenant_name"`
+	PlanName      string     `json:"plan_name"`
+	AmountRupiah  int64      `json:"amount_rupiah"`
+	UniqueCode    int16      `json:"unique_code"`
+	PaymentMethod string     `json:"payment_method"`
+	Status        string     `json:"status"`
+	ExpiresAt     *time.Time `json:"expires_at"`
+	CreatedAt     time.Time  `json:"created_at"`
+}
+
+type PlatformPaymentInfo struct {
+	ManualQRISConfigured bool `json:"manual_qris_configured"`
+	MidtransConfigured   bool `json:"midtrans_configured"`
+}
+
 // ListPlans publik (halaman harga), tidak lewat RLS karena tabel plans
 // memang tidak dibatasi per tenant. Respons hanya memuat data untuk pelanggan.
 func (s *Service) ListPlans(ctx context.Context) ([]PublicPlan, error) {
@@ -87,6 +113,9 @@ func (s *Service) ListPlans(ctx context.Context) ([]PublicPlan, error) {
 // UpdatePlanPrice hanya dipanggil dari rute admin yang sudah dilindungi
 // RequirePlatformAdmin. Kode paket dan periode tetap; admin hanya mengubah harga.
 func (s *Service) UpdatePlanPrice(ctx context.Context, code string, price int64) (PublicPlan, error) {
+	if err := s.platformAdmin(ctx); err != nil {
+		return PublicPlan{}, err
+	}
 	if price < 1 {
 		return PublicPlan{}, httpx.BadRequest("harga_tidak_valid", "Harga paket harus lebih dari Rp0", nil)
 	}
@@ -100,11 +129,164 @@ func (s *Service) UpdatePlanPrice(ctx context.Context, code string, price int64)
 	return PublicPlan{Code: plan.Code, Name: plan.Name, PriceRupiah: plan.PriceRupiah, BillingInterval: plan.BillingInterval}, nil
 }
 
-// Subscribe membuat invoice QR dengan harga paket persis, lalu meminta Midtrans
-// membuat QR dinamis atas nama platform.
-func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode string) (OwnerInvoice, error) {
-	if s.platformServerKey == "" {
-		return OwnerInvoice{}, httpx.Conflict("pembayaran_platform_belum_diatur", "Pembayaran langganan belum tersedia. Pemilik Trimwait perlu mengatur akun pembayaran platform.", nil)
+func (s *Service) platformAdmin(ctx context.Context) error {
+	user, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	admin, err := s.IsPlatformAdmin(ctx, user.ID)
+	if err != nil {
+		return err
+	}
+	if !admin {
+		return httpx.Forbidden("bukan_admin", "Hanya pemilik SaaS yang bisa mengakses ini", nil)
+	}
+	return nil
+}
+
+func (s *Service) PlatformPaymentInfo(ctx context.Context) (PlatformPaymentInfo, error) {
+	if err := s.platformAdmin(ctx); err != nil {
+		return PlatformPaymentInfo{}, err
+	}
+	return s.getPlatformPaymentInfo(ctx)
+}
+
+func platformQRISContentType(data []byte) string {
+	contentType := http.DetectContentType(data)
+	if contentType == "image/png" || contentType == "image/jpeg" || contentType == "image/webp" {
+		return contentType
+	}
+	return ""
+}
+
+func (s *Service) getPlatformPaymentInfo(ctx context.Context) (PlatformPaymentInfo, error) {
+	info := PlatformPaymentInfo{MidtransConfigured: s.platformServerKey != ""}
+	row, err := s.queries(ctx).GetPlatformPaymentSettings(ctx)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return PlatformPaymentInfo{}, httpx.Internal(fmt.Errorf("ambil pengaturan pembayaran platform: %w", err))
+	}
+	info.ManualQRISConfigured = err == nil && len(row.ManualQrisImage) > 0 && row.ManualQrisContentType.Valid
+	return info, nil
+}
+
+func (s *Service) SetPlatformManualQRIS(ctx context.Context, data []byte) error {
+	if err := s.platformAdmin(ctx); err != nil {
+		return err
+	}
+	if len(data) == 0 {
+		return httpx.BadRequest("gambar_kosong", "Gambar QRIS kosong", nil)
+	}
+	if len(data) > maxPlatformQRISBytes {
+		return httpx.BadRequest("gambar_terlalu_besar", "Ukuran gambar QRIS maksimal 512 KB", nil)
+	}
+	contentType := platformQRISContentType(data)
+	if contentType == "" {
+		return httpx.BadRequest("format_gambar_tidak_didukung", "Gunakan gambar PNG, JPG, atau WebP", nil)
+	}
+	q := s.queries(ctx)
+	current, currentErr := q.GetPlatformPaymentSettings(ctx)
+	if currentErr != nil && !errors.Is(currentErr, pgx.ErrNoRows) {
+		return httpx.Internal(fmt.Errorf("cek QRIS manual platform: %w", currentErr))
+	}
+	if currentErr == nil && len(current.ManualQrisImage) > 0 {
+		pending, err := q.CountPendingManualInvoices(ctx)
+		if err != nil {
+			return httpx.Internal(fmt.Errorf("cek tagihan manual tertunda: %w", err))
+		}
+		if pending > 0 {
+			return httpx.Conflict("tagihan_manual_masih_pending", "QRIS tidak dapat diganti selama masih ada tagihan manual yang menunggu pembayaran", nil)
+		}
+	}
+	err := q.SetPlatformManualQRIS(ctx, db.SetPlatformManualQRISParams{
+		ManualQrisImage: data, ManualQrisContentType: pgtype.Text{String: contentType, Valid: true},
+	})
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("simpan QRIS manual platform: %w", err))
+	}
+	return nil
+}
+
+func (s *Service) ClearPlatformManualQRIS(ctx context.Context) error {
+	if err := s.platformAdmin(ctx); err != nil {
+		return err
+	}
+	q := s.queries(ctx)
+	pending, err := q.CountPendingManualInvoices(ctx)
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("cek tagihan manual tertunda: %w", err))
+	}
+	if pending > 0 {
+		return httpx.Conflict("tagihan_manual_masih_pending", "QRIS tidak dapat dihapus selama masih ada tagihan manual yang menunggu pembayaran", nil)
+	}
+	if err := q.ClearPlatformManualQRIS(ctx); err != nil {
+		return httpx.Internal(fmt.Errorf("hapus QRIS manual platform: %w", err))
+	}
+	return nil
+}
+
+func (s *Service) GetPlatformManualQRIS(ctx context.Context) ([]byte, string, error) {
+	if err := s.platformAdmin(ctx); err != nil {
+		return nil, "", err
+	}
+	return s.getManualQRISImage(ctx)
+}
+
+func (s *Service) getManualQRISImage(ctx context.Context) ([]byte, string, error) {
+	row, err := s.queries(ctx).GetPlatformPaymentSettings(ctx)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, "", httpx.NotFound("qris_tidak_tersedia", "QRIS manual platform belum dipasang", nil)
+		}
+		return nil, "", httpx.Internal(fmt.Errorf("ambil QRIS manual platform: %w", err))
+	}
+	if len(row.ManualQrisImage) == 0 || !row.ManualQrisContentType.Valid {
+		return nil, "", httpx.NotFound("qris_tidak_tersedia", "QRIS manual platform belum dipasang", nil)
+	}
+	return row.ManualQrisImage, row.ManualQrisContentType.String, nil
+}
+
+func (s *Service) OwnerPaymentOptions(ctx context.Context, tenantID uuid.UUID) (PaymentOptions, error) {
+	user, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return PaymentOptions{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	if err := authorization.RequireTenantRole(ctx, s.queries(ctx), tenantID, user.ID, "owner"); err != nil {
+		return PaymentOptions{}, err
+	}
+	var info PaymentOptions
+	err := rls.RunAsSystem(ctx, s.pool, func(sysCtx context.Context) error {
+		platformInfo, err := s.getPlatformPaymentInfo(sysCtx)
+		info = PaymentOptions(platformInfo)
+		return err
+	})
+	return info, err
+}
+
+func (s *Service) GetOwnerPlatformManualQRIS(ctx context.Context, tenantID uuid.UUID) ([]byte, string, error) {
+	user, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return nil, "", httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	if err := authorization.RequireTenantRole(ctx, s.queries(ctx), tenantID, user.ID, "owner"); err != nil {
+		return nil, "", err
+	}
+	var data []byte
+	var contentType string
+	err := rls.RunAsSystem(ctx, s.pool, func(sysCtx context.Context) error {
+		var err error
+		data, contentType, err = s.getManualQRISImage(sysCtx)
+		return err
+	})
+	return data, contentType, err
+}
+
+// Subscribe membuat invoice dengan metode QRIS manual atau Midtrans.
+func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode, paymentMethod string) (OwnerInvoice, error) {
+	if paymentMethod == "" {
+		paymentMethod = "midtrans"
+	}
+	if paymentMethod != "manual" && paymentMethod != "midtrans" {
+		return OwnerInvoice{}, httpx.BadRequest("metode_pembayaran_tidak_valid", "Pilih pembayaran QRIS manual atau QRIS otomatis", nil)
 	}
 	q := s.queries(ctx)
 	user, ok := identity.UserFromContext(ctx)
@@ -113,6 +295,16 @@ func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode st
 	}
 	if err := authorization.RequireTenantRole(ctx, q, tenantID, user.ID, "owner"); err != nil {
 		return OwnerInvoice{}, err
+	}
+	options, err := s.OwnerPaymentOptions(ctx, tenantID)
+	if err != nil {
+		return OwnerInvoice{}, err
+	}
+	if paymentMethod == "manual" && !options.ManualQRISConfigured {
+		return OwnerInvoice{}, httpx.Conflict("qris_manual_belum_diatur", "QRIS manual platform belum dipasang. Pilih QRIS otomatis atau hubungi pemilik Trimwait.", nil)
+	}
+	if paymentMethod == "midtrans" && !options.MidtransConfigured {
+		return OwnerInvoice{}, httpx.Conflict("midtrans_belum_diatur", "QRIS otomatis belum tersedia. Pilih QRIS manual atau hubungi pemilik Trimwait.", nil)
 	}
 
 	plan, err := q.GetPlanByCode(ctx, planCode)
@@ -141,14 +333,38 @@ func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode st
 		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("upsert subscription: %w", err))
 	}
 
-	invoice, err := q.CreateInvoice(ctx, db.CreateInvoiceParams{
-		TenantID: tenantID, PlanID: plan.ID, AmountRupiah: plan.PriceRupiah, UniqueCode: 0,
-	})
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+	var invoice db.Invoice
+	const maxAttempts = 10
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		uniqueCode := int16(0)
+		amount := plan.PriceRupiah
+		if paymentMethod == "manual" {
+			uniqueCode = int16(1 + rand.IntN(998))
+			amount += int64(uniqueCode)
+		}
+		invoice, err = q.CreateInvoice(ctx, db.CreateInvoiceParams{
+			TenantID: tenantID, PlanID: plan.ID, AmountRupiah: amount, UniqueCode: uniqueCode, PaymentMethod: paymentMethod,
+		})
+		if err == nil {
+			break
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return OwnerInvoice{}, httpx.Internal(fmt.Errorf("membuat invoice: %w", err))
+		}
+		if _, pendingErr := q.GetPendingInvoiceByTenant(ctx, tenantID); pendingErr == nil {
+			return OwnerInvoice{}, httpx.Conflict("tagihan_masih_pending", "Masih ada tagihan yang belum diproses untuk bisnis ini", nil)
+		} else if !errors.Is(pendingErr, pgx.ErrNoRows) {
+			return OwnerInvoice{}, httpx.Internal(fmt.Errorf("cek tagihan aktif setelah konflik: %w", pendingErr))
+		}
+		if paymentMethod != "manual" {
 			return OwnerInvoice{}, httpx.Conflict("tagihan_masih_pending", "Masih ada tagihan yang belum diproses untuk bisnis ini", nil)
 		}
-		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("membuat invoice: %w", err))
+	}
+	if err != nil {
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("gagal menemukan nominal unik setelah %d percobaan", maxAttempts))
+	}
+	if paymentMethod == "manual" {
+		return ownerInvoiceFromDB(invoice), nil
 	}
 	orderID := "tw-sub-" + invoice.ID.String()
 	charge, chargeErr := s.midtrans.ChargeQRIS(ctx, s.platformServerKey, s.platformProduction, orderID, plan.PriceRupiah)
@@ -225,22 +441,23 @@ func (s *Service) GetOwnerStatus(ctx context.Context, tenantID uuid.UUID) (Subsc
 }
 
 type OwnerInvoice struct {
-	ID           uuid.UUID  `json:"id"`
-	AmountRupiah int64      `json:"amount_rupiah"`
-	UniqueCode   int16      `json:"unique_code"`
-	Status       string     `json:"status"`
-	ExpiresAt    *time.Time `json:"expires_at"`
-	PaidAt       *time.Time `json:"paid_at"`
-	PeriodStart  *time.Time `json:"period_start"`
-	PeriodEnd    *time.Time `json:"period_end"`
-	QRCodeURL    *string    `json:"qr_code_url"`
-	CreatedAt    time.Time  `json:"created_at"`
+	ID            uuid.UUID  `json:"id"`
+	AmountRupiah  int64      `json:"amount_rupiah"`
+	UniqueCode    int16      `json:"unique_code"`
+	PaymentMethod string     `json:"payment_method"`
+	Status        string     `json:"status"`
+	ExpiresAt     *time.Time `json:"expires_at"`
+	PaidAt        *time.Time `json:"paid_at"`
+	PeriodStart   *time.Time `json:"period_start"`
+	PeriodEnd     *time.Time `json:"period_end"`
+	QRCodeURL     *string    `json:"qr_code_url"`
+	CreatedAt     time.Time  `json:"created_at"`
 }
 
 func ownerInvoiceFromDB(invoice db.Invoice) OwnerInvoice {
 	item := OwnerInvoice{
 		ID: invoice.ID, AmountRupiah: invoice.AmountRupiah, UniqueCode: invoice.UniqueCode,
-		Status: invoice.Status, CreatedAt: invoice.CreatedAt.Time,
+		PaymentMethod: invoice.PaymentMethod, Status: invoice.Status, CreatedAt: invoice.CreatedAt.Time,
 	}
 	if invoice.ExpiresAt.Valid {
 		value := invoice.ExpiresAt.Time
@@ -284,12 +501,29 @@ func (s *Service) ListInvoices(ctx context.Context, tenantID uuid.UUID) ([]Owner
 	return result, nil
 }
 
-func (s *Service) ListPendingInvoices(ctx context.Context) ([]db.Invoice, error) {
+func (s *Service) ListPendingInvoices(ctx context.Context) ([]AdminInvoice, error) {
+	if err := s.platformAdmin(ctx); err != nil {
+		return nil, err
+	}
 	invoices, err := s.queries(ctx).ListPendingInvoices(ctx)
 	if err != nil {
 		return nil, httpx.Internal(fmt.Errorf("ambil daftar invoice pending: %w", err))
 	}
-	return httpx.NonNil(invoices), nil
+	result := make([]AdminInvoice, 0, len(invoices))
+	for _, invoice := range invoices {
+		item := AdminInvoice{
+			ID: invoice.ID, TenantID: invoice.TenantID, TenantName: invoice.TenantName,
+			PlanName: invoice.PlanName, AmountRupiah: invoice.AmountRupiah,
+			UniqueCode: invoice.UniqueCode, PaymentMethod: invoice.PaymentMethod,
+			Status: invoice.Status, CreatedAt: invoice.CreatedAt.Time,
+		}
+		if invoice.ExpiresAt.Valid {
+			value := invoice.ExpiresAt.Time
+			item.ExpiresAt = &value
+		}
+		result = append(result, item)
+	}
+	return httpx.NonNil(result), nil
 }
 
 func (s *Service) IsPlatformAdmin(ctx context.Context, userID uuid.UUID) (bool, error) {
@@ -305,6 +539,13 @@ func (s *Service) IsPlatformAdmin(ctx context.Context, userID uuid.UUID) (bool, 
 // baru dihitung dari current_period_end lama, bukan dari sekarang — supaya
 // owner tidak "rugi" hari kalau bayar lebih awal.
 func (s *Service) ConfirmInvoicePayment(ctx context.Context, invoiceID, adminUserID uuid.UUID) error {
+	admin, err := s.IsPlatformAdmin(ctx, adminUserID)
+	if err != nil {
+		return err
+	}
+	if !admin {
+		return httpx.Forbidden("bukan_admin", "Hanya pemilik SaaS yang bisa mengonfirmasi pembayaran", nil)
+	}
 	q := s.queries(ctx)
 
 	inv, err := q.GetInvoiceByID(ctx, invoiceID)
@@ -317,6 +558,9 @@ func (s *Service) ConfirmInvoicePayment(ctx context.Context, invoiceID, adminUse
 
 	if inv.Status != "pending" && inv.Status != "expired" {
 		return httpx.Conflict("invoice_sudah_diproses", "Invoice ini sudah dibayar atau dibatalkan", nil)
+	}
+	if inv.PaymentMethod != "manual" {
+		return httpx.Conflict("konfirmasi_manual_tidak_berlaku", "Tagihan QRIS otomatis dikonfirmasi Midtrans", nil)
 	}
 
 	plan, err := q.GetPlanByID(ctx, inv.PlanID)

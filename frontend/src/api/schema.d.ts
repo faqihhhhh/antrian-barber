@@ -38,6 +38,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar tagihan langganan tertunda dan yang baru kedaluwarsa */
+        get: operations["listPlatformInvoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/invoices/{invoiceID}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Konfirmasi pembayaran QRIS manual */
+        post: operations["confirmPlatformManualInvoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/payment-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Status metode pembayaran langganan platform */
+        get: operations["getPlatformPaymentSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/payment-settings/manual-qris": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Unggah QRIS statis untuk pembayaran langganan manual */
+        put: operations["uploadPlatformManualQRIS"];
+        post?: never;
+        /** Hapus QRIS manual platform */
+        delete: operations["deletePlatformManualQRIS"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/payment-settings/manual-qris/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ambil gambar QRIS platform untuk pratinjau admin */
+        get: operations["getPlatformManualQRISImage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/plans/{planCode}": {
         parameters: {
             query?: never;
@@ -430,6 +516,40 @@ export interface paths {
         };
         /** Status langganan tenant untuk owner */
         get: operations["getOwnerSubscription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/subscription/payment-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Metode pembayaran langganan yang tersedia untuk owner */
+        get: operations["getOwnerSubscriptionPaymentOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/subscription/manual-qris": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Gambar QRIS platform untuk pembayaran manual owner */
+        get: operations["getOwnerPlatformManualQRIS"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1381,6 +1501,8 @@ export interface components {
         };
         SubscribeRequest: {
             plan_code: string;
+            /** @enum {string} */
+            payment_method: "manual" | "midtrans";
         };
         OwnerInvoice: {
             /** Format: uuid */
@@ -1389,6 +1511,8 @@ export interface components {
             amount_rupiah: number;
             /** Format: int32 */
             unique_code: number;
+            /** @enum {string} */
+            payment_method: "manual" | "midtrans";
             /** @enum {string} */
             status: "pending" | "paid" | "expired" | "canceled";
             /** Format: date-time */
@@ -1401,6 +1525,31 @@ export interface components {
             period_end: string | null;
             /** Format: uri */
             qr_code_url: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        PaymentOptions: {
+            manual_qris_configured: boolean;
+            midtrans_configured: boolean;
+        };
+        PlatformPaymentInfo: components["schemas"]["PaymentOptions"];
+        AdminInvoice: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            tenant_name: string;
+            plan_name: string;
+            /** Format: int64 */
+            amount_rupiah: number;
+            /** Format: int32 */
+            unique_code: number;
+            /** @enum {string} */
+            payment_method: "manual" | "midtrans";
+            /** @enum {string} */
+            status: "pending" | "expired";
+            /** Format: date-time */
+            expires_at: string | null;
             /** Format: date-time */
             created_at: string;
         };
@@ -1495,6 +1644,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlatformStats"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listPlatformInvoices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar tagihan untuk pemilik SaaS */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminInvoice"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    confirmPlatformManualInvoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invoiceID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tagihan ditandai lunas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getPlatformPaymentSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status konfigurasi pembayaran */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformPaymentInfo"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    uploadPlatformManualQRIS: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "image/png": string;
+                "image/jpeg": string;
+                "image/webp": string;
+            };
+        };
+        responses: {
+            /** @description QRIS manual platform tersimpan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    deletePlatformManualQRIS: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description QRIS manual platform dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getPlatformManualQRISImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Gambar QRIS platform */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/jpeg": string;
+                    "image/webp": string;
                 };
             };
             default: components["responses"]["Error"];
@@ -2100,6 +2385,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnerSubscription"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getOwnerSubscriptionPaymentOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status QRIS manual dan Midtrans platform */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOptions"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getOwnerPlatformManualQRIS: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Gambar QRIS platform */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                    "image/jpeg": string;
+                    "image/webp": string;
                 };
             };
             default: components["responses"]["Error"];

@@ -26,6 +26,7 @@ Hak per peran **harus diperiksa di service**, RLS hanya memastikan keanggotaan t
 - `tenant_profiles`: kunci Midtrans terenkripsi, `midtrans_is_production`, gambar QRIS manual
   (`manual_qris_image`, `_content_type`, `_updated_at`), status onboarding.
 - `plans`, `subscriptions`, `invoices`, `subscription_reminders`: langganan tenant ke platform.
+- `platform_payment_settings`: QRIS manual platform, dibatasi RLS untuk pemilik SaaS.
 - `queue_sessions`: satu per outlet per tanggal lokal. `max_quota`, `used_quota`, `next_ticket_number`,
   status `open` atau `closed`.
 - `tickets`: `ticket_number`, `queue_position`, `status`, `match_code`, `customer_name` (maks 60),
@@ -40,10 +41,13 @@ Hak per peran **harus diperiksa di service**, RLS hanya memastikan keanggotaan t
 Status: `belum_berlangganan`, `aktif`, `masa_tenggang`, `baca_saja`. Endpoint menulis milik tenant
 dijaga middleware `requireActive`. Pelanggan tidak dihukum oleh status langganan owner, kecuali
 pemesanan online baru ditutup (`accepting_bookings=false`, alasan `langganan_tidak_aktif`).
-Tagihan langganan memakai QRIS dinamis Midtrans milik platform dan aktif otomatis setelah
-webhook Midtrans tervalidasi. Kredensialnya memakai `PLATFORM_MIDTRANS_SERVER_KEY` dan
-`PLATFORM_MIDTRANS_IS_PRODUCTION`, terpisah dari kunci Midtrans milik tenant untuk DP pelanggan.
-Harga paket bulanan dan tahunan dapat diubah pemilik SaaS, dan invoice memakai harga paket persis.
+Owner memilih QRIS manual atau Midtrans seperti pembayaran DP. QRIS manual adalah gambar statis
+milik platform; nominal invoice ditambah kode unik dan langganan aktif setelah pemilik SaaS
+mencocokkan pembayaran lalu mengonfirmasi invoice. QRIS Midtrans milik platform mengaktifkan
+langganan otomatis setelah webhook tervalidasi. Kredensialnya memakai
+`PLATFORM_MIDTRANS_SERVER_KEY` dan `PLATFORM_MIDTRANS_IS_PRODUCTION`, terpisah dari kunci Midtrans
+milik tenant untuk DP pelanggan. Harga paket bulanan dan tahunan dapat diubah pemilik SaaS, dan
+invoice memakai harga paket saat dibuat.
 Owner hanya bisa membuat satu tagihan pending per bisnis. Tagihan perpanjangan baru boleh dibuat
 dalam 7 hari sebelum akhir periode aktif. QR berlaku 30 menit, dihitung memakai waktu database.
 Invoice lunas menyimpan rentang periode yang ditambahkan untuk audit. Saat pembayaran tervalidasi,

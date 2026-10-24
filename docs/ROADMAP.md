@@ -45,6 +45,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 13-3-4 | Onboarding owner mengarahkan tenant tanpa langganan ke tagihan dan menghubungkan outlet ke pembayaran DP serta meja admin |
 | 13-3-5 | Skrip verifikasi API nyata membuka sesi, membuat booking pelanggan, mensimulasikan konfirmasi DP, memastikan tiket masuk antrean, lalu membersihkan data uji |
 | 13-3-6 | Pemilik memeriksa alur onboarding dan booking di browser: pengaturan outlet, pembayaran/admin, buka sesi, booking pelanggan, dan konfirmasi tiket uji (semua PASS) |
+| 13-3-7 | Pembayaran langganan manual QRIS platform dengan konfirmasi pemilik SaaS, selain Midtrans otomatis |
 | 14-1 | API menambahkan header keamanan `nosniff`, anti-frame, kebijakan referrer, dan pembatasan fitur browser; dilindungi tes unit |
 | 14-2a | Login dibatasi 10 percobaan per alamat IP per menit; pelanggaran membalas 429 dan `Retry-After`, penghitung dibatasi di memori |
 | 14-2b | Booking online dibatasi 5 permintaan per alamat IP per menit; permintaan berlebih membalas 429 dan `Retry-After` |

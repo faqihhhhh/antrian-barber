@@ -42,6 +42,109 @@ paths:
                 $ref: '#/components/schemas/PlatformStats'
         default:
           $ref: '#/components/responses/Error'
+  /v1/admin/invoices:
+    get:
+      operationId: listPlatformInvoices
+      tags: [platform]
+      summary: Daftar tagihan langganan tertunda dan yang baru kedaluwarsa
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Daftar tagihan untuk pemilik SaaS
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AdminInvoice' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/admin/invoices/{invoiceID}/confirm:
+    post:
+      operationId: confirmPlatformManualInvoice
+      tags: [platform]
+      summary: Konfirmasi pembayaran QRIS manual
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: invoiceID
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Tagihan ditandai lunas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/admin/payment-settings:
+    get:
+      operationId: getPlatformPaymentSettings
+      tags: [platform]
+      summary: Status metode pembayaran langganan platform
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Status konfigurasi pembayaran
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlatformPaymentInfo' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/admin/payment-settings/manual-qris:
+    put:
+      operationId: uploadPlatformManualQRIS
+      tags: [platform]
+      summary: Unggah QRIS statis untuk pembayaran langganan manual
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          image/png: { schema: { type: string, format: binary } }
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        '200':
+          description: QRIS manual platform tersimpan
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: deletePlatformManualQRIS
+      tags: [platform]
+      summary: Hapus QRIS manual platform
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: QRIS manual platform dihapus
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/admin/payment-settings/manual-qris/image:
+    get:
+      operationId: getPlatformManualQRISImage
+      tags: [platform]
+      summary: Ambil gambar QRIS platform untuk pratinjau admin
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Gambar QRIS platform
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+        default:
+          $ref: '#/components/responses/Error'
   /v1/admin/plans/{planCode}:
     put:
       operationId: updatePlatformPlanPrice
@@ -576,6 +679,41 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/OwnerSubscription' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/subscription/payment-options:
+    get:
+      operationId: getOwnerSubscriptionPaymentOptions
+      tags: [langganan]
+      summary: Metode pembayaran langganan yang tersedia untuk owner
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: Status QRIS manual dan Midtrans platform
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentOptions' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/subscription/manual-qris:
+    get:
+      operationId: getOwnerPlatformManualQRIS
+      tags: [langganan]
+      summary: Gambar QRIS platform untuk pembayaran manual owner
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: Gambar QRIS platform
+          content:
+            image/png: { schema: { type: string, format: binary } }
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
         default:
           $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/subscribe:
@@ -2011,22 +2149,46 @@ components:
         billing_interval: { type: string, enum: [monthly, yearly] }
     SubscribeRequest:
       type: object
-      required: [plan_code]
+      required: [plan_code, payment_method]
       properties:
         plan_code: { type: string }
+        payment_method: { type: string, enum: [manual, midtrans] }
     OwnerInvoice:
       type: object
-      required: [id, amount_rupiah, unique_code, status, expires_at, paid_at, period_start, period_end, created_at, qr_code_url]
+      required: [id, amount_rupiah, unique_code, payment_method, status, expires_at, paid_at, period_start, period_end, created_at, qr_code_url]
       properties:
         id: { type: string, format: uuid }
         amount_rupiah: { type: integer, format: int64 }
         unique_code: { type: integer, format: int32 }
+        payment_method: { type: string, enum: [manual, midtrans] }
         status: { type: string, enum: [pending, paid, expired, canceled] }
         expires_at: { type: string, format: date-time, nullable: true }
         paid_at: { type: string, format: date-time, nullable: true }
         period_start: { type: string, format: date-time, nullable: true }
         period_end: { type: string, format: date-time, nullable: true }
         qr_code_url: { type: string, format: uri, nullable: true }
+        created_at: { type: string, format: date-time }
+    PaymentOptions:
+      type: object
+      required: [manual_qris_configured, midtrans_configured]
+      properties:
+        manual_qris_configured: { type: boolean }
+        midtrans_configured: { type: boolean }
+    PlatformPaymentInfo:
+      $ref: '#/components/schemas/PaymentOptions'
+    AdminInvoice:
+      type: object
+      required: [id, tenant_id, tenant_name, plan_name, amount_rupiah, unique_code, payment_method, status, expires_at, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        tenant_name: { type: string }
+        plan_name: { type: string }
+        amount_rupiah: { type: integer, format: int64 }
+        unique_code: { type: integer, format: int32 }
+        payment_method: { type: string, enum: [manual, midtrans] }
+        status: { type: string, enum: [pending, expired] }
+        expires_at: { type: string, format: date-time, nullable: true }
         created_at: { type: string, format: date-time }
     MembershipInfo:
       type: object

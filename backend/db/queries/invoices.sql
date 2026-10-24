@@ -1,6 +1,6 @@
 -- name: CreateInvoice :one
-INSERT INTO invoices (tenant_id, plan_id, amount_rupiah, unique_code, expires_at)
-VALUES ($1, $2, $3, $4, now() + interval '30 minutes')
+INSERT INTO invoices (tenant_id, plan_id, amount_rupiah, unique_code, expires_at, payment_method)
+VALUES ($1, $2, $3, $4, now() + interval '30 minutes', $5)
 ON CONFLICT DO NOTHING
 RETURNING *;
 
@@ -27,16 +27,24 @@ WHERE id = $1 AND status = 'pending';
 
 -- name: MarkInvoiceMidtransPaid :one
 UPDATE invoices SET status = 'paid', paid_at = now(), updated_at = now()
-WHERE id = $1 AND status = 'pending' AND amount_rupiah = $2
+WHERE id = $1 AND status = 'pending' AND payment_method = 'midtrans' AND amount_rupiah = $2
 RETURNING tenant_id, plan_id, paid_at;
 
 -- name: ListInvoicesByTenant :many
 SELECT * FROM invoices WHERE tenant_id = $1 ORDER BY created_at DESC;
 
 -- name: ListPendingInvoices :many
-SELECT * FROM invoices
-WHERE status = 'pending' OR (status = 'expired' AND expires_at > now() - interval '14 days')
-ORDER BY created_at;
+SELECT i.id, i.tenant_id, t.name AS tenant_name, i.plan_id, p.name AS plan_name,
+       i.amount_rupiah, i.unique_code, i.payment_method, i.status, i.expires_at, i.created_at
+FROM invoices i
+JOIN tenants t ON t.id = i.tenant_id
+JOIN plans p ON p.id = i.plan_id
+WHERE i.status = 'pending' OR (i.status = 'expired' AND i.expires_at > now() - interval '14 days')
+ORDER BY i.created_at;
+
+-- name: CountPendingManualInvoices :one
+SELECT count(*)::bigint FROM invoices
+WHERE status = 'pending' AND payment_method = 'manual';
 
 -- name: ExpireStaleInvoices :execrows
 UPDATE invoices SET status = 'expired', updated_at = now()

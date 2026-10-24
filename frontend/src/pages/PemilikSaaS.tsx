@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
-import { Alert, Spinner } from '../components/ui'
-import { formatMonthYear, formatRupiah } from '../lib/format'
+import { Alert, ConfirmDialog, Spinner } from '../components/ui'
+import { formatDateTime, formatMonthYear, formatRupiah } from '../lib/format'
 
 export default function PemilikSaaS() {
   const me = useMe()
@@ -31,6 +31,7 @@ export default function PemilikSaaS() {
         <h1 className="mt-1 text-2xl font-bold">Ringkasan SaaS</h1>
         <p className="mt-1 text-sm text-body-muted">Kinerja bisnis dan langganan platform.</p>
       </header>
+      <PlatformBilling />
       {stats.isPending ? <Spinner /> : stats.isError ? <Alert>{messageOf(stats.error)}</Alert> : (
         <>
           <PlanPricing />
@@ -83,6 +84,90 @@ export default function PemilikSaaS() {
       )}
     </main>
   )
+}
+
+function PlatformBilling() {
+  const queryClient = useQueryClient()
+  const input = useRef<HTMLInputElement>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [confirmInvoiceID, setConfirmInvoiceID] = useState<string | null>(null)
+  const settings = useQuery({
+    queryKey: ['platform-payment-settings'],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET('/v1/admin/payment-settings')
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+  })
+  const invoices = useQuery({
+    queryKey: ['platform-invoices'],
+    refetchInterval: (query) => query.state.data?.some((invoice) => invoice.status === 'pending') ? 10_000 : false,
+    queryFn: async () => {
+      const { data, error, response } = await api.GET('/v1/admin/invoices')
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+  })
+  const refreshBilling = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['platform-payment-settings'] }),
+      queryClient.invalidateQueries({ queryKey: ['platform-invoices'] }),
+      queryClient.invalidateQueries({ queryKey: ['platform-stats'] }),
+    ])
+  }
+  const upload = useMutation({
+    mutationFn: async () => {
+      if (!file) throw new Error('Pilih gambar QRIS terlebih dahulu.')
+      const { data, error, response } = await api.PUT('/v1/admin/payment-settings/manual-qris', {
+        body: file as unknown as string,
+        bodySerializer: () => file,
+        headers: { 'Content-Type': file.type },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: async () => {
+      setFile(null)
+      if (input.current) input.current.value = ''
+      await refreshBilling()
+    },
+  })
+  const clear = useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await api.DELETE('/v1/admin/payment-settings/manual-qris')
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: refreshBilling,
+  })
+  const confirm = useMutation({
+    mutationFn: async (invoiceID: string) => {
+      const { data, error, response } = await api.POST('/v1/admin/invoices/{invoiceID}/confirm', { params: { path: { invoiceID } } })
+      if (!response.ok || !data) throw new ApiError(error)
+      return invoiceID
+    },
+    onSuccess: async () => {
+      setConfirmInvoiceID(null)
+      await refreshBilling()
+    },
+  })
+
+  return <section className="space-y-4 rounded-3xl border border-line bg-white p-5">
+    <div><h2 className="text-lg font-bold">Pembayaran langganan</h2><p className="mt-1 text-sm text-body-muted">Atur QRIS manual platform dan cocokkan pembayaran owner.</p></div>
+    {settings.isPending ? <Spinner /> : settings.isError ? <Alert>{messageOf(settings.error)}</Alert> : <div className="space-y-3 rounded-2xl border border-line bg-paper p-4">
+      <div className="flex items-center justify-between gap-3"><div><h3 className="font-semibold">QRIS manual platform</h3><p className="text-sm text-body-muted">Status: {settings.data.manual_qris_configured ? 'Sudah dipasang' : 'Belum dipasang'} · Otomatis: {settings.data.midtrans_configured ? 'Tersedia' : 'Belum diatur'}</p></div></div>
+      {settings.data.manual_qris_configured && <img src="/v1/admin/payment-settings/manual-qris/image" alt="QRIS manual platform" className="mx-auto size-48 rounded-xl border border-line bg-white object-contain" />}
+      <label className="block text-sm font-medium">Unggah QRIS (PNG, JPG, WebP; maksimal 512 KB)<input ref={input} className="mt-2 block w-full text-sm" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /></label>
+      {upload.isError && <Alert>{messageOf(upload.error)}</Alert>}{upload.isSuccess && <Alert tone="success">QRIS manual platform tersimpan.</Alert>}{clear.isError && <Alert>{messageOf(clear.error)}</Alert>}
+      <div className="flex flex-wrap gap-2"><button className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" disabled={!file || upload.isPending} onClick={() => upload.mutate()}>{upload.isPending ? 'Menyimpan…' : 'Simpan QRIS'}</button>{settings.data.manual_qris_configured && <button className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold disabled:opacity-50" disabled={clear.isPending} onClick={() => clear.mutate()}>{clear.isPending ? 'Menghapus…' : 'Hapus QRIS'}</button>}</div>
+    </div>}
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3"><h3 className="font-semibold">Tagihan owner</h3>{invoices.data && <span className="rounded-full bg-paper-raised px-3 py-1 text-sm">{invoices.data.filter((invoice) => invoice.status === 'pending').length} menunggu</span>}</div>
+      {invoices.isPending ? <Spinner /> : invoices.isError ? <Alert>{messageOf(invoices.error)}</Alert> : invoices.data.length === 0 ? <Alert tone="info">Tidak ada tagihan tertunda.</Alert> : invoices.data.map((invoice) => <article key={invoice.id} className="space-y-2 rounded-2xl border border-line p-4"><div className="flex items-start justify-between gap-3"><div><strong>{invoice.tenant_name}</strong><p className="text-sm text-body-muted">{invoice.plan_name} · {invoice.payment_method === 'manual' ? 'QRIS manual' : 'QRIS otomatis'}</p></div><span className="text-right text-sm">{invoice.status === 'pending' ? 'Menunggu' : 'Kedaluwarsa'}</span></div><p className="text-lg font-bold tabular-nums">{formatRupiah(invoice.amount_rupiah)}</p>{invoice.unique_code > 0 && <p className="text-sm text-body-muted">Kode unik: {invoice.unique_code}</p>}<p className="text-xs text-muted">Dibuat {formatDateTime(invoice.created_at)} · ID {invoice.id}</p>{invoice.payment_method === 'manual' ? <button className="w-full rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-50" disabled={confirm.isPending} onClick={() => setConfirmInvoiceID(invoice.id)}>{confirm.isPending && confirm.variables === invoice.id ? 'Memproses…' : 'Konfirmasi pembayaran manual'}</button> : <p className="text-sm text-body-muted">Pembayaran QRIS otomatis dikonfirmasi oleh Midtrans.</p>}</article>)}
+      {confirm.isError && <Alert>{messageOf(confirm.error)}</Alert>}
+    </div>
+    <ConfirmDialog open={confirmInvoiceID !== null} onCancel={() => setConfirmInvoiceID(null)} onConfirm={() => { if (confirmInvoiceID) confirm.mutate(confirmInvoiceID) }} title="Konfirmasi pembayaran manual?" description="Pastikan transfer QRIS sudah masuk dan nominalnya cocok dengan tagihan. Setelah dikonfirmasi, langganan owner langsung aktif." confirmLabel="Ya, pembayaran diterima" loading={confirm.isPending} />
+  </section>
 }
 
 function PlanPricing() {

@@ -224,11 +224,13 @@ Skrip memakai sesi cookie owner dan pelanggan yang sudah ada, membuka sesi berta
 DP manual, mengonfirmasi pembayaran sebagai simulasi lokal, memastikan tiket berstatus `waiting` pada akun
 pelanggan, lalu menghapus sesi uji beserta tiket terkait. Tidak ada transfer uang.
 
-Untuk alur tagihan owner: buka **Langganan**, pilih paket, lalu buat tagihan saat bisnis belum aktif
-atau periode aktif tinggal 7 hari. Pastikan QRIS tampil, nominal sama dengan harga paket, masa berlaku
-30 menit terlihat, pembayaran Midtrans mengaktifkan periode otomatis, dan invoice pending kedua ditolak.
-Di panel pemilik SaaS, ubah harga paket bulanan dan tahunan lalu pastikan pilihan owner memakai harga baru;
-invoice yang sudah dibuat harus tetap pada nominal awal.
+Untuk alur tagihan owner: di `/pemilik-saas`, unggah QRIS statis platform. Buka **Langganan**, pilih
+paket dan QRIS manual, lalu buat tagihan saat bisnis belum aktif atau periode aktif tinggal 7 hari.
+Pastikan nominal memuat kode unik, QR platform tampil, invoice muncul dalam daftar tagihan SaaS,
+konfirmasi manual mengaktifkan periode, dan invoice pending kedua ditolak. Ulangi dengan Midtrans:
+QR dinamis tampil, nominal sama dengan harga paket, masa berlaku 30 menit terlihat, dan webhook
+mengaktifkan periode otomatis. Di panel SaaS, pastikan jumlah pending tampil dan ubah harga paket
+bulanan/tahunan; pilihan owner harus memakai harga baru sementara invoice lama tetap memakai nominal awal.
 Di Render, set `PLATFORM_MIDTRANS_SERVER_KEY` ke Server Key akun merchant Trimwait dan
 `PLATFORM_MIDTRANS_IS_PRODUCTION=true` untuk akun produksi (`false` untuk Sandbox). Daftarkan
 notifikasi pembayaran Midtrans ke `https://<domain-api>/v1/webhooks/midtrans`. Jangan memakai Server Key

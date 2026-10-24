@@ -34,6 +34,7 @@ type Invoice struct {
 	PeriodEnd       pgtype.Timestamptz `json:"period_end"`
 	MidtransOrderID pgtype.Text        `json:"midtrans_order_id"`
 	QrCodeUrl       pgtype.Text        `json:"qr_code_url"`
+	PaymentMethod   string             `json:"payment_method"`
 }
 
 type KapsterSessionState struct {
@@ -97,6 +98,14 @@ type Plan struct {
 type PlatformAdmin struct {
 	UserID    uuid.UUID          `json:"user_id"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type PlatformPaymentSetting struct {
+	ID                    bool               `json:"id"`
+	ManualQrisImage       []byte             `json:"manual_qris_image"`
+	ManualQrisContentType pgtype.Text        `json:"manual_qris_content_type"`
+	ManualQrisUpdatedAt   pgtype.Timestamptz `json:"manual_qris_updated_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
 }
 
 type PushSubscription struct {

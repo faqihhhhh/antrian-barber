@@ -22,11 +22,13 @@ type Querier interface {
 	ClaimTicketNumberForBooking(ctx context.Context, pSessionID uuid.UUID) (int32, error)
 	ClaimTurnNotification(ctx context.Context, id uuid.UUID) (uuid.UUID, error)
 	ClearManualQRIS(ctx context.Context, tenantID uuid.UUID) error
+	ClearPlatformManualQRIS(ctx context.Context) error
 	ClosePastQueueSessions(ctx context.Context) ([]uuid.UUID, error)
 	CloseQueueSession(ctx context.Context, id uuid.UUID) (QueueSession, error)
 	ConfirmTicketFinalPayment(ctx context.Context, arg ConfirmTicketFinalPaymentParams) error
 	CountActiveKapsters(ctx context.Context, queueSessionID uuid.UUID) (int64, error)
 	CountActiveTicketsInQueueSession(ctx context.Context, queueSessionID uuid.UUID) (int64, error)
+	CountPendingManualInvoices(ctx context.Context) (int64, error)
 	CountWaitingAheadOf(ctx context.Context, arg CountWaitingAheadOfParams) (int64, error)
 	CountWaitingInSession(ctx context.Context, queueSessionID uuid.UUID) (int64, error)
 	CreateEmailVerificationToken(ctx context.Context, arg CreateEmailVerificationTokenParams) (EmailVerificationToken, error)
@@ -60,6 +62,7 @@ type Querier interface {
 	GetPendingInvoiceByTenant(ctx context.Context, tenantID uuid.UUID) (Invoice, error)
 	GetPlanByCode(ctx context.Context, code string) (Plan, error)
 	GetPlanByID(ctx context.Context, id uuid.UUID) (Plan, error)
+	GetPlatformPaymentSettings(ctx context.Context) (GetPlatformPaymentSettingsRow, error)
 	GetQueueSessionByID(ctx context.Context, id uuid.UUID) (QueueSession, error)
 	GetQueueSessionByOutletAndDate(ctx context.Context, arg GetQueueSessionByOutletAndDateParams) (QueueSession, error)
 	GetQueueSessionForUpdate(ctx context.Context, id uuid.UUID) (QueueSession, error)
@@ -91,7 +94,7 @@ type Querier interface {
 	ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Outlet, error)
 	ListOutletsForMembership(ctx context.Context, arg ListOutletsForMembershipParams) ([]Outlet, error)
 	ListOwnerEmailsByTenant(ctx context.Context, tenantID uuid.UUID) ([]string, error)
-	ListPendingInvoices(ctx context.Context) ([]Invoice, error)
+	ListPendingInvoices(ctx context.Context) ([]ListPendingInvoicesRow, error)
 	ListPendingManualTicketPaymentsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]ListPendingManualTicketPaymentsBySessionRow, error)
 	ListPublicOutletDirectory(ctx context.Context) ([]ListPublicOutletDirectoryRow, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID uuid.UUID) ([]PushSubscription, error)
@@ -130,6 +133,7 @@ type Querier interface {
 	RequeueTicketAtEnd(ctx context.Context, arg RequeueTicketAtEndParams) error
 	SetInvoiceMidtransPayment(ctx context.Context, arg SetInvoiceMidtransPaymentParams) (int64, error)
 	SetManualQRIS(ctx context.Context, arg SetManualQRISParams) error
+	SetPlatformManualQRIS(ctx context.Context, arg SetPlatformManualQRISParams) error
 	SetSubscriptionPlan(ctx context.Context, arg SetSubscriptionPlanParams) (int64, error)
 	SlugExists(ctx context.Context, slug string) (bool, error)
 	StatsDailyByOutlet(ctx context.Context, arg StatsDailyByOutletParams) ([]StatsDailyByOutletRow, error)
