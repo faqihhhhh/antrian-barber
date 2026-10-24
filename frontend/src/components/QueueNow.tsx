@@ -30,10 +30,17 @@ export default function QueueNow({ today, live }: { today: SessionSnapshot | nul
       <p className="mt-4 text-7xl font-bold leading-none tabular-nums">{today.waiting_count}</p>
       <p className="mt-1 text-paper-muted">{today.waiting_count === 0 ? 'Belum ada yang menunggu' : 'orang sedang menunggu'}</p>
       {!closed && (
-        <p className="mt-4 border-t border-ink-muted pt-3 text-sm text-paper-muted">
-          Kalau Anda datang sekarang:{' '}
-          <strong className="text-white">{formatWait(today.estimated_wait_minutes, today.active_kapsters)}</strong>
-        </p>
+        <div className="mt-5 grid grid-cols-2 gap-4 border-t border-ink-muted pt-4">
+          <div>
+            <p className="text-xs text-paper-muted">Kapster aktif</p>
+            <p className="mt-1 text-lg font-bold tabular-nums">{today.active_kapsters}</p>
+          </div>
+          <div>
+            <p className="text-xs text-paper-muted">Perkiraan jika datang sekarang</p>
+            <p className="mt-1 text-sm font-bold">{formatWait(today.estimated_wait_minutes, today.active_kapsters)}</p>
+          </div>
+          <p className="col-span-2 -mt-1 text-xs text-paper-muted">Jumlah antrean dan estimasi dapat berubah selama layanan berlangsung.</p>
+        </div>
       )}
     </section>
   )
