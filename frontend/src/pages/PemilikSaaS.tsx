@@ -157,7 +157,15 @@ function PlatformBilling() {
     {settings.isPending ? <Spinner /> : settings.isError ? <Alert>{messageOf(settings.error)}</Alert> : <div className="space-y-3 rounded-2xl border border-line bg-paper p-4">
       <div className="flex items-center justify-between gap-3"><div><h3 className="font-semibold">QRIS manual platform</h3><p className="text-sm text-body-muted">Status: {settings.data.manual_qris_configured ? 'Sudah dipasang' : 'Belum dipasang'} · Otomatis: {settings.data.midtrans_configured ? 'Tersedia' : 'Belum diatur'}</p></div></div>
       {settings.data.manual_qris_configured && <img src="/v1/admin/payment-settings/manual-qris/image" alt="QRIS manual platform" className="mx-auto size-48 rounded-xl border border-line bg-white object-contain" />}
-      <label className="block text-sm font-medium">Unggah QRIS (PNG, JPG, WebP; maksimal 512 KB)<input ref={input} className="mt-2 block w-full text-sm" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /></label>
+      <div>
+        <span className="mb-2 block text-sm font-medium">Gambar QRIS</span>
+        <label className="relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line-strong bg-white px-4 py-5 text-center transition-colors hover:bg-paper focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/20">
+          <span className="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white">Pilih gambar QRIS</span>
+          <span className="max-w-full break-all text-sm text-body-muted">{file ? file.name : 'Klik di sini untuk memilih file dari perangkat'}</span>
+          <input ref={input} aria-label="Pilih gambar QRIS platform" className="absolute inset-0 h-full w-full cursor-pointer opacity-0" type="file" accept="image/png,image/jpeg,image/webp" disabled={upload.isPending} onChange={(event) => { upload.reset(); setFile(event.target.files?.[0] ?? null) }} />
+        </label>
+        <p className="mt-2 text-xs text-muted">PNG, JPG, atau WebP. Maksimal 512 KB.</p>
+      </div>
       {upload.isError && <Alert>{messageOf(upload.error)}</Alert>}{upload.isSuccess && <Alert tone="success">QRIS manual platform tersimpan.</Alert>}{clear.isError && <Alert>{messageOf(clear.error)}</Alert>}
       <div className="flex flex-wrap gap-2"><button className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" disabled={!file || upload.isPending} onClick={() => upload.mutate()}>{upload.isPending ? 'Menyimpan…' : 'Simpan QRIS'}</button>{settings.data.manual_qris_configured && <button className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold disabled:opacity-50" disabled={clear.isPending} onClick={() => clear.mutate()}>{clear.isPending ? 'Menghapus…' : 'Hapus QRIS'}</button>}</div>
     </div>}
