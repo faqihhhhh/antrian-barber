@@ -315,6 +315,7 @@ function QueuePanel({ membership, session, onStreamConnectionChange }: {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold">{ticket.customer_name || 'Pelanggan'}</span>
                   <span className="block text-sm text-muted">{ticket.channel === 'offline' ? 'Datang langsung' : 'Pesan online'}</span>
+                  {ticket.has_been_called && <span className="mt-1 inline-flex"><Badge tone="warning">Pernah dipanggil</Badge></span>}
                 </span>
               </li>
             ))}

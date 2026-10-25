@@ -49,6 +49,7 @@ type TicketResponse struct {
 	CustomerName  string    `json:"customer_name"`
 	MatchCode     string    `json:"match_code"`
 	Status        string    `json:"status"`
+	HasBeenCalled bool      `json:"has_been_called"`
 }
 
 // QueueSessionResponse hanya memuat data sesi yang dipakai layar operasional.
@@ -384,9 +385,19 @@ func (s *Service) ListTickets(ctx context.Context, sessionID uuid.UUID) ([]Ticke
 	if err != nil {
 		return nil, httpx.Internal(fmt.Errorf("ambil daftar tiket: %w", err))
 	}
+	calledIDs, err := s.queries(ctx).ListCalledTicketIDsBySession(ctx, sessionID)
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("ambil riwayat panggilan tiket: %w", err))
+	}
+	called := make(map[uuid.UUID]struct{}, len(calledIDs))
+	for _, id := range calledIDs {
+		called[id] = struct{}{}
+	}
 	responses := make([]TicketResponse, 0, len(tickets))
 	for _, ticket := range tickets {
-		responses = append(responses, ticketResponse(ticket))
+		response := ticketResponse(ticket)
+		_, response.HasBeenCalled = called[ticket.ID]
+		responses = append(responses, response)
 	}
 	return responses, nil
 }
@@ -504,6 +515,7 @@ func (s *Service) KapsterReady(ctx context.Context, tenantID, sessionID, userID 
 	}
 	s.broadcastSnapshot(ctx, q, sessionID)
 	response := ticketResponse(ticket)
+	response.HasBeenCalled = true
 	return &response, nil
 }
 
@@ -638,6 +650,7 @@ func (s *Service) KapsterSkip(ctx context.Context, tenantID, sessionID, userID u
 	}
 	s.broadcastSnapshot(ctx, q, sessionID)
 	response := ticketResponse(next)
+	response.HasBeenCalled = true
 	return &response, nil
 }
 
@@ -1015,7 +1028,9 @@ func (s *Service) ListAwaitingSettlement(ctx context.Context, sessionID uuid.UUI
 	}
 	responses := make([]TicketResponse, 0, len(tickets))
 	for _, ticket := range tickets {
-		responses = append(responses, ticketResponse(ticket))
+		response := ticketResponse(ticket)
+		response.HasBeenCalled = true
+		responses = append(responses, response)
 	}
 	return responses, nil
 }
@@ -1341,6 +1356,7 @@ type MyTicket struct {
 	Payment        *MyTicketPayment `json:"payment"`
 	Estimate       *EstimateResult  `json:"estimate"`
 	Reviewed       bool             `json:"reviewed"`
+	HasBeenCalled  bool             `json:"has_been_called"`
 }
 
 // MyTickets: tiket aktif dan yang selesai 7 hari terakhir milik pelanggan ini.
@@ -1352,6 +1368,24 @@ func (s *Service) MyTickets(ctx context.Context, userID uuid.UUID) ([]MyTicket, 
 		return nil, httpx.Internal(fmt.Errorf("ambil tiket saya: %w", err))
 	}
 
+	ticketIDs := make([]uuid.UUID, 0, len(rows))
+	for _, row := range rows {
+		ticketIDs = append(ticketIDs, row.TicketID)
+	}
+	calledIDs := make([]uuid.UUID, 0)
+	if len(ticketIDs) > 0 {
+		if err := rls.RunAsSystem(ctx, s.pool, func(systemCtx context.Context) error {
+			var queryErr error
+			calledIDs, queryErr = s.queries(systemCtx).ListCalledTicketIDsForTickets(systemCtx, ticketIDs)
+			return queryErr
+		}); err != nil {
+			return nil, httpx.Internal(fmt.Errorf("ambil riwayat panggilan tiket: %w", err))
+		}
+	}
+	called := make(map[uuid.UUID]struct{}, len(calledIDs))
+	for _, id := range calledIDs {
+		called[id] = struct{}{}
+	}
 	result := make([]MyTicket, 0, len(rows))
 	for _, r := range rows {
 		item := MyTicket{
@@ -1360,6 +1394,7 @@ func (s *Service) MyTickets(ctx context.Context, userID uuid.UUID) ([]MyTicket, 
 			SessionID: r.SessionID, SessionDate: r.SessionDate.Time.Format("2006-01-02"),
 			TicketNumber: r.TicketNumber, Status: r.Status, Reviewed: r.Reviewed,
 		}
+		_, item.HasBeenCalled = called[r.TicketID]
 		if r.MatchCode.Valid {
 			v := r.MatchCode.String
 			item.MatchCode = &v

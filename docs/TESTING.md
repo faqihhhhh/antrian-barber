@@ -169,8 +169,9 @@ bash scripts/verify/verify_kapster_pause.sh
 ```
 
 Skrip membuat sesi masa depan dengan tiga tiket offline. Kapster memanggil tiket 1, melewati tiket 1
-dan 2, lalu pemeriksaan harus menunjukkan tiket 3 sudah dipanggil dan tiket 1–2 berada di belakang
-antrean. Data sesi uji dibiarkan di database. Skrip jeda kapster membuat sesi masa depan kosong,
+dan 2, lalu pemeriksaan harus menunjukkan tiket 3 sudah dipanggil, tiket 1–2 berada di belakang
+antrean, dan kedua tiket itu memiliki penanda pernah dipanggil. Data sesi uji dibiarkan di database.
+Skrip jeda kapster membuat sesi masa depan kosong,
 memastikan status berubah `ready` → `idle`, lalu memeriksa pelanggan aktif tidak bisa ditinggalkan.
 
 Untuk staf owner: dari **Pengaturan outlet**, buka **Kelola staf**. Pastikan daftar staf dan status

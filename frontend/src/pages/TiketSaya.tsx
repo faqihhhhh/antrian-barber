@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { RetryAlert, Spinner } from '../components/ui'
+import { Badge, RetryAlert, Spinner } from '../components/ui'
 import { messageOf } from '../api/client'
 import { useMyTickets, type MyTicket } from '../hooks/useMyTickets'
 import { formatLongDate, isActiveStatus, TICKET_STATUS_LABEL } from '../lib/format'
@@ -72,6 +72,7 @@ function TicketRow({ ticket, highlight }: { ticket: MyTicket; highlight?: boolea
         <span className="block truncate font-semibold">{ticket.outlet_name}</span>
         <span className="block text-sm">{formatLongDate(ticket.session_date)}</span>
         <span className="block text-sm font-medium">{TICKET_STATUS_LABEL[ticket.status] ?? ticket.status}</span>
+        {ticket.has_been_called && ticket.status === 'waiting' && <span className="mt-1 inline-flex"><Badge tone="warning">Pernah dipanggil</Badge></span>}
       </span>
     </Link>
   )

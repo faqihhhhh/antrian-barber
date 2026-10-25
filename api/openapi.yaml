@@ -1575,7 +1575,7 @@ components:
           format: date-time
     QueueTicket:
       type: object
-      required: [id, ticket_number, queue_position, channel, customer_name, match_code, status]
+      required: [id, ticket_number, queue_position, channel, customer_name, match_code, status, has_been_called]
       properties:
         id:
           type: string
@@ -1596,6 +1596,9 @@ components:
         status:
           type: string
           enum: [pending_payment, waiting, called, in_progress, completed, canceled]
+        has_been_called:
+          type: boolean
+          description: True jika tiket pernah dipanggil kapster sebelumnya atau saat ini.
     PendingManualPayment:
       type: object
       required: [ticket_id, ticket_number, customer_name, match_code, method, amount_rupiah, expires_at]
@@ -1827,6 +1830,7 @@ components:
         - payment
         - estimate
         - reviewed
+        - has_been_called
       properties:
         ticket_id:
           type: string
@@ -1869,7 +1873,10 @@ components:
           allOf:
             - $ref: '#/components/schemas/EstimateResult'
         reviewed:
-          type: boolean    
+          type: boolean
+        has_been_called:
+          type: boolean
+          description: True jika tiket pernah dipanggil kapster sebelumnya atau saat ini.
     MessageResponse:
       type: object
       required: [message]

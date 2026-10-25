@@ -559,7 +559,10 @@ function QueueListPanel({ membership, session }: { membership: Membership; sessi
         <ul className="divide-y divide-line rounded-2xl border border-line bg-white px-4">
           {recentTickets.map((ticket) => (
             <li key={ticket.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-              <span><strong>#{ticket.ticket_number}</strong> · {ticket.customer_name || 'Pelanggan'}</span>
+              <span className="min-w-0">
+                <span className="block truncate"><strong>#{ticket.ticket_number}</strong> · {ticket.customer_name || 'Pelanggan'}</span>
+                {ticket.has_been_called && <span className="mt-1 inline-flex"><Badge tone="warning">Pernah dipanggil</Badge></span>}
+              </span>
               <span className="shrink-0 text-muted">{TICKET_STATUS_LABEL[ticket.status] ?? ticket.status}</span>
             </li>
           ))}

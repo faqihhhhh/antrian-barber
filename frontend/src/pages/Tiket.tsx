@@ -93,6 +93,9 @@ export default function Tiket() {
       {live && <ConnectionStatus connected={stream.connected} />}
       </div>
       <TicketStub ticket={ticket} showCode={ticket.status !== 'pending_payment' && ticket.status !== 'canceled'} />
+      {ticket.has_been_called && ticket.status === 'waiting' && (
+        <Alert tone="warning">Tiket Anda pernah dipanggil dan kini kembali menunggu di antrean. Pastikan Anda berada di outlet saat giliran tiba.</Alert>
+      )}
       {(ticket.status === 'waiting' || ticket.status === 'called') && <StatusBody ticket={ticket} />}
       <StatusStepper status={ticket.status} />
       {ticket.status === 'waiting' && <PushPrompt />}

@@ -84,6 +84,8 @@ type Querier interface {
 	IncreaseQueueQuota(ctx context.Context, arg IncreaseQueueQuotaParams) (QueueSession, error)
 	IsPlatformAdmin(ctx context.Context, userID uuid.UUID) (bool, error)
 	ListActivePlans(ctx context.Context) ([]Plan, error)
+	ListCalledTicketIDsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]uuid.UUID, error)
+	ListCalledTicketIDsForTickets(ctx context.Context, ticketIds []uuid.UUID) ([]uuid.UUID, error)
 	ListExpiredPendingPayments(ctx context.Context) ([]TicketPayment, error)
 	ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) ([]Invoice, error)
 	ListKapsterStatesBySession(ctx context.Context, queueSessionID uuid.UUID) ([]KapsterSessionState, error)

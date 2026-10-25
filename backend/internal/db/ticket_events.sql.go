@@ -33,3 +33,56 @@ func (q *Queries) CreateTicketEvent(ctx context.Context, arg CreateTicketEventPa
 	)
 	return err
 }
+
+const listCalledTicketIDsBySession = `-- name: ListCalledTicketIDsBySession :many
+SELECT DISTINCT te.ticket_id
+FROM ticket_events te
+JOIN tickets t ON t.id = te.ticket_id
+WHERE t.queue_session_id = $1 AND te.event_type = 'called'
+`
+
+func (q *Queries) ListCalledTicketIDsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listCalledTicketIDsBySession, queueSessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var ticket_id uuid.UUID
+		if err := rows.Scan(&ticket_id); err != nil {
+			return nil, err
+		}
+		items = append(items, ticket_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCalledTicketIDsForTickets = `-- name: ListCalledTicketIDsForTickets :many
+SELECT DISTINCT ticket_id
+FROM ticket_events
+WHERE event_type = 'called' AND ticket_id = ANY($1::uuid[])
+`
+
+func (q *Queries) ListCalledTicketIDsForTickets(ctx context.Context, ticketIds []uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listCalledTicketIDsForTickets, ticketIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var ticket_id uuid.UUID
+		if err := rows.Scan(&ticket_id); err != nil {
+			return nil, err
+		}
+		items = append(items, ticket_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

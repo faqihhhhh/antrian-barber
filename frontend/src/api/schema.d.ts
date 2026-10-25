@@ -1181,6 +1181,8 @@ export interface components {
             match_code: string;
             /** @enum {string} */
             status: "pending_payment" | "waiting" | "called" | "in_progress" | "completed" | "canceled";
+            /** @description True jika tiket pernah dipanggil kapster sebelumnya atau saat ini. */
+            has_been_called: boolean;
         };
         PendingManualPayment: {
             /** Format: uuid */
@@ -1324,6 +1326,8 @@ export interface components {
             payment: components["schemas"]["MyTicketPayment"] | null;
             estimate: components["schemas"]["EstimateResult"] | null;
             reviewed: boolean;
+            /** @description True jika tiket pernah dipanggil kapster sebelumnya atau saat ini. */
+            has_been_called: boolean;
         };
         MessageResponse: {
             message: string;

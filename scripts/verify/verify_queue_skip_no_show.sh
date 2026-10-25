@@ -65,6 +65,11 @@ check "skip pertama memanggil pelanggan kedua" "2" "$(jq -r '.ticket_number' "$T
 post_kapster skip
 check "skip kedua melewati dua no-show dan memanggil pelanggan ketiga" "3" "$(jq -r '.ticket_number' "$TMP_DIR/response.json")"
 
+QUEUE_TICKETS="$(curl -fsS -b "$KAPSTER_COOKIE_JAR" "$API_BASE/v1/tenants/$TENANT_ID/queue-sessions/$SESSION_ID/tickets")"
+for index in 0 1; do
+  check "tiket yang dilewati tercatat pernah dipanggil: #$((index + 1))" "true" "$(jq -er --arg id "${TICKET_IDS[$index]}" '.[] | select(.id == $id) | .has_been_called' <<<"$QUEUE_TICKETS")"
+done
+
 TICKET_STATE="$(docker compose exec -T db psql -U kapsflow -d kapsflow -At -v ON_ERROR_STOP=1 -c \
   "SELECT string_agg(ticket_number::text || ':' || status, ',' ORDER BY ticket_number) FROM tickets WHERE id IN ('${TICKET_IDS[0]}','${TICKET_IDS[1]}','${TICKET_IDS[2]}')")"
 check "dua tiket yang dilewati kembali menunggu" "1:waiting,2:waiting,3:called" "$TICKET_STATE"
