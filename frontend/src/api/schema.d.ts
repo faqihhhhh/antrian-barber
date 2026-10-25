@@ -845,6 +845,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Berhenti sementara dari status siap */
+        post: operations["kapsterPause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/start": {
         parameters: {
             query?: never;
@@ -2889,6 +2906,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueueTicket"] | components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    kapsterPause: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                sessionID: components["parameters"]["SessionID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Kapster kembali ke status tidak siap */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             default: components["responses"]["Error"];

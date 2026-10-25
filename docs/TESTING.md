@@ -161,11 +161,17 @@ TENANT_ID=YOUR_TENANT_UUID OUTLET_ID=YOUR_OUTLET_UUID \
 ADMIN_COOKIE_JAR=/tmp/admin-test-cookies.txt \
 KAPSTER_COOKIE_JAR=/tmp/kapster-test-cookies.txt \
 bash scripts/verify/verify_queue_skip_no_show.sh
+
+TENANT_ID=YOUR_TENANT_UUID OUTLET_ID=YOUR_OUTLET_UUID \
+ADMIN_COOKIE_JAR=/tmp/admin-test-cookies.txt \
+KAPSTER_COOKIE_JAR=/tmp/kapster-test-cookies.txt \
+bash scripts/verify/verify_kapster_pause.sh
 ```
 
 Skrip membuat sesi masa depan dengan tiga tiket offline. Kapster memanggil tiket 1, melewati tiket 1
 dan 2, lalu pemeriksaan harus menunjukkan tiket 3 sudah dipanggil dan tiket 1–2 berada di belakang
-antrean. Data sesi uji dibiarkan di database.
+antrean. Data sesi uji dibiarkan di database. Skrip jeda kapster membuat sesi masa depan kosong,
+memastikan status berubah `ready` → `idle`, lalu memeriksa pelanggan aktif tidak bisa ditinggalkan.
 
 Untuk staf owner: dari **Pengaturan outlet**, buka **Kelola staf**. Pastikan daftar staf dan status
 verifikasi email tampil. Form undangan harus menyediakan pilihan peran Admin/Kapster (boleh keduanya)

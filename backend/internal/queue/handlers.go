@@ -235,6 +235,25 @@ func (h *Handlers) Ready(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, ticket)
 }
 
+func (h *Handlers) Pause(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := param(r, "tenantID")
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("tenant_id_tidak_valid", "ID tenant tidak valid", err))
+		return
+	}
+	sessionID, err := param(r, "sessionID")
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("session_id_tidak_valid", "ID sesi tidak valid", err))
+		return
+	}
+	user, _ := identity.UserFromContext(r.Context())
+	if err := h.svc.KapsterPause(r.Context(), tenantID, sessionID, user.ID); err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Status siap dihentikan sementara"})
+}
+
 func (h *Handlers) Start(w http.ResponseWriter, r *http.Request) {
 	tenantID, err := param(r, "tenantID")
 	if err != nil {

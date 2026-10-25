@@ -1132,6 +1132,25 @@ paths:
                   - $ref: '#/components/schemas/MessageResponse'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/queue-sessions/{sessionID}/pause:
+    post:
+      operationId: kapsterPause
+      tags: [kapster]
+      summary: Berhenti sementara dari status siap
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - $ref: '#/components/parameters/SessionID'
+      responses:
+        '200':
+          description: Kapster kembali ke status tidak siap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/queue-sessions/{sessionID}/start:
     post:
       operationId: kapsterStart

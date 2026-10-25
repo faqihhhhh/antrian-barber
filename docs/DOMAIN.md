@@ -10,7 +10,7 @@ lalu perbaiki yang salah. Jangan diam-diam mengubah salah satunya.
 | Pemilik SaaS | `users.is_platform_admin` | Semua tenant, tagihan langganan, statistik platform (MRR, ARR, ARPA, churn) |
 | Owner | `memberships.roles` memuat `owner` | Mengatur bisnis, outlet, staf, harga DP, pembayaran, langganan, statistik, ulasan |
 | Admin | `admin` | Konfirmasi DP manual, tambah tiket offline, kelola sesi antrian di outlet penugasannya |
-| Kapster | `kapster` | Menekan siap, memanggil, memulai, menyelesaikan, melewati tiket di outlet penugasannya |
+| Kapster | `kapster` | Menekan siap, berhenti sementara dari status siap, memanggil, memulai, menyelesaikan, melewati tiket di outlet penugasannya |
 | Pembeli | pengguna biasa tanpa keanggotaan | Memesan, membayar DP, melihat tiket sendiri, memberi ulasan |
 
 Satu pengguna bisa punya beberapa keanggotaan dan satu keanggotaan bisa punya beberapa peran.
@@ -88,7 +88,11 @@ tiket `canceled`, kuota kembali. Untuk Midtrans, job mengecek status dulu (bisa 
 `pending_payment` -> `waiting` (setelah DP lunas) -> `called` (kapster menekan siap) -> `in_progress`
 -> `completed`. `canceled` bisa dari `pending_payment`. Tiket offline (tambah oleh admin) langsung `waiting`.
 Antrian diurutkan `queue_position`. Kapster yang menekan "siap" saat masih sibuk tidak boleh
-menghasilkan tiket yatim (ada guard `busy`).
+menghasilkan tiket yatim (ada guard `busy`). Saat antrean kosong, kapster berstatus `ready` dan
+dapat berhenti sementara ke `idle`; kapster tidak dapat berhenti saat sedang melayani pelanggan.
+Status ini terikat pada sesi tanggal tersebut dan tidak terbawa ke sesi hari berikutnya. Saat sesi
+ditutup manual atau otomatis setelah tanggal lokal outlet terlewati, status `ready` diubah kembali
+ke `idle`; kapster `busy` tetap dapat menyelesaikan tiket yang sedang ditangani.
 
 Jika pelanggan belum hadir saat dipanggil, kapster dapat memilih "Ganti pelanggan". Tiket itu tetap
 menunggu tetapi dipindah ke belakang seluruh antrean, lalu tiket menunggu terdepan berikutnya langsung

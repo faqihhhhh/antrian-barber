@@ -13,7 +13,7 @@ import (
 )
 
 const getKapsterSessionState = `-- name: GetKapsterSessionState :one
-SELECT id, tenant_id, queue_session_id, membership_id, status, current_ticket_id, created_at, updated_at FROM kapster_session_state WHERE queue_session_id = $1 AND membership_id = $2
+SELECT id, tenant_id, queue_session_id, membership_id, status, current_ticket_id, created_at, updated_at FROM kapster_session_state WHERE queue_session_id = $1 AND membership_id = $2 FOR UPDATE
 `
 
 type GetKapsterSessionStateParams struct {
@@ -68,6 +68,17 @@ func (q *Queries) ListKapsterStatesBySession(ctx context.Context, queueSessionID
 		return nil, err
 	}
 	return items, nil
+}
+
+const setReadyKapstersIdle = `-- name: SetReadyKapstersIdle :exec
+UPDATE kapster_session_state
+SET status = 'idle', updated_at = now()
+WHERE queue_session_id = $1 AND status = 'ready'
+`
+
+func (q *Queries) SetReadyKapstersIdle(ctx context.Context, queueSessionID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, setReadyKapstersIdle, queueSessionID)
+	return err
 }
 
 const upsertKapsterSessionState = `-- name: UpsertKapsterSessionState :one

@@ -6,7 +6,12 @@ ON CONFLICT (queue_session_id, membership_id) DO UPDATE SET
 RETURNING *;
 
 -- name: GetKapsterSessionState :one
-SELECT * FROM kapster_session_state WHERE queue_session_id = $1 AND membership_id = $2;
+SELECT * FROM kapster_session_state WHERE queue_session_id = $1 AND membership_id = $2 FOR UPDATE;
 
 -- name: ListKapsterStatesBySession :many
 SELECT * FROM kapster_session_state WHERE queue_session_id = $1;
+
+-- name: SetReadyKapstersIdle :exec
+UPDATE kapster_session_state
+SET status = 'idle', updated_at = now()
+WHERE queue_session_id = $1 AND status = 'ready';

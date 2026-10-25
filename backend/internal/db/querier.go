@@ -134,6 +134,7 @@ type Querier interface {
 	SetInvoiceMidtransPayment(ctx context.Context, arg SetInvoiceMidtransPaymentParams) (int64, error)
 	SetManualQRIS(ctx context.Context, arg SetManualQRISParams) error
 	SetPlatformManualQRIS(ctx context.Context, arg SetPlatformManualQRISParams) error
+	SetReadyKapstersIdle(ctx context.Context, queueSessionID uuid.UUID) error
 	SetSubscriptionPlan(ctx context.Context, arg SetSubscriptionPlanParams) (int64, error)
 	SlugExists(ctx context.Context, slug string) (bool, error)
 	StatsDailyByOutlet(ctx context.Context, arg StatsDailyByOutletParams) ([]StatsDailyByOutletRow, error)

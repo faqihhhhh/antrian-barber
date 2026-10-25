@@ -160,13 +160,18 @@ function QueuePanel({ membership, session, onStreamConnectionChange }: {
     refetchInterval: stream.connected ? false : POLL_INTERVAL,
   })
   const action = useMutation({
-    mutationFn: async (name: 'ready' | 'start' | 'skip' | 'complete') => {
+    mutationFn: async (name: 'ready' | 'pause' | 'start' | 'skip' | 'complete') => {
       const params = { params: { path: { tenantID: membership.tenant_id, sessionID: session.id } } }
       switch (name) {
         case 'ready': {
           const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/ready', params)
           if (!response.ok) throw new ApiError(error)
           return data && 'message' in data ? data.message : 'Pelanggan berikutnya dipanggil.'
+        }
+        case 'pause': {
+          const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/pause', params)
+          if (!response.ok || !data) throw new ApiError(error)
+          return data.message
         }
         case 'start': {
           const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/queue-sessions/{sessionID}/start', params)
@@ -247,9 +252,13 @@ function QueuePanel({ membership, session, onStreamConnectionChange }: {
           </Button>
         )}
         {!currentTicket && myState?.status === 'ready' && (
-          <p className="rounded-2xl border border-line bg-white px-4 py-4 text-center font-semibold" role="status">
-            Menunggu pelanggan berikutnya…
-          </p>
+          <div className="space-y-3 rounded-2xl border border-line bg-white px-4 py-4 text-center">
+            <p className="font-semibold" role="status">Menunggu pelanggan berikutnya…</p>
+            <p className="text-sm text-body-muted">Jika perlu meninggalkan tempat, berhenti sementara. Pelanggan baru tetap masuk antrean dan dilayani saat kapster siap.</p>
+            <Button type="button" variant="secondary" loading={action.isPending && action.variables === 'pause'} disabled={action.isPending} onClick={() => action.mutate('pause')}>
+              {action.isPending && action.variables === 'pause' ? 'Mengubah status…' : 'Berhenti sementara'}
+            </Button>
+          </div>
         )}
         {currentTicket?.status === 'called' && (
           <Button type="button" loading={action.isPending && action.variables === 'start'} disabled={action.isPending} onClick={() => action.mutate('start')} className="py-3 text-base">

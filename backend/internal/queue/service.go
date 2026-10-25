@@ -279,6 +279,9 @@ func (s *Service) CloseQueueSession(ctx context.Context, tenantID, sessionID, us
 	if err != nil {
 		return QueueSessionResponse{}, httpx.Internal(fmt.Errorf("menutup sesi antrian: %w", err))
 	}
+	if err := q.SetReadyKapstersIdle(ctx, sessionID); err != nil {
+		return QueueSessionResponse{}, httpx.Internal(fmt.Errorf("mengakhiri status siap kapster: %w", err))
+	}
 	s.broadcastSnapshot(ctx, q, sessionID)
 	return queueSessionResponse(closedSession), nil
 }
@@ -296,6 +299,9 @@ func (s *Service) ClosePastQueueSessions(ctx context.Context) (int, error) {
 		}
 		closedIDs = ids
 		for _, sessionID := range ids {
+			if err := q.SetReadyKapstersIdle(systemCtx, sessionID); err != nil {
+				return fmt.Errorf("mengakhiri status siap kapster: %w", err)
+			}
 			snapshot, snapshotErr := s.buildSnapshot(systemCtx, q, sessionID)
 			if snapshotErr != nil {
 				s.log.Error("gagal membangun snapshot sesi yang ditutup otomatis", "err", snapshotErr, "session_id", sessionID)
@@ -499,6 +505,41 @@ func (s *Service) KapsterReady(ctx context.Context, tenantID, sessionID, userID 
 	s.broadcastSnapshot(ctx, q, sessionID)
 	response := ticketResponse(ticket)
 	return &response, nil
+}
+
+// KapsterPause mengembalikan kapster dari status siap ke idle tanpa tiket aktif.
+func (s *Service) KapsterPause(ctx context.Context, tenantID, sessionID, userID uuid.UUID) error {
+	q := s.queries(ctx)
+	membership, err := s.requireKapster(ctx, q, tenantID, userID)
+	if err != nil {
+		return err
+	}
+	if err := s.requireSessionOutletAssignment(ctx, q, tenantID, sessionID, membership); err != nil {
+		return err
+	}
+
+	state, err := q.GetKapsterSessionState(ctx, db.GetKapsterSessionStateParams{QueueSessionID: sessionID, MembershipID: membership.ID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return httpx.Conflict("kapster_belum_siap", "Tekan Siap terlebih dahulu sebelum berhenti sementara", nil)
+	}
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("cek status kapster: %w", err))
+	}
+	if state.Status == "busy" {
+		return httpx.Conflict("masih_ada_pelanggan_aktif", "Selesaikan pelanggan yang sedang ditangani sebelum berhenti sementara", nil)
+	}
+	if state.Status == "idle" {
+		return nil
+	}
+
+	if _, err := q.UpsertKapsterSessionState(ctx, db.UpsertKapsterSessionStateParams{
+		TenantID: tenantID, QueueSessionID: sessionID, MembershipID: membership.ID,
+		Status: "idle", CurrentTicketID: pgtype.UUID{},
+	}); err != nil {
+		return httpx.Internal(fmt.Errorf("mengubah status kapster: %w", err))
+	}
+	s.broadcastSnapshot(ctx, q, sessionID)
+	return nil
 }
 
 func (s *Service) currentTicketID(state db.KapsterSessionState) (uuid.UUID, bool) {

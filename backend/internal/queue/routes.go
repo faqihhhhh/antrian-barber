@@ -29,6 +29,7 @@ func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger, pool *pgxpool.
 	r.Get("/{tenantID}/queue-sessions/{sessionID}/awaiting-settlement", h.ListAwaitingSettlement)
 
 	r.With(requireActive).Post("/{tenantID}/queue-sessions/{sessionID}/ready", h.Ready)
+	r.Post("/{tenantID}/queue-sessions/{sessionID}/pause", h.Pause)
 	r.With(requireActive).Post("/{tenantID}/queue-sessions/{sessionID}/start", h.Start)
 	r.With(requireActive).Post("/{tenantID}/queue-sessions/{sessionID}/skip", h.Skip)
 	r.With(requireActive).Post("/{tenantID}/queue-sessions/{sessionID}/complete", h.Complete)
