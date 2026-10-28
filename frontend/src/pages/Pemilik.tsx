@@ -28,17 +28,24 @@ export default function Pemilik() {
       <header>
         <h1 className="mt-1 text-2xl font-bold">Bisnis</h1>
       </header>
-      <nav
-        aria-label="Navigasi pengaturan bisnis"
-        className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 text-sm font-semibold"
-      >
-        <Link className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-2 text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" to="/pemilik/pembayaran">Pembayaran DP</Link>
-        <Link className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-2 text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" to="/pemilik/staf">Kelola staf</Link>
-        <Link className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-2 text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" to="/pemilik/peran">Peran operasional</Link>
-        <Link className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-2 text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" to="/pemilik/statistik">Statistik</Link>
-        <Link className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-2 text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" to="/pemilik/ulasan">Ulasan pelanggan</Link>
-        <Link className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-2 text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" to="/pemilik/langganan">Langganan</Link>
-      </nav>
+      <div className="space-y-4" aria-label="Menu pengelolaan bisnis">
+        <section aria-labelledby="operasional-heading" className="space-y-2">
+          <h2 id="operasional-heading" className="text-sm font-bold text-body-muted">Operasional</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <ManagementLink to="/pemilik/pembayaran" title="Pembayaran DP" description="Atur uang muka pelanggan" />
+            <ManagementLink to="/pemilik/staf" title="Kelola staf" description="Undang dan atur staf" />
+            <ManagementLink to="/pemilik/peran" title="Peran operasional" description="Atur akses Admin dan Kapster" />
+          </div>
+        </section>
+        <section aria-labelledby="bisnis-heading" className="space-y-2">
+          <h2 id="bisnis-heading" className="text-sm font-bold text-body-muted">Pantau & paket</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <ManagementLink to="/pemilik/statistik" title="Statistik" description="Lihat kinerja bisnis" />
+            <ManagementLink to="/pemilik/ulasan" title="Ulasan pelanggan" description="Baca penilaian pelanggan" />
+            <ManagementLink to="/pemilik/langganan" title="Langganan" description="Paket dan tagihan bisnis" />
+          </div>
+        </section>
+      </div>
 
       {memberships.length === 0 ? (
         <Alert tone="info">Akun ini belum menjadi owner bisnis.</Alert>
@@ -61,6 +68,21 @@ export default function Pemilik() {
         </>
       )}
     </main>
+  )
+}
+
+function ManagementLink({ to, title, description }: { to: string; title: string; description: string }) {
+  return (
+    <Link
+      to={to}
+      className="group flex min-h-24 flex-col justify-between rounded-2xl border border-line bg-white p-3 transition hover:border-line-strong hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
+    >
+      <span className="text-sm font-bold leading-5 text-ink">{title}</span>
+      <span className="flex items-end justify-between gap-1 text-xs leading-4 text-body-muted">
+        {description}
+        <span aria-hidden="true" className="shrink-0 text-base text-ink transition-transform group-hover:translate-x-0.5">→</span>
+      </span>
+    </Link>
   )
 }
 
