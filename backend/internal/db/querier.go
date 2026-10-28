@@ -80,6 +80,7 @@ type Querier interface {
 	GetValidEmailVerificationToken(ctx context.Context, tokenHash string) (EmailVerificationToken, error)
 	GetValidPasswordResetToken(ctx context.Context, tokenHash string) (PasswordResetToken, error)
 	GetValidSession(ctx context.Context, tokenHash string) (Session, error)
+	HasActiveKapsterTicketForMembership(ctx context.Context, membershipID uuid.UUID) (bool, error)
 	IncreaseQueueQuota(ctx context.Context, arg IncreaseQueueQuotaParams) (QueueSession, error)
 	IsPlatformAdmin(ctx context.Context, userID uuid.UUID) (bool, error)
 	ListActivePlans(ctx context.Context) ([]Plan, error)
@@ -136,6 +137,7 @@ type Querier interface {
 	SetInvoiceMidtransPayment(ctx context.Context, arg SetInvoiceMidtransPaymentParams) (int64, error)
 	SetManualQRIS(ctx context.Context, arg SetManualQRISParams) error
 	SetPlatformManualQRIS(ctx context.Context, arg SetPlatformManualQRISParams) error
+	SetReadyKapsterStatesIdleForMembership(ctx context.Context, membershipID uuid.UUID) error
 	SetReadyKapstersIdle(ctx context.Context, queueSessionID uuid.UUID) error
 	SetSubscriptionPlan(ctx context.Context, arg SetSubscriptionPlanParams) (int64, error)
 	SlugExists(ctx context.Context, slug string) (bool, error)
@@ -144,6 +146,7 @@ type Querier interface {
 	StatsPeakHours(ctx context.Context, arg StatsPeakHoursParams) ([]StatsPeakHoursRow, error)
 	StatsTimingByOutlet(ctx context.Context, arg StatsTimingByOutletParams) ([]StatsTimingByOutletRow, error)
 	TouchSession(ctx context.Context, id uuid.UUID) error
+	UpdateMembershipRoles(ctx context.Context, arg UpdateMembershipRolesParams) (int64, error)
 	UpdateOutletSettings(ctx context.Context, arg UpdateOutletSettingsParams) (Outlet, error)
 	UpdatePlanPrice(ctx context.Context, arg UpdatePlanPriceParams) (Plan, error)
 	UpdateUserDisplayName(ctx context.Context, arg UpdateUserDisplayNameParams) error

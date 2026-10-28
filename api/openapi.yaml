@@ -446,6 +446,34 @@ paths:
                 $ref: '#/components/schemas/DisplayNameResponse'
         default:
           $ref: '#/components/responses/Error'
+  /v1/me/tenants/{tenantID}/work-roles:
+    put:
+      operationId: setMyWorkRoles
+      tags: [akun]
+      summary: Aktifkan ruang Admin atau Kapster untuk owner
+      description: Owner hanya dapat mengatur peran operasional pada membership miliknya sendiri. Peran owner selalu dipertahankan.
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: tenantID
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OwnerWorkRolesRequest'
+      responses:
+        '200':
+          description: Peran owner diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OwnerWorkRolesResponse'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/me/password:
     put:
       operationId: changeMyPassword
@@ -1927,6 +1955,23 @@ components:
       properties:
         display_name:
           type: string
+    OwnerWorkRolesRequest:
+      type: object
+      required: [admin, kapster]
+      properties:
+        admin:
+          type: boolean
+        kapster:
+          type: boolean
+    OwnerWorkRolesResponse:
+      type: object
+      required: [roles]
+      properties:
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [owner, admin, kapster]
     ChangePasswordRequest:
       type: object
       required: [current_password, new_password]

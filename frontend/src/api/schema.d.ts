@@ -366,6 +366,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/tenants/{tenantID}/work-roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Aktifkan ruang Admin atau Kapster untuk owner
+         * @description Owner hanya dapat mengatur peran operasional pada membership miliknya sendiri. Peran owner selalu dipertahankan.
+         */
+        put: operations["setMyWorkRoles"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/password": {
         parameters: {
             query?: never;
@@ -1352,6 +1372,13 @@ export interface components {
         DisplayNameResponse: {
             display_name: string;
         };
+        OwnerWorkRolesRequest: {
+            admin: boolean;
+            kapster: boolean;
+        };
+        OwnerWorkRolesResponse: {
+            roles: ("owner" | "admin" | "kapster")[];
+        };
         ChangePasswordRequest: {
             current_password: string;
             new_password: string;
@@ -2135,6 +2162,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DisplayNameResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    setMyWorkRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OwnerWorkRolesRequest"];
+            };
+        };
+        responses: {
+            /** @description Peran owner diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerWorkRolesResponse"];
                 };
             };
             default: components["responses"]["Error"];

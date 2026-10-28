@@ -146,7 +146,7 @@ LEFT JOIN subscriptions s ON s.tenant_id = t.id;
 -- name: PlatformTotals :one
 SELECT
     (SELECT COUNT(*) FROM outlets)::bigint AS outlets_total,
-    (SELECT COUNT(*) FROM memberships WHERE roles && ARRAY['admin','kapster']::text[])::bigint AS staff_total,
+    (SELECT COUNT(*) FROM memberships WHERE roles && ARRAY['admin','kapster']::text[] AND NOT ('owner' = ANY(roles)))::bigint AS staff_total,
     (SELECT COUNT(*) FROM users WHERE id <> '00000000-0000-0000-0000-000000000001'::uuid)::bigint AS users_total,
     (SELECT COUNT(DISTINCT tenant_id) FROM invoices WHERE status = 'paid')::bigint AS ever_paid,
     (SELECT COUNT(*) FROM tenant_profiles WHERE midtrans_configured_at IS NOT NULL)::bigint AS midtrans_configured,

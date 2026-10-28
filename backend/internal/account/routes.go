@@ -10,5 +10,6 @@ func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger) {
 	h := NewHandlers(svc, log)
 	r.Get("/", h.Me)
 	r.Put("/display_name", h.SetDisplayName)
+	r.Put("/tenants/{tenantID}/work-roles", h.SetMyWorkRoles)
 	r.Put("/password", h.ChangePassword)
 }

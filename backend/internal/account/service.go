@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"kapsflow/internal/billing"
@@ -50,6 +51,58 @@ func (s *Service) SetDisplayName(ctx context.Context, userID uuid.UUID, rawDispl
 		return "", httpx.Internal(fmt.Errorf("menyimpan display_name: %w", err))
 	}
 	return displayName, nil
+}
+
+func (s *Service) SetMyWorkRoles(ctx context.Context, tenantID, userID uuid.UUID, enableAdmin, enableKapster bool) ([]string, error) {
+	q := s.queries(ctx)
+	membership, err := q.GetMembershipForUserAndTenant(ctx, db.GetMembershipForUserAndTenantParams{
+		TenantID: tenantID,
+		UserID:   userID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && !slices.Contains(membership.Roles, "owner")) {
+		return nil, httpx.Forbidden("bukan_owner", "Hanya owner yang bisa mengatur peran operasional akun ini", nil)
+	}
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("memeriksa membership owner: %w", err))
+	}
+
+	wasKapster := slices.Contains(membership.Roles, "kapster")
+	if wasKapster && !enableKapster {
+		busy, err := q.HasActiveKapsterTicketForMembership(ctx, membership.ID)
+		if err != nil {
+			return nil, httpx.Internal(fmt.Errorf("memeriksa layanan kapster aktif: %w", err))
+		}
+		if busy {
+			return nil, httpx.Conflict("kapster_sedang_melayani", "Selesaikan layanan yang sedang berjalan sebelum menonaktifkan peran kapster", nil)
+		}
+		if err := q.SetReadyKapsterStatesIdleForMembership(ctx, membership.ID); err != nil {
+			return nil, httpx.Internal(fmt.Errorf("mengakhiri status siap kapster: %w", err))
+		}
+	}
+
+	roles := workspaceRoles(enableAdmin, enableKapster)
+	rows, err := q.UpdateMembershipRoles(ctx, db.UpdateMembershipRolesParams{
+		ID:    membership.ID,
+		Roles: roles,
+	})
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("menyimpan peran operasional owner: %w", err))
+	}
+	if rows != 1 {
+		return nil, httpx.Internal(fmt.Errorf("menyimpan peran operasional owner: %d membership diperbarui", rows))
+	}
+	return roles, nil
+}
+
+func workspaceRoles(enableAdmin, enableKapster bool) []string {
+	roles := []string{"owner"}
+	if enableAdmin {
+		roles = append(roles, "admin")
+	}
+	if enableKapster {
+		roles = append(roles, "kapster")
+	}
+	return roles
 }
 
 func (s *Service) ChangePassword(ctx context.Context, userID uuid.UUID, currentPassword, newPassword string) error {

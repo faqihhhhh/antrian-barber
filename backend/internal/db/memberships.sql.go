@@ -141,7 +141,9 @@ SELECT
     u.email_verified_at
 FROM memberships m
 JOIN users u ON u.id = m.user_id
-WHERE m.tenant_id = $1 AND m.roles && ARRAY['admin','kapster']::text[]
+WHERE m.tenant_id = $1
+  AND m.roles && ARRAY['admin','kapster']::text[]
+  AND NOT ('owner' = ANY(m.roles))
 ORDER BY m.created_at
 `
 

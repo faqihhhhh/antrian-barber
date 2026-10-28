@@ -17,6 +17,7 @@ const Kapster = lazy(() => import('./pages/Kapster'))
 const Beranda = lazy(() => import('./pages/Beranda'))
 const Pemilik = lazy(() => import('./pages/Pemilik'))
 const PemilikStaf = lazy(() => import('./pages/PemilikStaf'))
+const PemilikPeran = lazy(() => import('./pages/PemilikPeran'))
 const PemilikPembayaran = lazy(() => import('./pages/PemilikPembayaran'))
 const PemilikStatistik = lazy(() => import('./pages/PemilikStatistik'))
 const PemilikUlasan = lazy(() => import('./pages/PemilikUlasan'))
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="kelola/:tenantId/sesi/:sessionId" element={<Admin />} />
           <Route path="pemilik" element={<Pemilik />} />
           <Route path="pemilik/staf" element={<PemilikStaf />} />
+          <Route path="pemilik/peran" element={<PemilikPeran />} />
           <Route path="pemilik/pembayaran" element={<PemilikPembayaran />} />
           <Route path="pemilik/statistik" element={<PemilikStatistik />} />
           <Route path="pemilik/ulasan" element={<PemilikUlasan />} />

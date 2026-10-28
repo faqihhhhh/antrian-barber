@@ -34,6 +34,7 @@ export default function Pemilik() {
       >
         <Link className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-2 text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" to="/pemilik/pembayaran">Pembayaran DP</Link>
         <Link className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-2 text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" to="/pemilik/staf">Kelola staf</Link>
+        <Link className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-2 text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" to="/pemilik/peran">Peran operasional</Link>
         <Link className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-2 text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" to="/pemilik/statistik">Statistik</Link>
         <Link className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-2 text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" to="/pemilik/ulasan">Ulasan pelanggan</Link>
         <Link className="shrink-0 rounded-full border border-line-strong bg-white px-3 py-2 text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" to="/pemilik/langganan">Langganan</Link>
@@ -91,10 +92,10 @@ function OutletList({ membership }: { membership: Membership }) {
     <section className="space-y-4">
       <article className="space-y-3 rounded-2xl border border-line bg-white p-4">
         <h2 className="font-bold">Lanjutkan penyiapan</h2>
-        <p className="text-sm leading-6 text-body-muted">Atur harga DP di outlet, pasang QRIS untuk menerima pembayaran, lalu buka sesi di meja admin agar pelanggan bisa memesan.</p>
+        <p className="text-sm leading-6 text-body-muted">Atur harga DP di outlet dan pasang QRIS. Aktifkan ruang Admin jika Anda ingin mengelola sesi antrean sendiri.</p>
         <div className="flex flex-wrap gap-2">
           <Link to="/pemilik/pembayaran" className="inline-flex rounded-xl border border-line-strong px-4 py-3 text-sm font-semibold text-ink">Atur pembayaran DP</Link>
-          <Link to="/admin" className="inline-flex rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white">Buka meja admin</Link>
+          <Link to="/pemilik/peran" className="inline-flex rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white">Atur peran operasional</Link>
         </div>
       </article>
       {outlets.data.map((outlet) => (

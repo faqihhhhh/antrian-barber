@@ -11,6 +11,23 @@ import (
 	"github.com/google/uuid"
 )
 
+const hasActiveKapsterTicketForMembership = `-- name: HasActiveKapsterTicketForMembership :one
+SELECT EXISTS (
+    SELECT 1
+    FROM kapster_session_state kss
+    JOIN tickets t ON t.id = kss.current_ticket_id
+    WHERE kss.membership_id = $1
+      AND t.status IN ('called', 'in_progress')
+)
+`
+
+func (q *Queries) HasActiveKapsterTicketForMembership(ctx context.Context, membershipID uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, hasActiveKapsterTicketForMembership, membershipID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listMembershipContextForUser = `-- name: ListMembershipContextForUser :many
 SELECT m.id AS membership_id, m.tenant_id, t.name AS tenant_name, m.roles
 FROM memberships m
@@ -99,4 +116,34 @@ func (q *Queries) ListOutletsForMembership(ctx context.Context, arg ListOutletsF
 		return nil, err
 	}
 	return items, nil
+}
+
+const setReadyKapsterStatesIdleForMembership = `-- name: SetReadyKapsterStatesIdleForMembership :exec
+UPDATE kapster_session_state
+SET status = 'idle', current_ticket_id = NULL, updated_at = now()
+WHERE membership_id = $1 AND status = 'ready'
+`
+
+func (q *Queries) SetReadyKapsterStatesIdleForMembership(ctx context.Context, membershipID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, setReadyKapsterStatesIdleForMembership, membershipID)
+	return err
+}
+
+const updateMembershipRoles = `-- name: UpdateMembershipRoles :execrows
+UPDATE memberships
+SET roles = $2, updated_at = now()
+WHERE id = $1
+`
+
+type UpdateMembershipRolesParams struct {
+	ID    uuid.UUID `json:"id"`
+	Roles []string  `json:"roles"`
+}
+
+func (q *Queries) UpdateMembershipRoles(ctx context.Context, arg UpdateMembershipRolesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateMembershipRoles, arg.ID, arg.Roles)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
