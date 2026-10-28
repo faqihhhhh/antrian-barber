@@ -131,7 +131,7 @@ export default function AppShell() {
           </nav>
           <div className="flex shrink-0 items-center gap-2">
             <span className="hidden max-w-40 truncate text-right text-sm text-body-muted sm:block">
-              {user?.username || user?.email}
+              {user?.display_name || user?.email}
             </span>
             <Button type="button" variant="secondary" className="w-auto px-3" loading={logout.isPending} onClick={() => logout.mutate()}>
               Keluar

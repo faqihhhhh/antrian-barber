@@ -16,7 +16,6 @@ import (
 	"kapsflow/internal/dbx"
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/identity"
-	"kapsflow/internal/pgerr"
 	"kapsflow/internal/rls"
 )
 
@@ -41,11 +40,11 @@ func (s *Service) queries(ctx context.Context) *db.Queries {
 }
 
 type InviteInput struct {
-	Email     string
-	Password  string
-	Username  string
-	Roles     []string
-	OutletIDs []uuid.UUID
+	Email       string
+	Password    string
+	DisplayName string
+	Roles       []string
+	OutletIDs   []uuid.UUID
 }
 
 // InviteStaff membuat akun baru untuk karyawan (email + password ditentukan
@@ -89,7 +88,7 @@ func (s *Service) InviteStaff(ctx context.Context, tenantID uuid.UUID, in Invite
 	if len(in.Password) < 8 {
 		return Member{}, httpx.BadRequest("password_terlalu_pendek", "Password minimal 8 karakter", nil)
 	}
-	username, err := identity.NormalizeUsername(in.Username)
+	displayName, err := identity.NormalizeDisplayName(in.DisplayName)
 	if err != nil {
 		return Member{}, err
 	}
@@ -99,21 +98,12 @@ func (s *Service) InviteStaff(ctx context.Context, tenantID uuid.UUID, in Invite
 	} else if !errors.Is(err, pgx.ErrNoRows) {
 		return Member{}, httpx.Internal(fmt.Errorf("cek email staf: %w", err))
 	}
-	if _, err := q.GetUserByUsername(ctx, dbx.Text(username)); err == nil {
-		return Member{}, httpx.Conflict("username_sudah_dipakai", "Username ini sudah digunakan. Pilih username lain.", nil)
-	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return Member{}, httpx.Internal(fmt.Errorf("cek username staf: %w", err))
-	}
-
 	hash, err := identity.HashPassword(in.Password)
 	if err != nil {
 		return Member{}, httpx.Internal(err)
 	}
-	user, err := q.CreateUser(ctx, db.CreateUserParams{Email: in.Email, PasswordHash: hash, Username: dbx.Text(username)})
+	user, err := q.CreateUser(ctx, db.CreateUserParams{Email: in.Email, PasswordHash: hash, DisplayName: dbx.Text(displayName)})
 	if err != nil {
-		if pgerr.IsUniqueViolationOn(err, "users_username_key") {
-			return Member{}, httpx.Conflict("username_sudah_dipakai", "Username ini sudah digunakan. Pilih username lain.", nil)
-		}
 		return Member{}, httpx.Internal(fmt.Errorf("membuat user staf: %w", err))
 	}
 
@@ -135,7 +125,7 @@ func (s *Service) InviteStaff(ctx context.Context, tenantID uuid.UUID, in Invite
 	return Member{
 		MembershipID:  membership.ID,
 		Email:         user.Email,
-		Username:      &username,
+		DisplayName:   &displayName,
 		Roles:         membership.Roles,
 		EmailVerified: false,
 		OutletIDs:     in.OutletIDs,
@@ -145,7 +135,7 @@ func (s *Service) InviteStaff(ctx context.Context, tenantID uuid.UUID, in Invite
 type Member struct {
 	MembershipID  uuid.UUID   `json:"membership_id"`
 	Email         string      `json:"email"`
-	Username      *string     `json:"username"`
+	DisplayName   *string     `json:"display_name"`
 	Roles         []string    `json:"roles"`
 	EmailVerified bool        `json:"email_verified"`
 	OutletIDs     []uuid.UUID `json:"outlet_ids"`
@@ -180,7 +170,7 @@ func (s *Service) ListStaff(ctx context.Context, tenantID uuid.UUID) ([]Member, 
 		result = append(result, Member{
 			MembershipID:  row.MembershipID,
 			Email:         row.Email,
-			Username:      textPointer(row.Username),
+			DisplayName:   textPointer(row.DisplayName),
 			Roles:         row.Roles,
 			EmailVerified: row.EmailVerifiedAt.Valid,
 			OutletIDs:     outletIDs,

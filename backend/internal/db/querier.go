@@ -77,7 +77,6 @@ type Querier interface {
 	GetTicketPaymentByTicketID(ctx context.Context, ticketID uuid.UUID) (TicketPayment, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (User, error)
-	GetUserByUsername(ctx context.Context, username pgtype.Text) (User, error)
 	GetValidEmailVerificationToken(ctx context.Context, tokenHash string) (EmailVerificationToken, error)
 	GetValidPasswordResetToken(ctx context.Context, tokenHash string) (PasswordResetToken, error)
 	GetValidSession(ctx context.Context, tokenHash string) (Session, error)
@@ -88,6 +87,7 @@ type Querier interface {
 	ListCalledTicketIDsForTickets(ctx context.Context, ticketIds []uuid.UUID) ([]uuid.UUID, error)
 	ListExpiredPendingPayments(ctx context.Context) ([]TicketPayment, error)
 	ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) ([]Invoice, error)
+	ListKapsterNamesForTickets(ctx context.Context, ticketIds []uuid.UUID) ([]ListKapsterNamesForTicketsRow, error)
 	ListKapsterStatesBySession(ctx context.Context, queueSessionID uuid.UUID) ([]KapsterSessionState, error)
 	ListMembershipContextForUser(ctx context.Context, userID uuid.UUID) ([]ListMembershipContextForUserRow, error)
 	ListMembershipOutletIDs(ctx context.Context, membershipID uuid.UUID) ([]uuid.UUID, error)
@@ -146,8 +146,8 @@ type Querier interface {
 	TouchSession(ctx context.Context, id uuid.UUID) error
 	UpdateOutletSettings(ctx context.Context, arg UpdateOutletSettingsParams) (Outlet, error)
 	UpdatePlanPrice(ctx context.Context, arg UpdatePlanPriceParams) (Plan, error)
+	UpdateUserDisplayName(ctx context.Context, arg UpdateUserDisplayNameParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
-	UpdateUserUsername(ctx context.Context, arg UpdateUserUsernameParams) error
 	UpsertKapsterSessionState(ctx context.Context, arg UpsertKapsterSessionStateParams) (KapsterSessionState, error)
 	UpsertSubscription(ctx context.Context, arg UpsertSubscriptionParams) (Subscription, error)
 	UpsertTenantProfileMidtrans(ctx context.Context, arg UpsertTenantProfileMidtransParams) error

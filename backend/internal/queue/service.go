@@ -1357,6 +1357,7 @@ type MyTicket struct {
 	Estimate       *EstimateResult  `json:"estimate"`
 	Reviewed       bool             `json:"reviewed"`
 	HasBeenCalled  bool             `json:"has_been_called"`
+	KapsterName    *string          `json:"kapster_name"`
 }
 
 // MyTickets: tiket aktif dan yang selesai 7 hari terakhir milik pelanggan ini.
@@ -1373,11 +1374,24 @@ func (s *Service) MyTickets(ctx context.Context, userID uuid.UUID) ([]MyTicket, 
 		ticketIDs = append(ticketIDs, row.TicketID)
 	}
 	calledIDs := make([]uuid.UUID, 0)
+	kapsterNames := make(map[uuid.UUID]string)
 	if len(ticketIDs) > 0 {
 		if err := rls.RunAsSystem(ctx, s.pool, func(systemCtx context.Context) error {
 			var queryErr error
 			calledIDs, queryErr = s.queries(systemCtx).ListCalledTicketIDsForTickets(systemCtx, ticketIDs)
-			return queryErr
+			if queryErr != nil {
+				return queryErr
+			}
+			rows, queryErr := s.queries(systemCtx).ListKapsterNamesForTickets(systemCtx, ticketIDs)
+			if queryErr != nil {
+				return queryErr
+			}
+			for _, row := range rows {
+				if row.KapsterName.Valid {
+					kapsterNames[row.TicketID] = row.KapsterName.String
+				}
+			}
+			return nil
 		}); err != nil {
 			return nil, httpx.Internal(fmt.Errorf("ambil riwayat panggilan tiket: %w", err))
 		}
@@ -1395,6 +1409,9 @@ func (s *Service) MyTickets(ctx context.Context, userID uuid.UUID) ([]MyTicket, 
 			TicketNumber: r.TicketNumber, Status: r.Status, Reviewed: r.Reviewed,
 		}
 		_, item.HasBeenCalled = called[r.TicketID]
+		if name, ok := kapsterNames[r.TicketID]; ok {
+			item.KapsterName = &name
+		}
 		if r.MatchCode.Valid {
 			v := r.MatchCode.String
 			item.MatchCode = &v

@@ -61,6 +61,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | UI-6 | Tema monokrom memakai satu aksen indigo terbatas untuk penanda, informasi, dan identitas; tombol utama dan status tetap memakai warna semantiknya |
 | UI-8 | Panel samping masuk tampil ringkas di HP dan ilustrasi barber memakai aksen indigo |
 | UI-10 | Perbaiki gaya tombol umum yang tertimpa `className`; rapikan aksi kapster dan gunakan warna sukses untuk notifikasi berhasil |
+| 16-1 | Ganti username dengan nama panggilan akun, izinkan nama tidak unik, dan tampilkan nama kapster pada tiket pelanggan |
 
 ## Berikutnya (urutan wajib)
 

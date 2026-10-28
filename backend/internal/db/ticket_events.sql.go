@@ -86,3 +86,36 @@ func (q *Queries) ListCalledTicketIDsForTickets(ctx context.Context, ticketIds [
 	}
 	return items, nil
 }
+
+const listKapsterNamesForTickets = `-- name: ListKapsterNamesForTickets :many
+SELECT t.id AS ticket_id, u.display_name AS kapster_name
+FROM tickets t
+JOIN memberships m ON m.id = t.assigned_membership_id
+JOIN users u ON u.id = m.user_id
+WHERE t.id = ANY($1::uuid[])
+`
+
+type ListKapsterNamesForTicketsRow struct {
+	TicketID    uuid.UUID   `json:"ticket_id"`
+	KapsterName pgtype.Text `json:"kapster_name"`
+}
+
+func (q *Queries) ListKapsterNamesForTickets(ctx context.Context, ticketIds []uuid.UUID) ([]ListKapsterNamesForTicketsRow, error) {
+	rows, err := q.db.Query(ctx, listKapsterNamesForTickets, ticketIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListKapsterNamesForTicketsRow
+	for rows.Next() {
+		var i ListKapsterNamesForTicketsRow
+		if err := rows.Scan(&i.TicketID, &i.KapsterName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

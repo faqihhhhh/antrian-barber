@@ -13,19 +13,19 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, password_hash, username)
+INSERT INTO users (email, password_hash, display_name)
 VALUES ($1, $2, $3)
-RETURNING id, email, password_hash, email_verified_at, created_at, updated_at, username
+RETURNING id, email, password_hash, email_verified_at, created_at, updated_at, display_name
 `
 
 type CreateUserParams struct {
 	Email        string      `json:"email"`
 	PasswordHash string      `json:"password_hash"`
-	Username     pgtype.Text `json:"username"`
+	DisplayName  pgtype.Text `json:"display_name"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.Email, arg.PasswordHash, arg.Username)
+	row := q.db.QueryRow(ctx, createUser, arg.Email, arg.PasswordHash, arg.DisplayName)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -34,13 +34,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Username,
+		&i.DisplayName,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, email_verified_at, created_at, updated_at, username FROM users WHERE email = $1
+SELECT id, email, password_hash, email_verified_at, created_at, updated_at, display_name FROM users WHERE email = $1
 `
 
 func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
@@ -53,13 +53,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Username,
+		&i.DisplayName,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, password_hash, email_verified_at, created_at, updated_at, username FROM users WHERE id = $1
+SELECT id, email, password_hash, email_verified_at, created_at, updated_at, display_name FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -72,26 +72,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.EmailVerifiedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Username,
-	)
-	return i, err
-}
-
-const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, email, password_hash, email_verified_at, created_at, updated_at, username FROM users WHERE username = $1
-`
-
-func (q *Queries) GetUserByUsername(ctx context.Context, username pgtype.Text) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByUsername, username)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.PasswordHash,
-		&i.EmailVerifiedAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.Username,
+		&i.DisplayName,
 	)
 	return i, err
 }
@@ -102,6 +83,20 @@ UPDATE users SET email_verified_at = now(), updated_at = now() WHERE id = $1
 
 func (q *Queries) MarkUserEmailVerified(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, markUserEmailVerified, id)
+	return err
+}
+
+const updateUserDisplayName = `-- name: UpdateUserDisplayName :exec
+UPDATE users SET display_name = $2, updated_at = now() WHERE id = $1
+`
+
+type UpdateUserDisplayNameParams struct {
+	ID          uuid.UUID   `json:"id"`
+	DisplayName pgtype.Text `json:"display_name"`
+}
+
+func (q *Queries) UpdateUserDisplayName(ctx context.Context, arg UpdateUserDisplayNameParams) error {
+	_, err := q.db.Exec(ctx, updateUserDisplayName, arg.ID, arg.DisplayName)
 	return err
 }
 
@@ -116,19 +111,5 @@ type UpdateUserPasswordParams struct {
 
 func (q *Queries) UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error {
 	_, err := q.db.Exec(ctx, updateUserPassword, arg.ID, arg.PasswordHash)
-	return err
-}
-
-const updateUserUsername = `-- name: UpdateUserUsername :exec
-UPDATE users SET username = $2, updated_at = now() WHERE id = $1
-`
-
-type UpdateUserUsernameParams struct {
-	ID       uuid.UUID   `json:"id"`
-	Username pgtype.Text `json:"username"`
-}
-
-func (q *Queries) UpdateUserUsername(ctx context.Context, arg UpdateUserUsernameParams) error {
-	_, err := q.db.Exec(ctx, updateUserUsername, arg.ID, arg.Username)
 	return err
 }

@@ -205,7 +205,7 @@ export interface paths {
          * Daftar akun baru
          * @description Selalu membalas 202 dengan pesan yang sama, baik email itu baru maupun
          *     sudah terdaftar, supaya tidak membocorkan email siapa yang sudah punya akun.
-         *     Kode error: `password_terlalu_pendek`, `username_tidak_valid`, `username_sudah_dipakai`.
+         *     Kode error: `password_terlalu_pendek`, `display_name_tidak_valid`.
          */
         post: operations["register"];
         delete?: never;
@@ -349,7 +349,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/me/username": {
+    "/v1/me/display_name": {
         parameters: {
             query?: never;
             header?: never;
@@ -357,8 +357,8 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Atur atau ubah username akun */
-        put: operations["setMyUsername"];
+        /** Atur atau ubah nama panggilan akun */
+        put: operations["setMyDisplayName"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1328,6 +1328,8 @@ export interface components {
             reviewed: boolean;
             /** @description True jika tiket pernah dipanggil kapster sebelumnya atau saat ini. */
             has_been_called: boolean;
+            /** @description Nama panggilan kapster yang sedang atau telah melayani tiket. */
+            kapster_name: string | null;
         };
         MessageResponse: {
             message: string;
@@ -1341,14 +1343,14 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
-            /** @description Username unik; disimpan dalam huruf kecil. */
-            username: string;
+            /** @description Nama panggilan akun, tidak harus unik. */
+            display_name: string;
         };
-        UsernameRequest: {
-            username: string;
+        DisplayNameRequest: {
+            display_name: string;
         };
-        UsernameResponse: {
-            username: string;
+        DisplayNameResponse: {
+            display_name: string;
         };
         ChangePasswordRequest: {
             current_password: string;
@@ -1369,7 +1371,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             email: string;
-            username: string | null;
+            display_name: string | null;
         };
         OutletInfo: {
             /** Format: uuid */
@@ -1415,7 +1417,7 @@ export interface components {
             membership_id: string;
             /** Format: email */
             email: string;
-            username: string | null;
+            display_name: string | null;
             roles: ("admin" | "kapster")[];
             email_verified: boolean;
             outlet_ids: string[];
@@ -1424,7 +1426,7 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
-            username: string;
+            display_name: string;
             roles: ("admin" | "kapster")[];
             outlet_ids: string[];
         };
@@ -2113,7 +2115,7 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    setMyUsername: {
+    setMyDisplayName: {
         parameters: {
             query?: never;
             header?: never;
@@ -2122,17 +2124,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UsernameRequest"];
+                "application/json": components["schemas"]["DisplayNameRequest"];
             };
         };
         responses: {
-            /** @description Username tersimpan */
+            /** @description Nama panggilan tersimpan */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UsernameResponse"];
+                    "application/json": components["schemas"]["DisplayNameResponse"];
                 };
             };
             default: components["responses"]["Error"];

@@ -9,7 +9,7 @@ export default function PelangganBeranda() {
   const me = useMe()
   const navigate = useNavigate()
   const outlet = lastOutlet()
-  const username = me.data?.user.username
+  const displayName = me.data?.user.display_name
   const directory = useQuery({
     queryKey: ['public-outlet-directory'],
     queryFn: async () => {
@@ -23,7 +23,7 @@ export default function PelangganBeranda() {
   return (
     <main className="mx-auto min-h-[70dvh] max-w-2xl space-y-6 px-5 py-8">
       <header>
-        <h1 className="text-2xl font-bold">{username ? `Halo, ${username}` : 'Ruang pelanggan'}</h1>
+        <h1 className="text-2xl font-bold">{displayName ? `Halo, ${displayName}` : 'Ruang pelanggan'}</h1>
         <p className="mt-1 text-sm text-body-muted">Pesan antrean dan pantau giliran Anda.</p>
       </header>
 

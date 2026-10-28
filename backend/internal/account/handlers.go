@@ -32,25 +32,25 @@ func (h *Handlers) Me(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, result)
 }
 
-func (h *Handlers) SetUsername(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) SetDisplayName(w http.ResponseWriter, r *http.Request) {
 	user, ok := identity.UserFromContext(r.Context())
 	if !ok {
 		httpx.Error(w, r, h.log, httpx.Unauthorized("belum_login", "Anda belum masuk", nil))
 		return
 	}
 	var req struct {
-		Username string `json:"username"`
+		DisplayName string `json:"display_name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
 		return
 	}
-	username, err := h.svc.SetUsername(r.Context(), user.ID, req.Username)
+	displayName, err := h.svc.SetDisplayName(r.Context(), user.ID, req.DisplayName)
 	if err != nil {
 		httpx.Error(w, r, h.log, err)
 		return
 	}
-	httpx.JSON(w, http.StatusOK, map[string]string{"username": username})
+	httpx.JSON(w, http.StatusOK, map[string]string{"display_name": displayName})
 }
 
 func (h *Handlers) ChangePassword(w http.ResponseWriter, r *http.Request) {

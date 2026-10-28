@@ -11,9 +11,9 @@ export default function Akun() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
-  const saveUsername = useMutation({
-    mutationFn: async (username: string) => {
-      const { data, error, response } = await api.PUT('/v1/me/username', { body: { username } })
+  const saveDisplayName = useMutation({
+    mutationFn: async (displayName: string) => {
+      const { data, error, response } = await api.PUT('/v1/me/display_name', { body: { display_name: displayName } })
       if (!response.ok || !data) throw new ApiError(error)
       return data
     },
@@ -38,10 +38,10 @@ export default function Akun() {
   if (me.isError) return <main className="mx-auto max-w-xl px-5 py-8"><Alert>{messageOf(me.error)}</Alert></main>
   if (!me.data) return null
 
-  function submitUsername(event: FormEvent<HTMLFormElement>) {
+  function submitDisplayName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
-    saveUsername.mutate(String(form.get('username') ?? ''))
+    saveDisplayName.mutate(String(form.get('display_name') ?? ''))
   }
 
   function submitPassword(event: FormEvent<HTMLFormElement>) {
@@ -61,21 +61,20 @@ export default function Akun() {
         <h2 className="text-lg font-semibold">Profil</h2>
         <p className="mt-2 text-sm text-body-muted">Email</p>
         <p className="break-all font-medium">{me.data.user.email}</p>
-        <form className="mt-5 space-y-3" onSubmit={submitUsername}>
+        <form className="mt-5 space-y-3" onSubmit={submitDisplayName}>
           <Field
-            label="Username"
-            name="username"
-            autoComplete="username"
+            label="Nama panggilan"
+            name="display_name"
+            autoComplete="nickname"
             required
-            minLength={3}
-            maxLength={24}
-            pattern="[A-Za-z][A-Za-z0-9_]{2,23}"
-            defaultValue={me.data.user.username ?? ''}
-            hint="3–24 karakter. Awali dengan huruf; gunakan huruf, angka, atau garis bawah."
+            minLength={1}
+            maxLength={60}
+            defaultValue={me.data.user.display_name ?? ''}
+            hint="Maksimal 60 karakter, boleh memakai spasi."
           />
-          {saveUsername.isError && <Alert>{messageOf(saveUsername.error)}</Alert>}
-          {saveUsername.isSuccess && <Alert tone="success">Username berhasil disimpan.</Alert>}
-          <Button type="submit" loading={saveUsername.isPending}>Simpan username</Button>
+          {saveDisplayName.isError && <Alert>{messageOf(saveDisplayName.error)}</Alert>}
+          {saveDisplayName.isSuccess && <Alert tone="success">Nama panggilan berhasil disimpan.</Alert>}
+          <Button type="submit" loading={saveDisplayName.isPending}>Simpan nama panggilan</Button>
         </form>
       </section>
 

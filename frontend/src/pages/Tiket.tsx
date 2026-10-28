@@ -165,6 +165,7 @@ function StatusBody({ ticket }: { ticket: MyTicket }) {
       return (
         <section className="rounded-3xl border border-emerald-300 bg-emerald-50 p-6 text-emerald-900" aria-live="assertive">
           <h2 className="text-3xl font-extrabold">Giliran Anda!</h2>
+          {ticket.kapster_name && <p className="mt-2 font-semibold">Kapster Anda: {ticket.kapster_name}</p>}
           <p className="mt-1 text-base">Tunjukkan kode pada tiket ini ke kapster.</p>
         </section>
       )
@@ -173,6 +174,7 @@ function StatusBody({ ticket }: { ticket: MyTicket }) {
       return (
         <section className="rounded-3xl border border-line bg-white p-6">
           <h2 className="text-lg font-bold">Sedang dilayani</h2>
+          {ticket.kapster_name && <p className="mt-1 font-semibold">Dilayani oleh {ticket.kapster_name}</p>}
           <p className="mt-1 text-sm text-body-muted">Setelah selesai, Anda bisa memberi penilaian di halaman ini.</p>
         </section>
       )

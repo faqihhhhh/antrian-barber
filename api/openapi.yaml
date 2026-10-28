@@ -264,7 +264,7 @@ paths:
       description: |
         Selalu membalas 202 dengan pesan yang sama, baik email itu baru maupun
         sudah terdaftar, supaya tidak membocorkan email siapa yang sudah punya akun.
-        Kode error: `password_terlalu_pendek`, `username_tidak_valid`, `username_sudah_dipakai`.
+        Kode error: `password_terlalu_pendek`, `display_name_tidak_valid`.
       requestBody:
         required: true
         content:
@@ -424,11 +424,11 @@ paths:
                 $ref: '#/components/schemas/MeContext'
         default:
           $ref: '#/components/responses/Error'
-  /v1/me/username:
+  /v1/me/display_name:
     put:
-      operationId: setMyUsername
+      operationId: setMyDisplayName
       tags: [akun]
-      summary: Atur atau ubah username akun
+      summary: Atur atau ubah nama panggilan akun
       security:
         - cookieAuth: []
       requestBody:
@@ -436,14 +436,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UsernameRequest'
+                $ref: '#/components/schemas/DisplayNameRequest'
       responses:
         '200':
-          description: Username tersimpan
+          description: Nama panggilan tersimpan
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UsernameResponse'
+                $ref: '#/components/schemas/DisplayNameResponse'
         default:
           $ref: '#/components/responses/Error'
   /v1/me/password:
@@ -1831,6 +1831,7 @@ components:
         - estimate
         - reviewed
         - has_been_called
+        - kapster_name
       properties:
         ticket_id:
           type: string
@@ -1877,6 +1878,10 @@ components:
         has_been_called:
           type: boolean
           description: True jika tiket pernah dipanggil kapster sebelumnya atau saat ini.
+        kapster_name:
+          type: string
+          nullable: true
+          description: Nama panggilan kapster yang sedang atau telah melayani tiket.
     MessageResponse:
       type: object
       required: [message]
@@ -1895,7 +1900,7 @@ components:
           minLength: 8
     RegisterRequest:
       type: object
-      required: [email, password, username]
+      required: [email, password, display_name]
       properties:
         email:
           type: string
@@ -1903,26 +1908,24 @@ components:
         password:
           type: string
           minLength: 8
-        username:
+        display_name:
           type: string
-          minLength: 3
-          maxLength: 24
-          pattern: '^[a-zA-Z][a-zA-Z0-9_]{2,23}$'
-          description: Username unik; disimpan dalam huruf kecil.
-    UsernameRequest:
+          minLength: 1
+          maxLength: 60
+          description: Nama panggilan akun, tidak harus unik.
+    DisplayNameRequest:
       type: object
-      required: [username]
+      required: [display_name]
       properties:
-        username:
+        display_name:
           type: string
-          minLength: 3
-          maxLength: 24
-          pattern: '^[a-zA-Z][a-zA-Z0-9_]{2,23}$'
-    UsernameResponse:
+          minLength: 1
+          maxLength: 60
+    DisplayNameResponse:
       type: object
-      required: [username]
+      required: [display_name]
       properties:
-        username:
+        display_name:
           type: string
     ChangePasswordRequest:
       type: object
@@ -1957,18 +1960,18 @@ components:
           minLength: 8
     UserInfo:
       type: object
-      required: [id, email, username]
+      required: [id, email, display_name]
       properties:
         id:
           type: string
           format: uuid
         email:
           type: string
-        username:
+        display_name:
           type: string
           nullable: true
-          minLength: 3
-          maxLength: 24
+          minLength: 1
+          maxLength: 60
     OutletInfo:
       type: object
       required: [id, name, timezone]
@@ -2045,7 +2048,7 @@ components:
           minimum: 1
     StaffMember:
       type: object
-      required: [membership_id, email, username, roles, email_verified, outlet_ids]
+      required: [membership_id, email, display_name, roles, email_verified, outlet_ids]
       properties:
         membership_id:
           type: string
@@ -2053,7 +2056,7 @@ components:
         email:
           type: string
           format: email
-        username:
+        display_name:
           type: string
           nullable: true
         roles:
@@ -2070,7 +2073,7 @@ components:
             format: uuid
     InviteStaffRequest:
       type: object
-      required: [email, password, username, roles, outlet_ids]
+      required: [email, password, display_name, roles, outlet_ids]
       properties:
         email:
           type: string
@@ -2078,11 +2081,10 @@ components:
         password:
           type: string
           minLength: 8
-        username:
+        display_name:
           type: string
-          minLength: 3
-          maxLength: 24
-          pattern: '^[a-zA-Z][a-zA-Z0-9_]{2,23}$'
+          minLength: 1
+          maxLength: 60
         roles:
           type: array
           minItems: 1

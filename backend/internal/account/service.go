@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"kapsflow/internal/billing"
@@ -16,7 +15,6 @@ import (
 	"kapsflow/internal/dbx"
 	"kapsflow/internal/httpx"
 	"kapsflow/internal/identity"
-	"kapsflow/internal/pgerr"
 	"kapsflow/internal/rls"
 )
 
@@ -37,31 +35,21 @@ func (s *Service) queries(ctx context.Context) *db.Queries {
 }
 
 type UserInfo struct {
-	ID       uuid.UUID `json:"id"`
-	Email    string    `json:"email"`
-	Username *string   `json:"username"`
+	ID          uuid.UUID `json:"id"`
+	Email       string    `json:"email"`
+	DisplayName *string   `json:"display_name"`
 }
 
-func (s *Service) SetUsername(ctx context.Context, userID uuid.UUID, rawUsername string) (string, error) {
-	username, err := identity.NormalizeUsername(rawUsername)
+func (s *Service) SetDisplayName(ctx context.Context, userID uuid.UUID, rawDisplayName string) (string, error) {
+	displayName, err := identity.NormalizeDisplayName(rawDisplayName)
 	if err != nil {
 		return "", err
 	}
 	q := s.queries(ctx)
-	existing, err := q.GetUserByUsername(ctx, dbx.Text(username))
-	if err == nil && existing.ID != userID {
-		return "", httpx.Conflict("username_sudah_dipakai", "Username ini sudah digunakan. Pilih username lain.", nil)
+	if err := q.UpdateUserDisplayName(ctx, db.UpdateUserDisplayNameParams{ID: userID, DisplayName: dbx.Text(displayName)}); err != nil {
+		return "", httpx.Internal(fmt.Errorf("menyimpan display_name: %w", err))
 	}
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return "", httpx.Internal(fmt.Errorf("cek username: %w", err))
-	}
-	if err := q.UpdateUserUsername(ctx, db.UpdateUserUsernameParams{ID: userID, Username: dbx.Text(username)}); err != nil {
-		if pgerr.IsUniqueViolationOn(err, "users_username_key") {
-			return "", httpx.Conflict("username_sudah_dipakai", "Username ini sudah digunakan. Pilih username lain.", nil)
-		}
-		return "", httpx.Internal(fmt.Errorf("menyimpan username: %w", err))
-	}
-	return username, nil
+	return displayName, nil
 }
 
 func (s *Service) ChangePassword(ctx context.Context, userID uuid.UUID, currentPassword, newPassword string) error {
@@ -159,8 +147,8 @@ func (s *Service) GetContext(ctx context.Context, user db.User) (Context, error)
 	}
 
 	userInfo := UserInfo{ID: user.ID, Email: user.Email}
-	if user.Username.Valid {
-		userInfo.Username = &user.Username.String
+	if user.DisplayName.Valid {
+		userInfo.DisplayName = &user.DisplayName.String
 	}
 	return Context{
 		User:            userInfo,

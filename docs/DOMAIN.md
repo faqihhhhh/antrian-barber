@@ -18,9 +18,7 @@ Hak per peran **harus diperiksa di service**, RLS hanya memastikan keanggotaan t
 
 ## Entitas utama
 
-- `users` menyimpan email, password, dan `username` unik untuk sapaan profil. Username 3–24
-  karakter, diawali huruf, hanya memakai huruf, angka, dan garis bawah. Akun lama boleh belum
-  memiliki username dan dapat mengaturnya dari Beranda.
+- `users` menyimpan email, password, dan `display_name` (nama panggilan) untuk sapaan profil. Nama 1–60 karakter, boleh berisi spasi dan tidak harus unik. Akun lama boleh belum memiliki nama panggilan dan dapat mengaturnya dari Beranda.
 - `tenants` (bisnis), `outlets` (cabang: `slug` unik, `timezone`, `address`, `dp_price_rupiah`,
   `default_duration_minutes`), `memberships` (pengguna di tenant, `roles[]`, penugasan outlet).
 - `tenant_profiles`: kunci Midtrans terenkripsi, `midtrans_is_production`, gambar QRIS manual

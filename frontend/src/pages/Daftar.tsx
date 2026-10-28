@@ -8,11 +8,11 @@ import { Alert, AuthLayout, Button, Field } from '../components/ui'
 export default function Daftar() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [username, setUsername] = useState('')
+  const [displayName, setDisplayName] = useState('')
 
   const register = useMutation({
     mutationFn: async () => {
-      const { error, response } = await api.POST('/v1/auth/register', { body: { email, password, username } })
+      const { error, response } = await api.POST('/v1/auth/register', { body: { email, password, display_name: displayName } })
       if (!response.ok) throw new ApiError(error)
     },
   })
@@ -58,16 +58,15 @@ export default function Daftar() {
           onChange={(e) => setEmail(e.target.value)}
         />
         <Field
-          label="Username"
-          name="username"
-          autoComplete="username"
+          label="Nama panggilan"
+          name="display_name"
+          autoComplete="nickname"
           required
-          minLength={3}
-          maxLength={24}
-          pattern="[A-Za-z][A-Za-z0-9_]{2,23}"
-          hint="3–24 karakter. Awali dengan huruf; gunakan huruf, angka, atau garis bawah."
-          value={username}
-          onChange={(e) => setUsername(e.target.value.toLowerCase())}
+          minLength={1}
+          maxLength={60}
+          hint="Maksimal 60 karakter, boleh memakai spasi."
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
         />
         <Field
           label="Password"

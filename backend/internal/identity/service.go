@@ -14,7 +14,6 @@ import (
 	db "kapsflow/internal/db"
 	"kapsflow/internal/dbx"
 	"kapsflow/internal/httpx"
-	"kapsflow/internal/pgerr"
 )
 
 const (
@@ -41,11 +40,11 @@ func NewService(pool *pgxpool.Pool, mailer Mailer, log *slog.Logger, baseURL str
 // email verifikasi dikirim lagi. Kalau sudah terverifikasi, balasannya
 // tetap "sukses" ke pemanggil, supaya tidak membocorkan email siapa saja
 // yang sudah terdaftar.
-func (s *Service) Register(ctx context.Context, email, password, rawUsername string) error {
+func (s *Service) Register(ctx context.Context, email, password, rawDisplayName string) error {
 	if len(password) < 8 {
 		return httpx.BadRequest("password_terlalu_pendek", "Password minimal 8 karakter", nil)
 	}
-	username, err := NormalizeUsername(rawUsername)
+	displayName, err := NormalizeDisplayName(rawDisplayName)
 	if err != nil {
 		return err
 	}
@@ -55,8 +54,8 @@ func (s *Service) Register(ctx context.Context, email, password, rawUsername str
 		if existing.EmailVerifiedAt.Valid {
 			return nil
 		}
-		if !existing.Username.Valid {
-			if err := s.setUsername(ctx, existing.ID, username); err != nil {
+		if !existing.DisplayName.Valid {
+			if err := s.setDisplayName(ctx, existing.ID, displayName); err != nil {
 				return err
 			}
 		}
@@ -65,45 +64,24 @@ func (s *Service) Register(ctx context.Context, email, password, rawUsername str
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return httpx.Internal(fmt.Errorf("cek user existing: %w", err))
 	}
-	if _, err := s.q.GetUserByUsername(ctx, dbx.Text(username)); err == nil {
-		return usernameTaken()
-	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return httpx.Internal(fmt.Errorf("cek username: %w", err))
-	}
-
 	hash, err := HashPassword(password)
 	if err != nil {
 		return httpx.Internal(fmt.Errorf("hash password: %w", err))
 	}
 
-	user, err := s.q.CreateUser(ctx, db.CreateUserParams{Email: email, PasswordHash: hash, Username: dbx.Text(username)})
+	user, err := s.q.CreateUser(ctx, db.CreateUserParams{Email: email, PasswordHash: hash, DisplayName: dbx.Text(displayName)})
 	if err != nil {
-		if pgerr.IsUniqueViolationOn(err, "users_username_key") {
-			return usernameTaken()
-		}
 		return httpx.Internal(fmt.Errorf("membuat user: %w", err))
 	}
 
 	return s.sendVerificationEmail(ctx, user.ID, user.Email)
 }
 
-func (s *Service) setUsername(ctx context.Context, userID uuid.UUID, username string) error {
-	if _, err := s.q.GetUserByUsername(ctx, dbx.Text(username)); err == nil {
-		return usernameTaken()
-	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return httpx.Internal(fmt.Errorf("cek username: %w", err))
-	}
-	if err := s.q.UpdateUserUsername(ctx, db.UpdateUserUsernameParams{ID: userID, Username: dbx.Text(username)}); err != nil {
-		if pgerr.IsUniqueViolationOn(err, "users_username_key") {
-			return usernameTaken()
-		}
-		return httpx.Internal(fmt.Errorf("menyimpan username: %w", err))
+func (s *Service) setDisplayName(ctx context.Context, userID uuid.UUID, displayName string) error {
+	if err := s.q.UpdateUserDisplayName(ctx, db.UpdateUserDisplayNameParams{ID: userID, DisplayName: dbx.Text(displayName)}); err != nil {
+		return httpx.Internal(fmt.Errorf("menyimpan display_name: %w", err))
 	}
 	return nil
-}
-
-func usernameTaken() error {
-	return httpx.Conflict("username_sudah_dipakai", "Username ini sudah digunakan. Pilih username lain.", nil)
 }
 
 func (s *Service) sendVerificationEmail(ctx context.Context, userID uuid.UUID, email string) error {

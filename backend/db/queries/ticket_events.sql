@@ -12,3 +12,10 @@ WHERE t.queue_session_id = $1 AND te.event_type = 'called';
 SELECT DISTINCT ticket_id
 FROM ticket_events
 WHERE event_type = 'called' AND ticket_id = ANY(sqlc.arg(ticket_ids)::uuid[]);
+
+-- name: ListKapsterNamesForTickets :many
+SELECT t.id AS ticket_id, u.display_name AS kapster_name
+FROM tickets t
+JOIN memberships m ON m.id = t.assigned_membership_id
+JOIN users u ON u.id = m.user_id
+WHERE t.id = ANY(sqlc.arg(ticket_ids)::uuid[]);

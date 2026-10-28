@@ -38,11 +38,11 @@ const STATUS: Record<string, { label: string; tone: 'success' | 'warning' | 'dan
 export default function Beranda() {
   const me = useMe()
   const queryClient = useQueryClient()
-  const [username, setUsername] = useState('')
+  const [displayName, setDisplayName] = useState('')
 
-  const saveUsername = useMutation({
+  const saveDisplayName = useMutation({
     mutationFn: async () => {
-      const { data, error, response } = await api.PUT('/v1/me/username', { body: { username } })
+      const { data, error, response } = await api.PUT('/v1/me/display_name', { body: { display_name: displayName } })
       if (!response.ok || !data) throw new ApiError(error)
       return data
     },
@@ -57,30 +57,30 @@ export default function Beranda() {
   return (
     <main className="mx-auto min-h-[70dvh] max-w-3xl px-5 pb-8 pt-8">
       <div className="mb-6">
-        <h1 className="mt-1 text-2xl font-bold">{data.user.username ? `Halo, ${data.user.username}` : 'Halo'}</h1>
+        <h1 className="mt-1 text-2xl font-bold">{data.user.display_name ? `Halo, ${data.user.display_name}` : 'Halo'}</h1>
         <p className="text-sm text-body-muted">{data.user.email}</p>
-        {!data.user.username && (
+        {!data.user.display_name && (
           <form
             className="mt-4 max-w-md space-y-3 rounded-2xl border border-line bg-white p-4"
             onSubmit={(event) => {
               event.preventDefault()
-              saveUsername.mutate()
+              saveDisplayName.mutate()
             }}
           >
             <Field
-              label="Buat username akun"
-              name="profile-username"
-              autoComplete="username"
+              label="Buat nama panggilan"
+              name="profile-displayName"
+              autoComplete="nickname"
               required
               minLength={3}
               maxLength={24}
               pattern="[A-Za-z][A-Za-z0-9_]{2,23}"
-              hint="3–24 karakter. Awali dengan huruf; gunakan huruf, angka, atau garis bawah."
-              value={username}
-              onChange={(event) => setUsername(event.target.value.toLowerCase())}
+              hint="Maksimal 60 karakter, boleh memakai spasi."
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value.toLowerCase())}
             />
-            {saveUsername.isError && <Alert>{messageOf(saveUsername.error)}</Alert>}
-            <Button type="submit" loading={saveUsername.isPending}>Simpan username</Button>
+            {saveDisplayName.isError && <Alert>{messageOf(saveDisplayName.error)}</Alert>}
+            <Button type="submit" loading={saveDisplayName.isPending}>Simpan nama panggilan</Button>
           </form>
         )}
         {data.is_platform_admin && (

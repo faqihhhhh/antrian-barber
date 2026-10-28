@@ -9,6 +9,6 @@ import (
 func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger) {
 	h := NewHandlers(svc, log)
 	r.Get("/", h.Me)
-	r.Put("/username", h.SetUsername)
+	r.Put("/display_name", h.SetDisplayName)
 	r.Put("/password", h.ChangePassword)
 }
