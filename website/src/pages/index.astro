@@ -4,12 +4,12 @@ const siteUrl = import.meta.env.PUBLIC_SITE_URL || Astro.url.origin
 const pageUrl = new URL(Astro.url.pathname, siteUrl).href
 const socialImage = new URL('/icons/icon-512.png', siteUrl).href
 const appScreenshots = [
-  { src: '/screenshots/customer-outlet.png', title: 'Halaman outlet pelanggan', description: 'Pelanggan melihat antrean dan memilih jadwal.' },
-  { src: '/screenshots/customer-ticket.png', title: 'Tiket pelanggan', description: 'Pelanggan memantau posisi dan perkiraan giliran.' },
-  { src: '/screenshots/admin-queue.png', title: 'Meja admin', description: 'Admin mengelola sesi, DP, dan antrean.' },
-  { src: '/screenshots/kapster-queue.png', title: 'Meja kapster', description: 'Kapster melihat pelanggan berikutnya dan status layanan.' },
-  { src: '/screenshots/owner-home.png', title: 'Beranda owner', description: 'Owner membuka ringkasan bisnis dan pengaturan outlet.' },
-  { src: '/screenshots/customer-login.png', title: 'Masuk ke Trimwait', description: 'Satu aplikasi untuk owner, admin, kapster, dan pelanggan.' },
+  { src: '/screenshots/customer-outlet.png', title: 'Halaman outlet pelanggan' },
+  { src: '/screenshots/customer-ticket.png', title: 'Tiket pelanggan' },
+  { src: '/screenshots/admin-queue.png', title: 'Meja admin' },
+  { src: '/screenshots/kapster-queue.png', title: 'Meja kapster' },
+  { src: '/screenshots/owner-home.png', title: 'Beranda owner' },
+  { src: '/screenshots/customer-login.png', title: 'Masuk ke Trimwait' },
 ]
 const features = [
   {
@@ -77,29 +77,23 @@ const features = [
               <span class="window-address">Trimwait · aplikasi</span>
               <span class="window-lock">●</span>
             </div>
-            <img src="/screenshots/customer-outlet.png" alt="Tampilan halaman outlet pelanggan di aplikasi Trimwait" loading="lazy" />
+            <div class="hero-carousel" data-hero-carousel role="region" aria-label="Pratinjau aplikasi Trimwait">
+              <div class="hero-carousel-track" data-hero-track tabindex="0" aria-label="Geser untuk mengganti screenshot aplikasi">
+                {appScreenshots.map((screenshot, index) => (
+                  <figure class="hero-slide" role="group" aria-roledescription="slide" aria-label={`${index + 1} dari ${appScreenshots.length}`}>
+                    <img src={screenshot.src} alt={screenshot.title} loading={index === 0 ? 'eager' : 'lazy'} />
+                  </figure>
+                ))}
+              </div>
+              <div class="hero-carousel-controls">
+                <button class="hero-carousel-button" type="button" data-hero-previous aria-label="Screenshot sebelumnya" disabled>←</button>
+                <span class="hero-carousel-count" data-hero-count aria-live="polite">1 / {appScreenshots.length}</span>
+                <span class="hero-carousel-title" data-hero-title>{appScreenshots[0].title}</span>
+                <button class="hero-carousel-button" type="button" data-hero-next aria-label="Screenshot berikutnya">→</button>
+              </div>
+            </div>
           </div>
           <div class="floating-note"><span class="check">↗</span><span><b>Dirancang untuk ponsel</b><small>Pelanggan dan tim memakai aplikasi yang sama</small></span></div>
-        </div>
-      </section>
-
-      <section class="screenshots" aria-labelledby="screenshots-title">
-        <div class="section-heading"><p class="eyebrow">TAMPILAN APLIKASI</p><h2 id="screenshots-title">Satu alur untuk pelanggan<br />dan seluruh tim.</h2><p class="screenshots-intro">Lihat langsung bagaimana pelanggan memesan dan bagaimana tim menjaga antrean tetap tertata.</p></div>
-        <div class="screenshot-carousel" data-screenshot-carousel aria-label="Galeri screenshot aplikasi">
-          <div class="screenshot-track" data-screenshot-track tabindex="0" aria-label="Geser untuk melihat screenshot aplikasi">
-            {appScreenshots.map((screenshot, index) => (
-              <figure class="screenshot-card" role="group" aria-roledescription="slide" aria-label={`${index + 1} dari ${appScreenshots.length}`}>
-                <div class="screenshot-image"><img src={screenshot.src} alt={screenshot.title} loading="lazy" /></div>
-                <figcaption><h3>{screenshot.title}</h3><p>{screenshot.description}</p></figcaption>
-              </figure>
-            ))}
-          </div>
-          <div class="screenshot-controls">
-            <button class="carousel-button" type="button" data-screenshot-previous aria-label="Screenshot sebelumnya">←</button>
-            <span class="carousel-count" data-screenshot-count aria-live="polite">1 / {appScreenshots.length}</span>
-            <button class="carousel-button" type="button" data-screenshot-next aria-label="Screenshot berikutnya">→</button>
-            <span class="carousel-hint">Geser untuk melihat lainnya</span>
-          </div>
         </div>
       </section>
 
@@ -151,28 +145,26 @@ const features = [
 
     <footer><a class="brand" href="#beranda" aria-label="Trimwait, ke beranda"><img src="/trimwait-logo.png" alt="" /></a><p>Antrian lebih tertata, layanan lebih nyaman.</p><nav aria-label="Informasi hukum"><a href="/syarat">Syarat penggunaan</a><a href="/privasi">Privasi</a></nav><span>© {new Date().getFullYear()} Trimwait</span></footer>
 <script>
-  const carousel = document.querySelector<HTMLElement>('[data-screenshot-carousel]')
-  const track = carousel?.querySelector<HTMLElement>('[data-screenshot-track]')
-  const count = carousel?.querySelector<HTMLElement>('[data-screenshot-count]')
-  const previous = carousel?.querySelector<HTMLButtonElement>('[data-screenshot-previous]')
-  const next = carousel?.querySelector<HTMLButtonElement>('[data-screenshot-next]')
-  const slides = track ? Array.from(track.querySelectorAll<HTMLElement>('.screenshot-card')) : []
+  const carousel = document.querySelector<HTMLElement>('[data-hero-carousel]')
+  const track = carousel?.querySelector<HTMLElement>('[data-hero-track]')
+  const count = carousel?.querySelector<HTMLElement>('[data-hero-count]')
+  const title = carousel?.querySelector<HTMLElement>('[data-hero-title]')
+  const previous = carousel?.querySelector<HTMLButtonElement>('[data-hero-previous]')
+  const next = carousel?.querySelector<HTMLButtonElement>('[data-hero-next]')
+  const slides = track ? Array.from(track.querySelectorAll<HTMLElement>('.hero-slide')) : []
 
-  if (track && count && previous && next) {
+  if (track && count && title && previous && next && slides.length > 0) {
     let activeIndex = 0
-    const step = () => slides[0].getBoundingClientRect().width + Number.parseFloat(getComputedStyle(track).columnGap || '0')
     const updateControls = () => {
-      const trackLeft = track.getBoundingClientRect().left
-      activeIndex = slides.reduce((nearest, slide, index) =>
-        Math.abs(slide.getBoundingClientRect().left - trackLeft) < Math.abs(slides[nearest].getBoundingClientRect().left - trackLeft) ? index : nearest,
-      0)
+      activeIndex = Math.max(0, Math.min(slides.length - 1, Math.round(track.scrollLeft / track.clientWidth)))
       count.textContent = `${activeIndex + 1} / ${slides.length}`
-      previous.disabled = track.scrollLeft <= 1
-      next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 1
+      title.textContent = slides[activeIndex].querySelector('img')?.alt ?? ''
+      previous.disabled = activeIndex === 0
+      next.disabled = activeIndex === slides.length - 1
     }
 
-    previous.addEventListener('click', () => track.scrollBy({ left: -step(), behavior: 'smooth' }))
-    next.addEventListener('click', () => track.scrollBy({ left: step(), behavior: 'smooth' }))
+    previous.addEventListener('click', () => track.scrollTo({ left: (activeIndex - 1) * track.clientWidth, behavior: 'smooth' }))
+    next.addEventListener('click', () => track.scrollTo({ left: (activeIndex + 1) * track.clientWidth, behavior: 'smooth' }))
     track.addEventListener('scroll', () => window.requestAnimationFrame(updateControls), { passive: true })
     window.addEventListener('resize', updateControls)
     updateControls()
@@ -213,7 +205,7 @@ const features = [
   .window-bar { position: relative; z-index: 1; display: flex; height: 34px; align-items: center; justify-content: space-between; padding: 0 12px; border-bottom: 1px solid var(--color-line); background: var(--color-paper-raised); }
   .window-dots { display: flex; gap: 5px; }.window-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--color-line-strong); }.window-dots i:first-child { background: var(--color-ink-muted); }
   .window-address { position: absolute; left: 50%; color: var(--color-muted); font-size: 12px; font-weight: 600; transform: translateX(-50%); }.window-lock { color: var(--color-body-muted); font-size: 12px; }
-  .app-window > img { display: block; width: 100%; height: calc(100% - 34px); object-fit: cover; object-position: top center; }
+  .hero-carousel { height: calc(100% - 34px); }.hero-carousel-track { display: flex; width: 100%; height: calc(100% - 48px); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; scroll-behavior: smooth; }.hero-carousel-track::-webkit-scrollbar { display: none; }.hero-slide { display: grid; flex: 0 0 100%; height: 100%; margin: 0; place-items: center; scroll-snap-align: start; scroll-snap-stop: always; background: var(--color-paper); }.hero-slide img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: center; }.hero-carousel-controls { display: flex; height: 48px; align-items: center; gap: 10px; padding: 0 12px; border-top: 1px solid var(--color-line); background: var(--color-paper); }.hero-carousel-button { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 1px solid var(--color-line-strong); border-radius: 50%; background: var(--color-paper); color: var(--color-ink); cursor: pointer; }.hero-carousel-button:disabled { opacity: .45; cursor: default; }.hero-carousel-count { min-width: 36px; color: var(--color-body-muted); font-size: 11px; font-weight: 700; text-align: center; }.hero-carousel-title { overflow: hidden; color: var(--color-body); font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
   .floating-note { position: absolute; right: 0; bottom: 2px; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 1px solid var(--color-line-soft); border-radius: 13px; background: var(--color-paper); box-shadow: 0 12px 30px color-mix(in srgb, var(--color-ink) 7%, transparent); }
   .check { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 50%; background: var(--color-paper-raised); color: var(--color-ink-muted); font-size: 13px; }.floating-note b,.floating-note small { display: block; }.floating-note b { font-size: 12px; }.floating-note small { margin-top: 3px; color: var(--color-muted); font-size: 12px; }
   .trust-strip { display: flex; align-items: center; justify-content: space-between; gap: 20px; max-width: 1160px; margin: 0 auto; padding: 22px 0; border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); color: var(--color-body); font-size: 12px; font-weight: 650; }
@@ -224,12 +216,11 @@ const features = [
   .role-features { padding-top: 20px; }
   .feature-list { border-top: 1px solid var(--color-line); }.feature-item { display: grid; grid-template-columns: 42px 1fr 20px; align-items: start; gap: 14px; padding: 23px 0; border-bottom: 1px solid var(--color-line); }.feature-number { padding-top: 3px; color: var(--color-accent); font-size: 12px; font-weight: 800; }.feature-item h3 { margin: 0; font-size: 16px; }.feature-item p { max-width: 470px; margin: 8px 0 0; color: var(--color-muted); font-size: 13px; line-height: 1.65; }.feature-arrow { color: var(--color-muted); }
   .pricing-section { max-width: 1160px; margin: 0 auto; padding: 20px 0 110px; }.pricing-section .section-heading { margin-bottom: 30px; }.pricing-section .section-heading h2 { margin: 0; font-size: 41px; line-height: 1.1; letter-spacing: -2px; }.pricing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 760px; }.pricing-card { min-height: 150px; padding: 24px; border: 1px solid var(--color-line); border-radius: 16px; background: var(--color-paper); }.pricing-card h3 { margin: 0 0 18px; font-size: 16px; }.pricing-amount { margin: 0; color: var(--color-ink-brand); font-size: clamp(24px, 4vw, 34px); font-weight: 800; letter-spacing: -1px; }.pricing-amount span { display: block; margin-top: 5px; color: var(--color-body-muted); font-size: 14px; font-weight: 500; letter-spacing: 0; }
-  .screenshots { max-width: 1160px; margin: 0 auto; padding: 35px 0 105px; }.screenshots .section-heading { max-width: 720px; margin-bottom: 34px; }.screenshots .section-heading h2 { margin: 0; font-size: 41px; line-height: 1.1; letter-spacing: -2px; }.screenshots-intro { max-width: 560px; margin: 15px 0 0; color: var(--color-body-muted); font-size: 15px; line-height: 1.65; }.screenshot-track { display: flex; gap: 18px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; scroll-behavior: smooth; }.screenshot-track::-webkit-scrollbar { display: none; }.screenshot-card { flex: 0 0 clamp(250px, 28vw, 340px); min-width: 0; margin: 0; overflow: hidden; scroll-snap-align: start; scroll-snap-stop: always; border: 1px solid var(--color-line); border-radius: 18px; background: var(--color-paper); }.screenshot-image { display: flex; height: 390px; justify-content: center; overflow: hidden; background: var(--color-paper-raised); }.screenshot-image img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top center; }.screenshot-card figcaption { min-height: 100px; padding: 16px 18px 19px; border-top: 1px solid var(--color-line); }.screenshot-card h3 { margin: 0; font-size: 15px; }.screenshot-card figcaption p { margin: 6px 0 0; color: var(--color-body-muted); font-size: 12px; line-height: 1.5; }.screenshot-controls { display: flex; align-items: center; gap: 12px; margin-top: 16px; }.carousel-button { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid var(--color-line-strong); border-radius: 50%; background: var(--color-paper); color: var(--color-ink); font-size: 20px; cursor: pointer; }.carousel-button:hover:not(:disabled) { border-color: var(--color-accent); background: var(--color-accent-soft); }.carousel-button:disabled { opacity: .45; cursor: default; }.carousel-count { min-width: 48px; color: var(--color-body); font-size: 13px; font-weight: 700; text-align: center; }.carousel-hint { margin-left: 4px; color: var(--color-muted); font-size: 12px; }
   .demo-section { display: flex; align-items: center; justify-content: space-between; gap: 24px; max-width: 1160px; margin: 0 auto 100px; padding: 34px 0; border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); }.demo-section .eyebrow { margin-bottom: 12px; }.demo-section h2 { margin: 0; font-size: 30px; letter-spacing: -1px; }.demo-section p:not(.eyebrow) { margin: 8px 0 0; color: var(--color-body-muted); font-size: 15px; }
   .closing-cta { display: flex; align-items: center; justify-content: space-between; gap: 30px; max-width: 1160px; margin: 0 auto 80px; padding: 46px 52px; border-radius: 20px; background: var(--color-ink-brand); color: var(--color-paper); }.closing-cta .eyebrow { color: var(--color-accent-on-dark); }.closing-cta h2 { font-size: 32px; }.button-light { flex: 0 0 auto; background: var(--color-paper); color: var(--color-ink); }.button-light:hover { background: var(--color-paper-raised); }
   footer { display: flex; align-items: center; gap: 22px; max-width: 1160px; margin: auto; padding: 0 0 35px; }.footer .brand { font-size: 17px; }footer p { margin: 0; color: var(--color-muted); font-size: 12px; }footer > span { margin-left: auto; color: var(--color-muted); font-size: 12px; }
-  @media (max-width: 900px) { .trust-strip,.features,.pricing-section,.screenshots,.demo-section,.closing-cta,footer { margin-right: 30px; margin-left: 30px; }.features { gap: 38px; } }
-  @media (max-width: 680px) { .topbar { height: 70px; padding: 0 20px; }.brand { font-size: 18px; }nav { gap: 14px; }nav a:first-child { display: none; }.button-small { min-height: 38px; padding: 0 12px; font-size: 12px; }.hero { grid-template-columns: 1fr; gap: 12px; min-height: auto; padding: 54px 22px 38px; }.hero-copy { max-width: 520px; }h1 { font-size: clamp(48px, 12.5vw, 64px); letter-spacing: -.5px; }.hero-description { margin: 20px 0; font-size: 14px; }.hero-actions { align-items: flex-start; flex-direction: column; gap: 17px; }.hero-note { margin-top: 15px; }.preview-wrap { min-height: 590px; }.app-window { width: min(440px, 96%); height: 560px; }.preview-glow { width: min(380px, 92%); }.floating-note { right: -2px; bottom: 0; }.trust-strip { align-items: flex-start; flex-direction: column; margin: 0 22px; padding: 20px 0; }.trust-strip p { margin-bottom: 3px; }.features { grid-template-columns: 1fr; gap: 30px; margin: 0 22px; padding: 74px 0; }.section-heading h2 { font-size: 36px; }.pricing-section { margin: 0 22px; padding: 12px 0 74px; }.pricing-section .section-heading h2 { font-size: 36px; }.pricing-grid { grid-template-columns: 1fr; }.pricing-card { min-height: 0; }.demo-section { align-items: flex-start; flex-direction: column; margin: 0 22px 74px; }.demo-section .button { width: 100%; }.closing-cta { align-items: flex-start; flex-direction: column; margin: 0 22px 56px; padding: 30px 24px; }.closing-cta h2 { font-size: 29px; }.closing-cta .button { width: 100%; }footer { flex-wrap: wrap; gap: 12px; margin: 0 22px; padding-bottom: 25px; }footer p { flex-basis: 100%; order: 3; }footer nav { flex-basis: 100%; order: 4; }footer > span { margin-left: 0; order: 5; }.screenshots { margin: 0 22px; padding: 10px 0 74px; }.screenshots .section-heading h2 { font-size: 36px; }.screenshot-track { gap: 12px; }.screenshot-card { flex-basis: min(78vw, 300px); }.screenshot-image { height: 340px; }.screenshot-controls { gap: 9px; }.carousel-hint { margin-left: auto; } }
+  @media (max-width: 900px) { .trust-strip,.features,.pricing-section,.demo-section,.closing-cta,footer { margin-right: 30px; margin-left: 30px; }.features { gap: 38px; } }
+  @media (max-width: 680px) { .topbar { height: 70px; padding: 0 20px; }.brand { font-size: 18px; }nav { gap: 14px; }nav a:first-child { display: none; }.button-small { min-height: 38px; padding: 0 12px; font-size: 12px; }.hero { grid-template-columns: 1fr; gap: 12px; min-height: auto; padding: 54px 22px 38px; }.hero-copy { max-width: 520px; }h1 { font-size: clamp(48px, 12.5vw, 64px); letter-spacing: -.5px; }.hero-description { margin: 20px 0; font-size: 14px; }.hero-actions { align-items: flex-start; flex-direction: column; gap: 17px; }.hero-note { margin-top: 15px; }.preview-wrap { min-height: 590px; }.app-window { width: min(440px, 96%); height: 560px; }.preview-glow { width: min(380px, 92%); }.floating-note { right: -2px; bottom: 0; }.trust-strip { align-items: flex-start; flex-direction: column; margin: 0 22px; padding: 20px 0; }.trust-strip p { margin-bottom: 3px; }.features { grid-template-columns: 1fr; gap: 30px; margin: 0 22px; padding: 74px 0; }.section-heading h2 { font-size: 36px; }.pricing-section { margin: 0 22px; padding: 12px 0 74px; }.pricing-section .section-heading h2 { font-size: 36px; }.pricing-grid { grid-template-columns: 1fr; }.pricing-card { min-height: 0; }.demo-section { align-items: flex-start; flex-direction: column; margin: 0 22px 74px; }.demo-section .button { width: 100%; }.closing-cta { align-items: flex-start; flex-direction: column; margin: 0 22px 56px; padding: 30px 24px; }.closing-cta h2 { font-size: 29px; }.closing-cta .button { width: 100%; }footer { flex-wrap: wrap; gap: 12px; margin: 0 22px; padding-bottom: 25px; }footer p { flex-basis: 100%; order: 3; }footer nav { flex-basis: 100%; order: 4; }footer > span { margin-left: 0; order: 5; } }
   @media (prefers-reduced-motion: reduce) { :global(html) { scroll-behavior: auto; }.button { transition: none; } }
-  @media (prefers-reduced-motion: reduce) { .screenshot-track { scroll-behavior: auto; } }
+  @media (prefers-reduced-motion: reduce) { .hero-carousel-track { scroll-behavior: auto; } }
 </style>
