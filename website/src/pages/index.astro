@@ -83,6 +83,26 @@ const features = [
         </div>
       </section>
 
+      <section class="screenshots" aria-labelledby="screenshots-title">
+        <div class="section-heading"><p class="eyebrow">TAMPILAN APLIKASI</p><h2 id="screenshots-title">Satu alur untuk pelanggan<br />dan seluruh tim.</h2><p class="screenshots-intro">Lihat langsung bagaimana pelanggan memesan dan bagaimana tim menjaga antrean tetap tertata.</p></div>
+        <div class="screenshot-carousel" data-screenshot-carousel aria-label="Galeri screenshot aplikasi">
+          <div class="screenshot-track" data-screenshot-track tabindex="0" aria-label="Geser untuk melihat screenshot aplikasi">
+            {appScreenshots.map((screenshot, index) => (
+              <figure class="screenshot-card" role="group" aria-roledescription="slide" aria-label={`${index + 1} dari ${appScreenshots.length}`}>
+                <div class="screenshot-image"><img src={screenshot.src} alt={screenshot.title} loading="lazy" /></div>
+                <figcaption><h3>{screenshot.title}</h3><p>{screenshot.description}</p></figcaption>
+              </figure>
+            ))}
+          </div>
+          <div class="screenshot-controls">
+            <button class="carousel-button" type="button" data-screenshot-previous aria-label="Screenshot sebelumnya">←</button>
+            <span class="carousel-count" data-screenshot-count aria-live="polite">1 / {appScreenshots.length}</span>
+            <button class="carousel-button" type="button" data-screenshot-next aria-label="Screenshot berikutnya">→</button>
+            <span class="carousel-hint">Geser untuk melihat lainnya</span>
+          </div>
+        </div>
+      </section>
+
       <section class="trust-strip" aria-label="Manfaat Trimwait">
         <p>Lebih teratur dari awal sampai selesai</p>
         <div><span>01</span> Pesan online</div><div><span>02</span> Pantau giliran</div><div><span>03</span> Kelola dari satu layar</div>
@@ -107,26 +127,6 @@ const features = [
               <span class="feature-arrow" aria-hidden="true">↗</span>
             </article>
           ))}
-        </div>
-      </section>
-
-      <section class="screenshots" aria-labelledby="screenshots-title">
-        <div class="section-heading"><p class="eyebrow">TAMPILAN APLIKASI</p><h2 id="screenshots-title">Satu alur untuk pelanggan<br />dan seluruh tim.</h2><p class="screenshots-intro">Lihat langsung bagaimana pelanggan memesan dan bagaimana tim menjaga antrean tetap tertata.</p></div>
-        <div class="screenshot-carousel" data-screenshot-carousel aria-label="Galeri screenshot aplikasi">
-          <div class="screenshot-track" data-screenshot-track tabindex="0" aria-label="Geser untuk melihat screenshot aplikasi">
-            {appScreenshots.map((screenshot, index) => (
-              <figure class="screenshot-card" role="group" aria-roledescription="slide" aria-label={`${index + 1} dari ${appScreenshots.length}`}>
-                <div class="screenshot-image"><img src={screenshot.src} alt={screenshot.title} loading="lazy" /></div>
-                <figcaption><h3>{screenshot.title}</h3><p>{screenshot.description}</p></figcaption>
-              </figure>
-            ))}
-          </div>
-          <div class="screenshot-controls">
-            <button class="carousel-button" type="button" data-screenshot-previous aria-label="Screenshot sebelumnya">←</button>
-            <span class="carousel-count" data-screenshot-count aria-live="polite">1 / {appScreenshots.length}</span>
-            <button class="carousel-button" type="button" data-screenshot-next aria-label="Screenshot berikutnya">→</button>
-            <span class="carousel-hint">Geser untuk melihat lainnya</span>
-          </div>
         </div>
       </section>
 
