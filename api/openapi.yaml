@@ -607,29 +607,6 @@ paths:
                   $ref: '#/components/schemas/StaffMember'
         default:
           $ref: '#/components/responses/Error'
-    post:
-      operationId: inviteTenantStaff
-      tags: [staf]
-      summary: Buat akun staf dan kirim verifikasi email
-      security:
-        - cookieAuth: []
-      parameters:
-        - $ref: '#/components/parameters/TenantID'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/InviteStaffRequest'
-      responses:
-        '201':
-          description: Akun staf dibuat
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StaffMember'
-        default:
-          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/staff/invitations:
     get:
       operationId: listStaffInvitationLinks
@@ -2328,34 +2305,6 @@ components:
         email: { type: string, format: email }
         display_name: { type: string, nullable: true }
         created_at: { type: string, format: date-time }
-    InviteStaffRequest:
-      type: object
-      required: [email, password, display_name, roles, outlet_ids]
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          minLength: 8
-        display_name:
-          type: string
-          minLength: 1
-          maxLength: 60
-        roles:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          items:
-            type: string
-            enum: [admin, kapster]
-        outlet_ids:
-          type: array
-          minItems: 1
-          uniqueItems: true
-          items:
-            type: string
-            format: uuid
     OwnerPaymentProfile:
       type: object
       required: [midtrans_configured, manual_qris_configured, onboarding_completed]

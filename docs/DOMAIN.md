@@ -22,6 +22,11 @@ Owner dapat mengaktifkan peran `admin` dan/atau `kapster` untuk membership milik
 - `users` menyimpan email, password, dan `display_name` (nama panggilan) untuk sapaan profil. Nama 1–60 karakter, boleh berisi spasi dan tidak harus unik. Akun lama boleh belum memiliki nama panggilan dan dapat mengaturnya dari Beranda.
 - `tenants` (bisnis), `outlets` (cabang: `slug` unik, `timezone`, `address`, `dp_price_rupiah`,
   `default_duration_minutes`), `memberships` (pengguna di tenant, `roles[]`, penugasan outlet).
+- Owner membuat `staff_invitation_links` yang tokennya disimpan sebagai hash dan berlaku 7 hari.
+  Calon staf mendaftar dengan akun sendiri, memverifikasi email, lalu mengajukan diri melalui link.
+  `staff_applications` tetap berstatus `pending` dan tidak memberi akses tenant sampai owner
+  menyetujui. Owner menetapkan peran `admin` dan/atau `kapster` serta outlet tugas saat menyetujui;
+  penolakan menutup pengajuan tanpa membuat membership.
 - `tenant_profiles`: kunci Midtrans terenkripsi, `midtrans_is_production`, gambar QRIS manual
   (`manual_qris_image`, `_content_type`, `_updated_at`), status onboarding.
 - `plans`, `subscriptions`, `invoices`, `subscription_reminders`: langganan tenant ke platform.

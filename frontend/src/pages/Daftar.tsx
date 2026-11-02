@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { useMutation } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useResendVerification } from '../auth/useResendVerification'
 import { Alert, AuthLayout, Button, Field } from '../components/ui'
 
 export default function Daftar() {
+  const location = useLocation()
+  const from = (location.state as { from?: string } | null)?.from
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -22,7 +24,7 @@ export default function Daftar() {
     return (
       <AuthLayout
         title="Cek email Anda"
-        subtitle={`Kami mengirim tautan verifikasi ke ${email}. Klik tautan itu untuk mengaktifkan akun.`}
+        subtitle={`Kami mengirim tautan verifikasi ke ${email}. Klik tautan itu untuk mengaktifkan akun.${from ? ' Setelah itu, buka kembali link undangan staf untuk mengajukan diri.' : ''}`}
       >
         <Alert tone="info">Tidak ada email? Periksa folder spam, atau kirim ulang tautannya.</Alert>
         {resend.isSuccess && <Alert tone="success">Email verifikasi dikirim ulang.</Alert>}
@@ -31,7 +33,7 @@ export default function Daftar() {
           Kirim ulang email verifikasi
         </Button>
         <p className="text-center text-sm">
-          <Link to="/masuk" className="inline-flex min-h-11 items-center px-3 py-2 font-semibold underline focus-visible:outline-2 focus-visible:outline-brand-ink">
+          <Link to="/masuk" state={from ? { from } : undefined} className="inline-flex min-h-11 items-center px-3 py-2 font-semibold underline focus-visible:outline-2 focus-visible:outline-brand-ink">
             Ke halaman masuk
           </Link>
         </p>
@@ -86,7 +88,7 @@ export default function Daftar() {
       </form>
       <p className="text-center text-sm text-body-muted">
         Sudah punya akun?{' '}
-        <Link to="/masuk" className="inline-flex min-h-11 items-center px-2 py-2 font-semibold text-ink underline focus-visible:outline-2 focus-visible:outline-brand-ink">
+        <Link to="/masuk" state={from ? { from } : undefined} className="inline-flex min-h-11 items-center px-2 py-2 font-semibold text-ink underline focus-visible:outline-2 focus-visible:outline-brand-ink">
           Masuk
         </Link>
       </p>

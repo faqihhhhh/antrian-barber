@@ -468,8 +468,7 @@ export interface paths {
         /** Daftar staf bisnis untuk owner */
         get: operations["listTenantStaff"];
         put?: never;
-        /** Buat akun staf dan kirim verifikasi email */
-        post: operations["inviteTenantStaff"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1608,14 +1607,6 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
-        InviteStaffRequest: {
-            /** Format: email */
-            email: string;
-            password: string;
-            display_name: string;
-            roles: ("admin" | "kapster")[];
-            outlet_ids: string[];
-        };
         OwnerPaymentProfile: {
             midtrans_configured: boolean;
             manual_qris_configured: boolean;
@@ -2499,33 +2490,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffMember"][];
-                };
-            };
-            default: components["responses"]["Error"];
-        };
-    };
-    inviteTenantStaff: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tenantID: components["parameters"]["TenantID"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["InviteStaffRequest"];
-            };
-        };
-        responses: {
-            /** @description Akun staf dibuat */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StaffMember"];
                 };
             };
             default: components["responses"]["Error"];

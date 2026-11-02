@@ -87,7 +87,7 @@ func run(log *slog.Logger) error {
 	tenantSvc := tenant.NewService(pool)
 	billingSvc := billing.NewService(pool, mailer, log, midtrans.NewClient(), cfg.PlatformMidtransServerKey, cfg.PlatformMidtransIsProduction)
 	profileSvc := profile.NewService(pool, box)
-	staffSvc := staff.NewService(pool, identitySvc)
+	staffSvc := staff.NewService(pool)
 	midtransClient := midtrans.NewClient()
 	hub := realtime.NewHub()
 	webpushClient := webpush.NewClient(cfg.VAPIDPublicKey, cfg.VAPIDPrivateKey, cfg.VAPIDSubject)

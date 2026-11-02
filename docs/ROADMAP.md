@@ -62,6 +62,8 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | UI-8 | Panel samping masuk tampil ringkas di HP dan ilustrasi barber memakai aksen indigo |
 | UI-10 | Perbaiki gaya tombol umum yang tertimpa `className`; rapikan aksi kapster dan gunakan warna sukses untuk notifikasi berhasil |
 | 16-1 | Ganti username dengan nama panggilan akun, izinkan nama tidak unik, dan tampilkan nama kapster pada tiket pelanggan |
+| 17-1 | Link undangan staf bertoken hash dan kedaluwarsa, pengajuan staf, serta endpoint owner untuk meninjau dan memberi peran/outlet |
+| 17-2 | Layar pendaftar staf dan owner untuk membuat/mencabut link, meninjau pendaftar, dan menetapkan akses; build dan lint lulus, checklist browser menunggu pemeriksaan |
 
 ## Berikutnya (urutan wajib)
 

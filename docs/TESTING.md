@@ -174,9 +174,14 @@ antrean, dan kedua tiket itu memiliki penanda pernah dipanggil. Data sesi uji di
 Skrip jeda kapster membuat sesi masa depan kosong,
 memastikan status berubah `ready` → `idle`, lalu memeriksa pelanggan aktif tidak bisa ditinggalkan.
 
-Untuk staf owner: dari **Pengaturan outlet**, buka **Kelola staf**. Pastikan daftar staf dan status
-verifikasi email tampil. Form undangan harus menyediakan pilihan peran Admin/Kapster (boleh keduanya)
-dan penugasan outlet; role Owner tidak boleh tersedia.
+Untuk staf owner: dari **Pengaturan outlet**, buka **Kelola staf**. Buat link undangan, salin dan buka
+di tab privat. Pastikan link menampilkan nama bisnis, pendaftar perlu masuk atau membuat akun, lalu
+memverifikasi email sebelum mengajukan diri. Kembali sebagai owner: cabut link dan pastikan link itu
+tidak bisa dipakai lagi; buat link baru untuk melanjutkan. Ajukan diri memakai akun terverifikasi,
+pastikan pendaftar tampil dengan nama dan email tanpa mendapat akses bisnis, lalu setujui dengan
+peran Admin dan Kapster serta outlet yang dipilih. Pastikan staf muncul di daftar dan mendapat akses
+sesuai penugasan. Uji juga penolakan, peran kosong, outlet dari tenant lain, akun dengan email belum
+terverifikasi, dan pastikan hanya owner yang dapat melihat atau meninjau pengajuan.
 
 Untuk pembayaran owner: buka **Pengaturan outlet → Pembayaran DP**. Pastikan status QRIS manual tampil.
 Pilih gambar QRIS PNG/JPG/WebP maksimal 512 KB dan simpan hanya jika ingin mengganti QRIS aktif.

@@ -11,6 +11,7 @@ import HalamanOutlet from './pages/Outlet'
 import Tiket from './pages/Tiket'
 import TiketSaya from './pages/TiketSaya'
 import VerifikasiEmail from './pages/VerifikasiEmail'
+import GabungStaf from './pages/GabungStaf'
 
 const Admin = lazy(() => import('./pages/Admin'))
 const Kapster = lazy(() => import('./pages/Kapster'))
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/masuk" element={<Masuk />} />
         <Route path="/pelanggan/masuk" element={<Masuk />} />
         <Route path="/daftar" element={<Daftar />} />
+        <Route path="/gabung-staf" element={<GabungStaf />} />
         <Route path="/verifikasi-email" element={<VerifikasiEmail />} />
         <Route path="/lupa-password" element={<LupaPassword />} />
         <Route path="/atur-ulang-password" element={<AturUlangPassword />} />
