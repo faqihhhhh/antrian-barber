@@ -63,8 +63,8 @@ const features = [
           <h1>Antrian rapi.<br /><em>Pelanggan nyaman.</em></h1>
           <p class="hero-description">Bantu pelanggan memesan dari ponsel, dan bantu tim mengelola layanan tanpa kehilangan urutan.</p>
           <div class="hero-actions">
-            <a class="button" href={`${appUrl}/daftar`}>Buat akun <span aria-hidden="true">↗</span></a>
-            <a class="text-link" href="#cara-kerja">Lihat cara kerja <span aria-hidden="true">↓</span></a>
+            <a class="button" href={`${appUrl}/daftar`}>Buat akun</a>
+            <a class="text-link" href="#cara-kerja">Lihat cara kerja</a>
           </div>
           <p class="hero-note">Untuk pemilik usaha, admin, kapster, dan pelanggan.</p>
         </div>
@@ -86,14 +86,13 @@ const features = [
                 ))}
               </div>
               <div class="hero-carousel-controls">
-                <button class="hero-carousel-button" type="button" data-hero-previous aria-label="Screenshot sebelumnya" disabled>←</button>
+                <button class="hero-carousel-button" type="button" data-hero-previous aria-label="Screenshot sebelumnya" disabled>Sebelumnya</button>
                 <span class="hero-carousel-count" data-hero-count aria-live="polite">1 / {appScreenshots.length}</span>
                 <span class="hero-carousel-title" data-hero-title>{appScreenshots[0].title}</span>
-                <button class="hero-carousel-button" type="button" data-hero-next aria-label="Screenshot berikutnya">→</button>
+                <button class="hero-carousel-button" type="button" data-hero-next aria-label="Screenshot berikutnya">Berikutnya</button>
               </div>
             </div>
           </div>
-          <div class="floating-note"><span class="check">↗</span><span><b>Dirancang untuk ponsel</b><small>Pelanggan dan tim memakai aplikasi yang sama</small></span></div>
         </div>
       </section>
 
@@ -118,7 +117,6 @@ const features = [
             <article class="feature-item">
               <span class="feature-number">{feature.number}</span>
               <div><h3>{feature.title}</h3><p>{feature.description}</p></div>
-              <span class="feature-arrow" aria-hidden="true">↗</span>
             </article>
           ))}
         </div>
@@ -134,12 +132,12 @@ const features = [
 
       <section class="demo-section" aria-labelledby="demo-title">
         <div><p class="eyebrow">LIHAT LANGSUNG</p><h2 id="demo-title">Minta demo</h2><p>Lihat alur Trimwait sebelum memilih.</p></div>
-        <!-- TODO pemilik: isi email kontak untuk permintaan demo --><a class="button" href="mailto:[EMAIL: isi oleh pemilik]">Minta demo <span aria-hidden="true">↗</span></a>
+        <!-- TODO pemilik: isi email kontak untuk permintaan demo --><a class="button" href="mailto:[EMAIL: isi oleh pemilik]">Minta demo</a>
       </section>
 
       <section class="closing-cta">
         <div><p class="eyebrow">MULAI DARI OUTLET PERTAMAMU</p><h2>Beri waktu lebih banyak<br />untuk pelangganmu.</h2></div>
-        <a class="button button-light" href={`${appUrl}/daftar`}>Buat akun <span aria-hidden="true">↗</span></a>
+        <a class="button button-light" href={`${appUrl}/daftar`}>Buat akun</a>
       </section>
     </main>
 
@@ -205,16 +203,14 @@ const features = [
   .window-bar { position: relative; z-index: 1; display: flex; height: 34px; align-items: center; justify-content: space-between; padding: 0 12px; border-bottom: 1px solid var(--color-line); background: var(--color-paper-raised); }
   .window-dots { display: flex; gap: 5px; }.window-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--color-line-strong); }.window-dots i:first-child { background: var(--color-ink-muted); }
   .window-address { position: absolute; left: 50%; color: var(--color-muted); font-size: 12px; font-weight: 600; transform: translateX(-50%); }.window-lock { color: var(--color-body-muted); font-size: 12px; }
-  .hero-carousel { height: calc(100% - 34px); }.hero-carousel-track { display: flex; width: 100%; height: calc(100% - 48px); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; scroll-behavior: smooth; }.hero-carousel-track::-webkit-scrollbar { display: none; }.hero-slide { display: grid; flex: 0 0 100%; height: 100%; margin: 0; place-items: center; scroll-snap-align: start; scroll-snap-stop: always; background: var(--color-paper); }.hero-slide img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: center; }.hero-carousel-controls { display: flex; height: 48px; align-items: center; gap: 10px; padding: 0 12px; border-top: 1px solid var(--color-line); background: var(--color-paper); }.hero-carousel-button { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 1px solid var(--color-line-strong); border-radius: 50%; background: var(--color-paper); color: var(--color-ink); cursor: pointer; }.hero-carousel-button:disabled { opacity: .45; cursor: default; }.hero-carousel-count { min-width: 36px; color: var(--color-body-muted); font-size: 11px; font-weight: 700; text-align: center; }.hero-carousel-title { overflow: hidden; color: var(--color-body); font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
-  .floating-note { position: absolute; right: 0; bottom: 2px; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 1px solid var(--color-line-soft); border-radius: 13px; background: var(--color-paper); box-shadow: 0 12px 30px color-mix(in srgb, var(--color-ink) 7%, transparent); }
-  .check { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 50%; background: var(--color-paper-raised); color: var(--color-ink-muted); font-size: 13px; }.floating-note b,.floating-note small { display: block; }.floating-note b { font-size: 12px; }.floating-note small { margin-top: 3px; color: var(--color-muted); font-size: 12px; }
+  .hero-carousel { height: calc(100% - 34px); }.hero-carousel-track { display: flex; width: 100%; height: calc(100% - 48px); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; scroll-behavior: smooth; }.hero-carousel-track::-webkit-scrollbar { display: none; }.hero-slide { display: grid; flex: 0 0 100%; height: 100%; margin: 0; place-items: center; scroll-snap-align: start; scroll-snap-stop: always; background: var(--color-paper); }.hero-slide img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: center; }.hero-carousel-controls { display: flex; height: 48px; align-items: center; gap: 10px; padding: 0 12px; border-top: 1px solid var(--color-line); background: var(--color-paper); }.hero-carousel-button { display: inline-flex; min-height: 30px; flex: 0 0 auto; align-items: center; justify-content: center; padding: 0 10px; border: 1px solid var(--color-line-strong); border-radius: 8px; background: var(--color-paper); color: var(--color-ink); font-size: 11px; font-weight: 650; cursor: pointer; }.hero-carousel-button:disabled { opacity: .45; cursor: default; }.hero-carousel-count { min-width: 36px; color: var(--color-body-muted); font-size: 11px; font-weight: 700; text-align: center; }.hero-carousel-title { overflow: hidden; color: var(--color-body); font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
   .trust-strip { display: flex; align-items: center; justify-content: space-between; gap: 20px; max-width: 1160px; margin: 0 auto; padding: 22px 0; border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); color: var(--color-body); font-size: 12px; font-weight: 650; }
   .trust-strip p { margin: 0; color: var(--color-muted); font-size: 12px; font-weight: 500; }.trust-strip div { display: flex; align-items: center; gap: 9px; }.trust-strip div span { color: var(--color-ink-muted); font-size: 12px; }
   .features { display: grid; grid-template-columns: .8fr 1.2fr; gap: 70px; max-width: 1160px; margin: auto; padding: 110px 0 120px; }
   .section-heading .eyebrow { margin-bottom: 18px; }.section-heading h2,.closing-cta h2 { margin: 0; font-size: 41px; line-height: 1.1; letter-spacing: -2px; }
   .step-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--color-line); }.step-list li { display: grid; grid-template-columns: 42px 1fr; align-items: start; gap: 14px; padding: 23px 0; border-bottom: 1px solid var(--color-line); }.step-number { padding-top: 2px; color: var(--color-ink-muted); font-size: 15px; font-weight: 800; }.step-list p { margin: 0; color: var(--color-body); font-size: 16px; line-height: 1.55; font-weight: 600; }
   .role-features { padding-top: 20px; }
-  .feature-list { border-top: 1px solid var(--color-line); }.feature-item { display: grid; grid-template-columns: 42px 1fr 20px; align-items: start; gap: 14px; padding: 23px 0; border-bottom: 1px solid var(--color-line); }.feature-number { padding-top: 3px; color: var(--color-accent); font-size: 12px; font-weight: 800; }.feature-item h3 { margin: 0; font-size: 16px; }.feature-item p { max-width: 470px; margin: 8px 0 0; color: var(--color-muted); font-size: 13px; line-height: 1.65; }.feature-arrow { color: var(--color-muted); }
+  .feature-list { border-top: 1px solid var(--color-line); }.feature-item { display: grid; grid-template-columns: 42px 1fr; align-items: start; gap: 14px; padding: 23px 0; border-bottom: 1px solid var(--color-line); }.feature-number { padding-top: 3px; color: var(--color-accent); font-size: 12px; font-weight: 800; }.feature-item h3 { margin: 0; font-size: 16px; }.feature-item p { max-width: 470px; margin: 8px 0 0; color: var(--color-muted); font-size: 13px; line-height: 1.65; }
   .pricing-section { max-width: 1160px; margin: 0 auto; padding: 20px 0 110px; }.pricing-section .section-heading { margin-bottom: 30px; }.pricing-section .section-heading h2 { margin: 0; font-size: 41px; line-height: 1.1; letter-spacing: -2px; }.pricing-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 760px; }.pricing-card { min-height: 150px; padding: 24px; border: 1px solid var(--color-line); border-radius: 16px; background: var(--color-paper); }.pricing-card h3 { margin: 0 0 18px; font-size: 16px; }.pricing-amount { margin: 0; color: var(--color-ink-brand); font-size: clamp(24px, 4vw, 34px); font-weight: 800; letter-spacing: -1px; }.pricing-amount span { display: block; margin-top: 5px; color: var(--color-body-muted); font-size: 14px; font-weight: 500; letter-spacing: 0; }
   .demo-section { display: flex; align-items: center; justify-content: space-between; gap: 24px; max-width: 1160px; margin: 0 auto 100px; padding: 34px 0; border-top: 1px solid var(--color-line); border-bottom: 1px solid var(--color-line); }.demo-section .eyebrow { margin-bottom: 12px; }.demo-section h2 { margin: 0; font-size: 30px; letter-spacing: -1px; }.demo-section p:not(.eyebrow) { margin: 8px 0 0; color: var(--color-body-muted); font-size: 15px; }
   .closing-cta { display: flex; align-items: center; justify-content: space-between; gap: 30px; max-width: 1160px; margin: 0 auto 80px; padding: 46px 52px; border-radius: 20px; background: var(--color-ink-brand); color: var(--color-paper); }.closing-cta .eyebrow { color: var(--color-accent-on-dark); }.closing-cta h2 { font-size: 32px; }.button-light { flex: 0 0 auto; background: var(--color-paper); color: var(--color-ink); }.button-light:hover { background: var(--color-paper-raised); }
