@@ -476,6 +476,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/staff/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar link undangan staf untuk owner */
+        get: operations["listStaffInvitationLinks"];
+        put?: never;
+        /** Buat link undangan staf yang berlaku tujuh hari */
+        post: operations["createStaffInvitationLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/staff/invitations/{invitationID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Cabut link undangan staf */
+        delete: operations["revokeStaffInvitationLink"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/staff/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar pendaftar staf yang menunggu keputusan owner */
+        get: operations["listStaffApplications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/staff/applications/{applicationID}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Setujui pendaftar dengan peran dan outlet tugas */
+        post: operations["approveStaffApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/staff/applications/{applicationID}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tolak pendaftar staf */
+        post: operations["rejectStaffApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/public/staff-invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Periksa apakah link undangan staf masih berlaku */
+        get: operations["lookupStaffInvitation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/staff-applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ajukan diri sebagai staf menggunakan link undangan */
+        post: operations["applyForStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/stats/overview": {
         parameters: {
             query?: never;
@@ -1449,6 +1569,45 @@ export interface components {
             email_verified: boolean;
             outlet_ids: string[];
         };
+        StaffInvitationLink: {
+            /** Format: uuid */
+            id: string;
+            /** @description Token undangan mentah, hanya dikirim saat link dibuat. */
+            url_token?: string;
+            /** Format: date-time */
+            expires_at: string;
+            /** Format: date-time */
+            revoked_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        StaffInvitationInfo: {
+            /** Format: uuid */
+            tenant_id: string;
+            tenant_name: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        StaffApplication: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenant_id: string;
+            tenant_name: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected";
+            /** Format: date-time */
+            created_at: string;
+        };
+        StaffApplicant: {
+            /** Format: uuid */
+            application_id: string;
+            /** Format: email */
+            email: string;
+            display_name?: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
         InviteStaffRequest: {
             /** Format: email */
             email: string;
@@ -2367,6 +2526,204 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffMember"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listStaffInvitationLinks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Link undangan aktif dan lama */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffInvitationLink"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    createStaffInvitationLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Link baru; token hanya dikirim sekali */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffInvitationLink"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    revokeStaffInvitationLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                invitationID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Link dicabut */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    listStaffApplications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pendaftar staf */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffApplicant"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    approveStaffApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                applicationID: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    roles: ("admin" | "kapster")[];
+                    outlet_ids: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Pengajuan disetujui dan membership dibuat */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    rejectStaffApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                applicationID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pengajuan ditolak */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    lookupStaffInvitation: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Informasi bisnis untuk undangan yang valid */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffInvitationInfo"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    applyForStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    token: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Pengajuan menunggu persetujuan owner */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffApplication"];
                 };
             };
             default: components["responses"]["Error"];

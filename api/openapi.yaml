@@ -630,6 +630,183 @@ paths:
                 $ref: '#/components/schemas/StaffMember'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/staff/invitations:
+    get:
+      operationId: listStaffInvitationLinks
+      tags: [staf]
+      summary: Daftar link undangan staf untuk owner
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: Link undangan aktif dan lama
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/StaffInvitationLink' }
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createStaffInvitationLink
+      tags: [staf]
+      summary: Buat link undangan staf yang berlaku tujuh hari
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '201':
+          description: Link baru; token hanya dikirim sekali
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffInvitationLink' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/staff/invitations/{invitationID}:
+    delete:
+      operationId: revokeStaffInvitationLink
+      tags: [staf]
+      summary: Cabut link undangan staf
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - name: invitationID
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Link dicabut
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/staff/applications:
+    get:
+      operationId: listStaffApplications
+      tags: [staf]
+      summary: Daftar pendaftar staf yang menunggu keputusan owner
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: Pendaftar staf
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/StaffApplicant' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/staff/applications/{applicationID}/approve:
+    post:
+      operationId: approveStaffApplication
+      tags: [staf]
+      summary: Setujui pendaftar dengan peran dan outlet tugas
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - name: applicationID
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roles, outlet_ids]
+              properties:
+                roles:
+                  type: array
+                  minItems: 1
+                  uniqueItems: true
+                  items: { type: string, enum: [admin, kapster] }
+                outlet_ids:
+                  type: array
+                  minItems: 1
+                  uniqueItems: true
+                  items: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Pengajuan disetujui dan membership dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/staff/applications/{applicationID}/reject:
+    post:
+      operationId: rejectStaffApplication
+      tags: [staf]
+      summary: Tolak pendaftar staf
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - name: applicationID
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Pengajuan ditolak
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/public/staff-invitations:
+    get:
+      operationId: lookupStaffInvitation
+      tags: [staf]
+      summary: Periksa apakah link undangan staf masih berlaku
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string, minLength: 32, maxLength: 128 }
+      responses:
+        '200':
+          description: Informasi bisnis untuk undangan yang valid
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffInvitationInfo' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/me/staff-applications:
+    post:
+      operationId: applyForStaff
+      tags: [staf]
+      summary: Ajukan diri sebagai staf menggunakan link undangan
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string, minLength: 32, maxLength: 128 }
+      responses:
+        '201':
+          description: Pengajuan menunggu persetujuan owner
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/StaffApplication' }
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/stats/overview:
     get:
       operationId: getTenantStatsOverview
@@ -2116,6 +2293,41 @@ components:
           items:
             type: string
             format: uuid
+    StaffInvitationLink:
+      type: object
+      required: [id, expires_at, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        url_token:
+          type: string
+          description: Token undangan mentah, hanya dikirim saat link dibuat.
+        expires_at: { type: string, format: date-time }
+        revoked_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+    StaffInvitationInfo:
+      type: object
+      required: [tenant_id, tenant_name, expires_at]
+      properties:
+        tenant_id: { type: string, format: uuid }
+        tenant_name: { type: string }
+        expires_at: { type: string, format: date-time }
+    StaffApplication:
+      type: object
+      required: [id, tenant_id, tenant_name, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        tenant_name: { type: string }
+        status: { type: string, enum: [pending, approved, rejected] }
+        created_at: { type: string, format: date-time }
+    StaffApplicant:
+      type: object
+      required: [application_id, email, created_at]
+      properties:
+        application_id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        display_name: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
     InviteStaffRequest:
       type: object
       required: [email, password, display_name, roles, outlet_ids]

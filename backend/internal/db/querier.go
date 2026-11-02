@@ -41,6 +41,8 @@ type Querier interface {
 	CreateQueueSession(ctx context.Context, arg CreateQueueSessionParams) (QueueSession, error)
 	CreateReview(ctx context.Context, arg CreateReviewParams) (Review, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateStaffApplication(ctx context.Context, arg CreateStaffApplicationParams) (bool, error)
+	CreateStaffInvitationLink(ctx context.Context, arg CreateStaffInvitationLinkParams) (CreateStaffInvitationLinkRow, error)
 	CreateTenant(ctx context.Context, arg CreateTenantParams) error
 	CreateTicket(ctx context.Context, arg CreateTicketParams) (Ticket, error)
 	CreateTicketEvent(ctx context.Context, arg CreateTicketEventParams) error
@@ -68,6 +70,7 @@ type Querier interface {
 	GetQueueSessionForUpdate(ctx context.Context, id uuid.UUID) (QueueSession, error)
 	GetReviewByTicketID(ctx context.Context, ticketID uuid.UUID) (Review, error)
 	GetReviewSummaryByTenant(ctx context.Context, tenantID uuid.UUID) ([]GetReviewSummaryByTenantRow, error)
+	GetStaffApplicationForUser(ctx context.Context, arg GetStaffApplicationForUserParams) (GetStaffApplicationForUserRow, error)
 	GetSubscriptionByTenant(ctx context.Context, tenantID uuid.UUID) (Subscription, error)
 	GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error)
 	GetTenantProfile(ctx context.Context, tenantID uuid.UUID) (GetTenantProfileRow, error)
@@ -99,6 +102,7 @@ type Querier interface {
 	ListOwnerEmailsByTenant(ctx context.Context, tenantID uuid.UUID) ([]string, error)
 	ListPendingInvoices(ctx context.Context) ([]ListPendingInvoicesRow, error)
 	ListPendingManualTicketPaymentsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]ListPendingManualTicketPaymentsBySessionRow, error)
+	ListPendingStaffApplications(ctx context.Context, tenantID uuid.UUID) ([]ListPendingStaffApplicationsRow, error)
 	ListPublicOutletDirectory(ctx context.Context) ([]ListPublicOutletDirectoryRow, error)
 	ListPushSubscriptionsForUser(ctx context.Context, userID uuid.UUID) ([]PushSubscription, error)
 	ListQueueSessionsByOutlet(ctx context.Context, outletID uuid.UUID) ([]QueueSession, error)
@@ -106,11 +110,13 @@ type Querier interface {
 	ListReviewsByKapster(ctx context.Context, arg ListReviewsByKapsterParams) ([]ListReviewsByKapsterRow, error)
 	ListReviewsByTenant(ctx context.Context, arg ListReviewsByTenantParams) ([]ListReviewsByTenantRow, error)
 	ListStaffByTenant(ctx context.Context, tenantID uuid.UUID) ([]ListStaffByTenantRow, error)
+	ListStaffInvitationLinks(ctx context.Context, tenantID uuid.UUID) ([]ListStaffInvitationLinksRow, error)
 	ListSubscriptionsEndingSoon(ctx context.Context) ([]ListSubscriptionsEndingSoonRow, error)
 	ListTenants(ctx context.Context) ([]Tenant, error)
 	ListTicketsAwaitingSettlement(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	ListTicketsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	ListUpcomingWaitingTickets(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
+	LookupStaffInvitation(ctx context.Context, dollar_1 []byte) (LookupStaffInvitationRow, error)
 	MarkEmailVerificationTokenUsed(ctx context.Context, id uuid.UUID) error
 	MarkInvoiceMidtransPaid(ctx context.Context, arg MarkInvoiceMidtransPaidParams) (MarkInvoiceMidtransPaidRow, error)
 	MarkInvoicePaid(ctx context.Context, arg MarkInvoicePaidParams) (MarkInvoicePaidRow, error)
@@ -134,6 +140,8 @@ type Querier interface {
 	RecordInvoiceSubscriptionPeriod(ctx context.Context, arg RecordInvoiceSubscriptionPeriodParams) (int64, error)
 	RecordSubscriptionReminder(ctx context.Context, arg RecordSubscriptionReminderParams) error
 	RequeueTicketAtEnd(ctx context.Context, arg RequeueTicketAtEndParams) error
+	ReviewStaffApplication(ctx context.Context, arg ReviewStaffApplicationParams) (ReviewStaffApplicationRow, error)
+	RevokeStaffInvitationLink(ctx context.Context, arg RevokeStaffInvitationLinkParams) (int64, error)
 	SetInvoiceMidtransPayment(ctx context.Context, arg SetInvoiceMidtransPaymentParams) (int64, error)
 	SetManualQRIS(ctx context.Context, arg SetManualQRISParams) error
 	SetPlatformManualQRIS(ctx context.Context, arg SetPlatformManualQRISParams) error

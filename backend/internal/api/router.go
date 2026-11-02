@@ -64,6 +64,7 @@ func New(
 	r.Route("/v1/public", func(pr chi.Router) {
 		queue.RegisterPublicRoutes(pr, queueSvc, log)
 		publicpage.RegisterRoutes(pr, publicSvc, log)
+		staff.RegisterPublicRoutes(pr, staffSvc, log)
 	})
 
 	r.Route("/v1/plans", func(pr chi.Router) {
@@ -96,6 +97,7 @@ func New(
 		mr.Use(identity.RequireAuth(identitySvc, log))
 		mr.Use(rls.Middleware(pool, log))
 		account.RegisterRoutes(mr, accountSvc, log)
+		staff.RegisterMyRoutes(mr, staffSvc, log)
 		queue.RegisterMeRoutes(mr, queueSvc, log)
 	})
 

@@ -151,6 +151,27 @@ type Session struct {
 	LastUsedAt pgtype.Timestamptz `json:"last_used_at"`
 }
 
+type StaffApplication struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	InvitationID uuid.UUID          `json:"invitation_id"`
+	UserID       uuid.UUID          `json:"user_id"`
+	Status       string             `json:"status"`
+	ReviewedBy   pgtype.UUID        `json:"reviewed_by"`
+	ReviewedAt   pgtype.Timestamptz `json:"reviewed_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
+type StaffInvitationLink struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	TokenHash []byte             `json:"token_hash"`
+	CreatedBy uuid.UUID          `json:"created_by"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	RevokedAt pgtype.Timestamptz `json:"revoked_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type Subscription struct {
 	ID               uuid.UUID          `json:"id"`
 	TenantID         uuid.UUID          `json:"tenant_id"`

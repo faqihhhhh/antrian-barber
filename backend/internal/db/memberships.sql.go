@@ -52,6 +52,59 @@ func (q *Queries) CreateMembership(ctx context.Context, arg CreateMembershipPara
 	return i, err
 }
 
+const createStaffApplication = `-- name: CreateStaffApplication :one
+SELECT submit_staff_application($1::bytea, $2::uuid) AS created
+`
+
+type CreateStaffApplicationParams struct {
+	TokenHash []byte    `json:"token_hash"`
+	UserID    uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) CreateStaffApplication(ctx context.Context, arg CreateStaffApplicationParams) (bool, error) {
+	row := q.db.QueryRow(ctx, createStaffApplication, arg.TokenHash, arg.UserID)
+	var created bool
+	err := row.Scan(&created)
+	return created, err
+}
+
+const createStaffInvitationLink = `-- name: CreateStaffInvitationLink :one
+INSERT INTO staff_invitation_links (tenant_id, token_hash, created_by, expires_at)
+VALUES ($1, $2, $3, $4)
+RETURNING id, tenant_id, expires_at, created_at
+`
+
+type CreateStaffInvitationLinkParams struct {
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	TokenHash []byte             `json:"token_hash"`
+	CreatedBy uuid.UUID          `json:"created_by"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+type CreateStaffInvitationLinkRow struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) CreateStaffInvitationLink(ctx context.Context, arg CreateStaffInvitationLinkParams) (CreateStaffInvitationLinkRow, error) {
+	row := q.db.QueryRow(ctx, createStaffInvitationLink,
+		arg.TenantID,
+		arg.TokenHash,
+		arg.CreatedBy,
+		arg.ExpiresAt,
+	)
+	var i CreateStaffInvitationLinkRow
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getMembershipForUserAndTenant = `-- name: GetMembershipForUserAndTenant :one
 SELECT id, tenant_id, user_id, roles, created_at, updated_at FROM memberships WHERE tenant_id = $1 AND user_id = $2
 `
@@ -71,6 +124,38 @@ func (q *Queries) GetMembershipForUserAndTenant(ctx context.Context, arg GetMemb
 		&i.Roles,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getStaffApplicationForUser = `-- name: GetStaffApplicationForUser :one
+SELECT id, tenant_id, user_id, status, created_at
+FROM staff_applications
+WHERE tenant_id = $1 AND user_id = $2
+`
+
+type GetStaffApplicationForUserParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	UserID   uuid.UUID `json:"user_id"`
+}
+
+type GetStaffApplicationForUserRow struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	UserID    uuid.UUID          `json:"user_id"`
+	Status    string             `json:"status"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) GetStaffApplicationForUser(ctx context.Context, arg GetStaffApplicationForUserParams) (GetStaffApplicationForUserRow, error) {
+	row := q.db.QueryRow(ctx, getStaffApplicationForUser, arg.TenantID, arg.UserID)
+	var i GetStaffApplicationForUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.UserID,
+		&i.Status,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -119,6 +204,50 @@ func (q *Queries) ListMembershipsForUser(ctx context.Context, userID uuid.UUID) 
 			&i.Roles,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPendingStaffApplications = `-- name: ListPendingStaffApplications :many
+SELECT a.id, a.user_id, a.status, a.created_at, u.email, u.display_name
+FROM staff_applications a
+JOIN users u ON u.id = a.user_id
+WHERE a.tenant_id = $1 AND a.status = 'pending'
+ORDER BY a.created_at
+`
+
+type ListPendingStaffApplicationsRow struct {
+	ID          uuid.UUID          `json:"id"`
+	UserID      uuid.UUID          `json:"user_id"`
+	Status      string             `json:"status"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Email       string             `json:"email"`
+	DisplayName pgtype.Text        `json:"display_name"`
+}
+
+func (q *Queries) ListPendingStaffApplications(ctx context.Context, tenantID uuid.UUID) ([]ListPendingStaffApplicationsRow, error) {
+	rows, err := q.db.Query(ctx, listPendingStaffApplications, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPendingStaffApplicationsRow
+	for rows.Next() {
+		var i ListPendingStaffApplicationsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Status,
+			&i.CreatedAt,
+			&i.Email,
+			&i.DisplayName,
 		); err != nil {
 			return nil, err
 		}
@@ -183,4 +312,123 @@ func (q *Queries) ListStaffByTenant(ctx context.Context, tenantID uuid.UUID) ([]
 		return nil, err
 	}
 	return items, nil
+}
+
+const listStaffInvitationLinks = `-- name: ListStaffInvitationLinks :many
+SELECT id, tenant_id, expires_at, revoked_at, created_at
+FROM staff_invitation_links
+WHERE tenant_id = $1
+ORDER BY created_at DESC
+`
+
+type ListStaffInvitationLinksRow struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	RevokedAt pgtype.Timestamptz `json:"revoked_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) ListStaffInvitationLinks(ctx context.Context, tenantID uuid.UUID) ([]ListStaffInvitationLinksRow, error) {
+	rows, err := q.db.Query(ctx, listStaffInvitationLinks, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListStaffInvitationLinksRow
+	for rows.Next() {
+		var i ListStaffInvitationLinksRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.ExpiresAt,
+			&i.RevokedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lookupStaffInvitation = `-- name: LookupStaffInvitation :one
+SELECT x.tenant_id::uuid AS tenant_id, x.tenant_name::text AS tenant_name,
+       x.expires_at::timestamptz AS expires_at
+FROM lookup_staff_invitation($1::bytea) AS x(tenant_id, tenant_name, expires_at)
+`
+
+type LookupStaffInvitationRow struct {
+	TenantID   uuid.UUID          `json:"tenant_id"`
+	TenantName string             `json:"tenant_name"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) LookupStaffInvitation(ctx context.Context, dollar_1 []byte) (LookupStaffInvitationRow, error) {
+	row := q.db.QueryRow(ctx, lookupStaffInvitation, dollar_1)
+	var i LookupStaffInvitationRow
+	err := row.Scan(&i.TenantID, &i.TenantName, &i.ExpiresAt)
+	return i, err
+}
+
+const reviewStaffApplication = `-- name: ReviewStaffApplication :one
+UPDATE staff_applications
+SET status = $3, reviewed_by = $4, reviewed_at = now()
+WHERE id = $1 AND tenant_id = $2 AND status = 'pending'
+RETURNING id, tenant_id, user_id, status, created_at
+`
+
+type ReviewStaffApplicationParams struct {
+	ID         uuid.UUID   `json:"id"`
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	Status     string      `json:"status"`
+	ReviewedBy pgtype.UUID `json:"reviewed_by"`
+}
+
+type ReviewStaffApplicationRow struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	UserID    uuid.UUID          `json:"user_id"`
+	Status    string             `json:"status"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) ReviewStaffApplication(ctx context.Context, arg ReviewStaffApplicationParams) (ReviewStaffApplicationRow, error) {
+	row := q.db.QueryRow(ctx, reviewStaffApplication,
+		arg.ID,
+		arg.TenantID,
+		arg.Status,
+		arg.ReviewedBy,
+	)
+	var i ReviewStaffApplicationRow
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.UserID,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const revokeStaffInvitationLink = `-- name: RevokeStaffInvitationLink :execrows
+UPDATE staff_invitation_links
+SET revoked_at = now()
+WHERE id = $1 AND tenant_id = $2 AND revoked_at IS NULL
+`
+
+type RevokeStaffInvitationLinkParams struct {
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
+}
+
+func (q *Queries) RevokeStaffInvitationLink(ctx context.Context, arg RevokeStaffInvitationLinkParams) (int64, error) {
+	result, err := q.db.Exec(ctx, revokeStaffInvitationLink, arg.ID, arg.TenantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

@@ -11,5 +11,17 @@ func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger, requireActive 
 	h := NewHandlers(svc, log)
 	r.With(requireActive).Post("/{tenantID}/staff", h.InviteStaff)
 	r.Get("/{tenantID}/staff", h.ListStaff)
+	r.With(requireActive).Post("/{tenantID}/staff/invitations", h.CreateInvitationLink)
+	r.Get("/{tenantID}/staff/invitations", h.ListInvitationLinks)
+	r.With(requireActive).Delete("/{tenantID}/staff/invitations/{invitationID}", h.RevokeInvitationLink)
+	r.Get("/{tenantID}/staff/applications", h.ListApplications)
+	r.With(requireActive).Post("/{tenantID}/staff/applications/{applicationID}/{decision:approve|reject}", h.ReviewApplication)
 }
 
+func RegisterPublicRoutes(r chi.Router, svc *Service, log *slog.Logger) {
+	r.Get("/staff-invitations", NewHandlers(svc, log).LookupInvitation)
+}
+
+func RegisterMyRoutes(r chi.Router, svc *Service, log *slog.Logger) {
+	r.Post("/staff-applications", NewHandlers(svc, log).ApplyForStaff)
+}
