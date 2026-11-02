@@ -57,7 +57,7 @@ func (c *Client) ChargeQRIS(ctx context.Context, serverKey string, isProduction 
 		},
 		"qris": map[string]any{"acquirer": "gopay"},
 		"custom_expiry": map[string]any{
-			"expiry_duration": 30,
+			"expiry_duration": 5,
 			"unit":            "minute",
 		},
 	})

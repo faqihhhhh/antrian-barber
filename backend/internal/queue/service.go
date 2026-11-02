@@ -691,7 +691,7 @@ func (s *Service) KapsterComplete(ctx context.Context, tenantID, sessionID, user
 	return nil
 }
 
-const paymentWindow = 30 * time.Minute
+const paymentWindow = 5 * time.Minute
 
 const matchCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // tanpa 0/O, 1/I/L yang mirip
 

@@ -2,25 +2,25 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #171717;
-  --color-ink-hover: #303030;
-  --color-ink-muted: #525252;
-  --color-ink-brand: #1E293B;
-  --color-paper: #F8FAFC;
-  --color-paper-raised: #F1F5F9;
-  --color-paper-muted: #E2E8F0;
-  --color-line: #E2E8F0;
-  --color-line-soft: #F1F5F9;
-  --color-line-strong: #CBD5E1;
-  --color-muted: #66666b;
-  --color-body-muted: #525257;
-  --color-body: #3f3f46;
-  --color-brand: #404040;
-  --color-brand-ink: #262626;
-  --color-accent: #4338CA;
-  --color-accent-ink: #3730A3;
-  --color-accent-soft: #EEF2FF;
-  --color-accent-on-dark: #A5B4FC;
+  --color-ink: #282544;
+  --color-ink-hover: #39345F;
+  --color-ink-muted: #5B5679;
+  --color-ink-brand: #34305E;
+  --color-paper: #F5F3FB;
+  --color-paper-raised: #ECE9F7;
+  --color-paper-muted: #DED9EF;
+  --color-line: #E2DEEF;
+  --color-line-soft: #F1EFF8;
+  --color-line-strong: #C9C3DF;
+  --color-muted: #6C687C;
+  --color-body-muted: #55516A;
+  --color-body: #3E3A50;
+  --color-brand: #5148A8;
+  --color-brand-ink: #3F378D;
+  --color-accent: #6758C8;
+  --color-accent-ink: #4E419F;
+  --color-accent-soft: #EEEBFC;
+  --color-accent-on-dark: #C9C2FB;
   --font-sans: "Inter Variable", system-ui, sans-serif;
 }
 

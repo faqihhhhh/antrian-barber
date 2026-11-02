@@ -122,7 +122,7 @@ func (q *Queries) GetTicketPaymentByTicketID(ctx context.Context, ticketID uuid.
 
 const listExpiredPendingPayments = `-- name: ListExpiredPendingPayments :many
 SELECT id, tenant_id, ticket_id, customer_user_id, method, amount_rupiah, unique_code, midtrans_order_id, status, confirmed_by, paid_at, expires_at, created_at, updated_at, qr_code_url FROM ticket_payments
-WHERE status = 'pending' AND expires_at < now() - interval '2 minutes'
+WHERE status = 'pending' AND expires_at < now()
 ORDER BY expires_at
 LIMIT 100
 `

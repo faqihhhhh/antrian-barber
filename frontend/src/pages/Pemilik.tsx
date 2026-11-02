@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
@@ -12,6 +12,7 @@ type Outlet = components['schemas']['OwnerOutlet']
 
 export default function Pemilik() {
   const me = useMe()
+  const location = useLocation()
   const [tenantChoice, setTenantChoice] = useState('')
 
   if (me.isPending) return <Spinner />
@@ -28,24 +29,20 @@ export default function Pemilik() {
       <header>
         <h1 className="mt-1 text-2xl font-bold">Bisnis</h1>
       </header>
-      <div className="space-y-4" aria-label="Menu pengelolaan bisnis">
-        <section aria-labelledby="operasional-heading" className="space-y-2">
-          <h2 id="operasional-heading" className="text-sm font-bold text-body-muted">Operasional</h2>
-          <div className="grid grid-cols-2 gap-2">
-            <ManagementLink to="/pemilik/pembayaran" title="Pembayaran DP" description="Atur uang muka pelanggan" />
-            <ManagementLink to="/pemilik/staf" title="Kelola staf" description="Undang dan atur staf" />
-            <ManagementLink to="/pemilik/peran" title="Peran operasional" description="Atur akses Admin dan Kapster" />
-          </div>
-        </section>
-        <section aria-labelledby="bisnis-heading" className="space-y-2">
-          <h2 id="bisnis-heading" className="text-sm font-bold text-body-muted">Pantau & paket</h2>
-          <div className="grid grid-cols-2 gap-2">
-            <ManagementLink to="/pemilik/statistik" title="Statistik" description="Lihat kinerja bisnis" />
-            <ManagementLink to="/pemilik/ulasan" title="Ulasan pelanggan" description="Baca penilaian pelanggan" />
-            <ManagementLink to="/pemilik/langganan" title="Langganan" description="Paket dan tagihan bisnis" />
-          </div>
-        </section>
-      </div>
+      <section aria-labelledby="menu-bisnis-heading" className="-mx-5 space-y-2">
+        <div className="flex items-end justify-between px-5">
+          <h2 id="menu-bisnis-heading" className="text-sm font-bold text-body">Menu bisnis</h2>
+          <span className="text-xs text-body-muted">Geser untuk melihat</span>
+        </div>
+        <nav aria-label="Menu pengelolaan bisnis" className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ManagementLink to="/pemilik/pembayaran" title="Pembayaran DP" currentPath={location.pathname} />
+          <ManagementLink to="/pemilik/staf" title="Kelola staf" currentPath={location.pathname} />
+          <ManagementLink to="/pemilik/peran" title="Peran operasional" currentPath={location.pathname} />
+          <ManagementLink to="/pemilik/statistik" title="Statistik" currentPath={location.pathname} />
+          <ManagementLink to="/pemilik/ulasan" title="Ulasan pelanggan" currentPath={location.pathname} />
+          <ManagementLink to="/pemilik/langganan" title="Langganan" currentPath={location.pathname} />
+        </nav>
+      </section>
 
       {memberships.length === 0 ? (
         <Alert tone="info">Akun ini belum menjadi owner bisnis.</Alert>
@@ -71,17 +68,15 @@ export default function Pemilik() {
   )
 }
 
-function ManagementLink({ to, title, description }: { to: string; title: string; description: string }) {
+function ManagementLink({ to, title, currentPath }: { to: string; title: string; currentPath: string }) {
+  const active = currentPath === to
   return (
     <Link
       to={to}
-      className="group flex min-h-24 flex-col justify-between rounded-2xl border border-line bg-white p-3 transition hover:border-line-strong hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
+      aria-current={active ? 'page' : undefined}
+      className={`inline-flex min-h-11 shrink-0 snap-start items-center whitespace-nowrap rounded-full border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-ink ${active ? 'border-ink bg-ink text-white shadow-sm' : 'border-line bg-white text-ink hover:border-line-strong hover:bg-paper-raised'}`}
     >
-      <span className="text-sm font-bold leading-5 text-ink">{title}</span>
-      <span className="flex items-end justify-between gap-1 text-xs leading-4 text-body-muted">
-        {description}
-        <span aria-hidden="true" className="shrink-0 text-base text-ink transition-transform group-hover:translate-x-0.5">→</span>
-      </span>
+      {title}
     </Link>
   )
 }

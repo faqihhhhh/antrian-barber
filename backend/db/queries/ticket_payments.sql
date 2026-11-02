@@ -31,6 +31,6 @@ WHERE id = $1 AND status = 'pending';
 
 -- name: ListExpiredPendingPayments :many
 SELECT * FROM ticket_payments
-WHERE status = 'pending' AND expires_at < now() - interval '2 minutes'
+WHERE status = 'pending' AND expires_at < now()
 ORDER BY expires_at
 LIMIT 100;

@@ -72,7 +72,7 @@ Urutan pemeriksaan dan kode errornya:
 6. Nama lebih dari 60 karakter: `nama_terlalu_panjang`. Nama dirapikan (spasi di tepi dibuang).
 
 Hasilnya tiket `pending_payment`, kode pencocokan 6 karakter (alfabet tanpa `0 O 1 I`), dan pembayaran
-`pending` berlaku 30 menit. Nomor tiket diambil lewat `claim_ticket_number_for_booking`. Nomor tidak
+`pending` berlaku 5 menit. Nomor tiket diambil lewat `claim_ticket_number_for_booking`. Nomor tidak
 pernah dipakai ulang (`next_ticket_number` hanya naik), sedangkan `used_quota` naik saat pesan dan turun
 saat tiket `pending_payment` dibatalkan.
 
