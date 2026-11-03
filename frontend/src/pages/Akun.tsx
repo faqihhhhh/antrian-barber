@@ -7,6 +7,7 @@ import { Alert, Button, Field, Spinner } from '../components/ui'
 export default function Akun() {
   const me = useMe()
   const queryClient = useQueryClient()
+  const [displayName, setDisplayName] = useState<string | null>(null)
   const [password, setPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -17,7 +18,10 @@ export default function Akun() {
       if (!response.ok || !data) throw new ApiError(error)
       return data
     },
-    onSuccess: async () => queryClient.invalidateQueries({ queryKey: ['me'] }),
+    onSuccess: async () => {
+      setDisplayName(null)
+      await queryClient.invalidateQueries({ queryKey: ['me'] })
+    },
   })
 
   const changePassword = useMutation({
@@ -37,11 +41,13 @@ export default function Akun() {
   if (me.isPending) return <Spinner />
   if (me.isError) return <main className="mx-auto max-w-xl px-5 py-8"><Alert>{messageOf(me.error)}</Alert></main>
   if (!me.data) return null
+  const currentDisplayName = me.data.user.display_name ?? ''
+  const nextDisplayName = displayName ?? currentDisplayName
 
   function submitDisplayName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const form = new FormData(event.currentTarget)
-    saveDisplayName.mutate(String(form.get('display_name') ?? ''))
+    if (displayName === null) return
+    saveDisplayName.mutate(displayName.trim())
   }
 
   function submitPassword(event: FormEvent<HTMLFormElement>) {
@@ -69,12 +75,13 @@ export default function Akun() {
             required
             minLength={1}
             maxLength={60}
-            defaultValue={me.data.user.display_name ?? ''}
+            value={nextDisplayName}
+            onChange={(event) => setDisplayName(event.target.value)}
             hint="Maksimal 60 karakter, boleh memakai spasi."
           />
           {saveDisplayName.isError && <Alert>{messageOf(saveDisplayName.error)}</Alert>}
           {saveDisplayName.isSuccess && <Alert tone="success">Nama panggilan berhasil disimpan.</Alert>}
-          <Button type="submit" loading={saveDisplayName.isPending}>Simpan nama panggilan</Button>
+          <Button type="submit" loading={saveDisplayName.isPending} disabled={displayName === null || nextDisplayName.trim() === currentDisplayName.trim() || !nextDisplayName.trim()}>Simpan nama panggilan</Button>
         </form>
       </section>
 
@@ -115,7 +122,7 @@ export default function Akun() {
           {newPassword && confirmPassword && newPassword !== confirmPassword && <Alert>Ulangan password belum cocok.</Alert>}
           {changePassword.isError && <Alert>{messageOf(changePassword.error)}</Alert>}
           {changePassword.isSuccess && <Alert tone="success">Password berhasil diubah.</Alert>}
-          <Button type="submit" loading={changePassword.isPending} disabled={newPassword !== confirmPassword}>Simpan password baru</Button>
+          <Button type="submit" loading={changePassword.isPending} disabled={!password || newPassword.length < 8 || newPassword !== confirmPassword}>Simpan password baru</Button>
         </form>
       </section>
     </main>

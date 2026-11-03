@@ -80,7 +80,7 @@ export default function Beranda() {
               onChange={(event) => setDisplayName(event.target.value.toLowerCase())}
             />
             {saveDisplayName.isError && <Alert>{messageOf(saveDisplayName.error)}</Alert>}
-            <Button type="submit" loading={saveDisplayName.isPending}>Simpan nama panggilan</Button>
+            <Button type="submit" loading={saveDisplayName.isPending} disabled={displayName.trim().length < 3}>Simpan nama panggilan</Button>
           </form>
         )}
         {data.is_platform_admin && (

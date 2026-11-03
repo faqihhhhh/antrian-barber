@@ -149,8 +149,10 @@ lihat angka antrian naik di halaman outlet tanpa reload.
 
 Untuk layar owner: masuk dengan akun owner tenant B, buka Beranda lalu **Atur outlet**. Pastikan
 nama outlet, harga DP, durasi bawaan, dan tautan publik tampil. Ubah harga DP dan durasi, simpan,
-lalu muat ulang untuk memastikan nilai tetap tersimpan. Buka tautan outlet dan pastikan halaman
-publiknya masih bisa dibuka.
+lalu muat ulang untuk memastikan nilai tetap tersimpan. Pastikan tombol simpan mati saat tidak ada
+perubahan dan aktif kembali setelah nilai diubah; kembalikan ke nilai awal dan pastikan tombol mati
+lagi. Tekan **Tambah outlet**, isi nama/zona waktu/alamat, lalu pastikan outlet baru muncul setelah
+disimpan. Buka tautan outlet dan pastikan halaman publiknya masih bisa dibuka.
 
 Untuk memastikan tiket no-show tidak membuat antrean berputar, siapkan cookie jar baru untuk akun
 admin dan kapster yang ditugaskan ke outlet tenant aktif. Jangan gunakan cookie jar lama yang pernah
@@ -218,6 +220,10 @@ Untuk invoice yang dikonfirmasi setelah migrasi periode audit, pastikan rentang 
 tampil. Invoice lama menampilkan keterangan periode belum tercatat karena datanya tidak bisa dipastikan.
 Pastikan owner tidak bisa membuat tagihan saat periode aktif masih lebih dari 7 hari dan hanya ada
 satu invoice pending untuk satu bisnis.
+
+Pada **Akun**, pastikan tombol simpan nama mati jika nama tidak berubah dan aktif setelah diedit.
+Pada **Pembayaran DP**, pastikan tombol simpan QRIS mati sebelum memilih file. Pada layar SaaS,
+pastikan tombol simpan harga paket mati untuk harga yang sama, lalu aktif setelah harga diganti.
 
 Untuk pemilik SaaS: masuk memakai akun platform admin (`cookies.txt`), buka Beranda, lalu tekan
 **Buka ringkasan platform** (atau buka `/pemilik-saas`). Pastikan MRR, ARR, jumlah tenant menurut

@@ -82,6 +82,7 @@ function ManagementLink({ to, title, currentPath }: { to: string; title: string;
 }
 
 function OutletList({ membership }: { membership: Membership }) {
+  const [showCreateOutlet, setShowCreateOutlet] = useState(false)
   const outlets = useQuery({
     queryKey: ['owner-outlets', membership.tenant_id],
     queryFn: async (): Promise<Outlet[]> => {
@@ -122,11 +123,16 @@ function OutletList({ membership }: { membership: Membership }) {
           outlet={outlet}
         />
       ))}
+      {showCreateOutlet ? (
+        <CreateOutlet tenantID={membership.tenant_id} title="Tambah outlet" onCancel={() => setShowCreateOutlet(false)} onCreated={() => setShowCreateOutlet(false)} />
+      ) : (
+        <Button type="button" variant="secondary" onClick={() => setShowCreateOutlet(true)}>Tambah outlet</Button>
+      )}
     </section>
   )
 }
 
-function CreateOutlet({ tenantID }: { tenantID: string }) {
+function CreateOutlet({ tenantID, title = 'Buat outlet pertama', onCancel, onCreated }: { tenantID: string; title?: string; onCancel?: () => void; onCreated?: () => void }) {
   const [name, setName] = useState('')
   const [timezone, setTimezone] = useState('Asia/Jakarta')
   const [address, setAddress] = useState('')
@@ -145,6 +151,7 @@ function CreateOutlet({ tenantID }: { tenantID: string }) {
         queryClient.invalidateQueries({ queryKey: ['owner-outlets', tenantID] }),
         queryClient.invalidateQueries({ queryKey: ['me'] }),
       ])
+      onCreated?.()
     },
   })
 
@@ -156,7 +163,7 @@ function CreateOutlet({ tenantID }: { tenantID: string }) {
   return (
     <section className="space-y-4 rounded-3xl border border-line bg-white p-5">
       <div>
-        <h2 className="text-lg font-bold">Buat outlet pertama</h2>
+        <h2 className="text-lg font-bold">{title}</h2>
         <p className="mt-1 text-sm leading-6 text-body-muted">Tentukan nama dan zona waktu outlet. Setelah dibuat, atur DP dan metode pembayaran sebelum pelanggan memesan.</p>
       </div>
       <form className="space-y-4" onSubmit={submit}>
@@ -171,8 +178,9 @@ function CreateOutlet({ tenantID }: { tenantID: string }) {
         </label>
         <Field label="Alamat outlet (opsional)" name="outletAddress" autoComplete="street-address" value={address} onChange={(event) => setAddress(event.target.value)} />
         {create.isError && <Alert>{messageOf(create.error)}</Alert>}
-        {create.isSuccess && <Alert tone="success">Outlet berhasil dibuat. Lanjutkan dengan mengatur DP dan pembayaran.</Alert>}
+        {create.isSuccess && <Alert tone="success">Outlet berhasil dibuat.</Alert>}
         <Button type="submit" loading={create.isPending} disabled={!name.trim()}>Buat outlet</Button>
+        {onCancel && <Button type="button" variant="ghost" disabled={create.isPending} onClick={onCancel}>Batal</Button>}
       </form>
     </section>
   )
@@ -186,6 +194,7 @@ function OutletSettings({ tenantID, outlet }: { tenantID: string; outlet: Outlet
   const [linkCopied, setLinkCopied] = useState(false)
   const [copyError, setCopyError] = useState(false)
   const publicURL = `${window.location.origin}/o/${outlet.slug}`
+  const hasChanges = Number(dpPrice) !== outlet.dp_price_rupiah || Number(duration) !== outlet.default_duration_minutes
 
   const save = useMutation({
     mutationFn: async () => {
@@ -244,7 +253,7 @@ function OutletSettings({ tenantID, outlet }: { tenantID: string; outlet: Outlet
           step="1000"
           required
           value={dpPrice}
-          onChange={(event) => setDpPrice(event.target.value)}
+          onChange={(event) => { setDpPrice(event.target.value); setSaved(false) }}
           hint={dpPrice !== '' && Number.isFinite(Number(dpPrice)) ? `Ditampilkan sebagai ${formatRupiah(Number(dpPrice))}` : undefined}
         />
         <Field
@@ -255,12 +264,12 @@ function OutletSettings({ tenantID, outlet }: { tenantID: string; outlet: Outlet
           step="1"
           required
           value={duration}
-          onChange={(event) => setDuration(event.target.value)}
+          onChange={(event) => { setDuration(event.target.value); setSaved(false) }}
           hint="Dipakai untuk menghitung perkiraan waktu tunggu."
         />
         {save.isError && <Alert>{messageOf(save.error)}</Alert>}
         {saved && <Alert tone="success">Pengaturan outlet tersimpan.</Alert>}
-        <Button type="submit" loading={save.isPending}>Simpan pengaturan</Button>
+        <Button type="submit" loading={save.isPending} disabled={!hasChanges}>Simpan pengaturan</Button>
       </form>
     </article>
   )

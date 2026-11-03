@@ -185,6 +185,8 @@ function StaffCard({ member, outlets, pending, onSave, onRemove }: {
 }) {
   const [roles, setRoles] = useState<StaffRole[]>(member.roles.filter((role): role is StaffRole => role === 'admin' || role === 'kapster'))
   const [outletIDs, setOutletIDs] = useState<string[]>(member.outlet_ids)
+  const originalRoles = member.roles.filter((role): role is StaffRole => role === 'admin' || role === 'kapster')
+  const hasChanges = !sameValues(roles, originalRoles) || !sameValues(outletIDs, member.outlet_ids)
   function toggleRole(role: StaffRole) { setRoles((current) => current.includes(role) ? current.filter((item) => item !== role) : [...current, role]) }
   function toggleOutlet(id: string) { setOutletIDs((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]) }
   return <article className="space-y-3 rounded-2xl border border-line bg-white p-4">
@@ -206,10 +208,14 @@ function StaffCard({ member, outlets, pending, onSave, onRemove }: {
       </label>)}
     </fieldset>
     <div className="flex flex-col gap-2 sm:flex-row">
-      <Button type="button" disabled={!roles.length || !outletIDs.length} loading={pending} onClick={() => onSave({ membershipID: member.membership_id, roles, outletIDs })}>Simpan perubahan</Button>
+      <Button type="button" disabled={!hasChanges || !roles.length || !outletIDs.length} loading={pending} onClick={() => onSave({ membershipID: member.membership_id, roles, outletIDs })}>Simpan perubahan</Button>
       <Button type="button" variant="secondary" disabled={pending} onClick={onRemove}>Keluarkan dari bisnis</Button>
     </div>
   </article>
+}
+
+function sameValues(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value) => right.includes(value))
 }
 
 function ApplicantCard({ applicant, outlets, review, pending, error }: {
