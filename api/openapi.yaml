@@ -1014,6 +1014,36 @@ paths:
                 $ref: '#/components/schemas/OwnerPaymentProfile'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/profile/midtrans:
+    post:
+      operationId: setOwnerMidtransKeys
+      tags: [owner]
+      summary: Simpan kunci Midtrans tenant
+      description: Hanya owner. Kunci disimpan terenkripsi dan tidak pernah dikembalikan lewat API.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [server_key, client_key, is_production]
+              properties:
+                server_key: { type: string, minLength: 1 }
+                client_key: { type: string, minLength: 1 }
+                is_production: { type: boolean }
+      responses:
+        '200':
+          description: Kunci tersimpan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/public/outlets/{slug}:
     get:
       operationId: getPublicOutlet
@@ -2364,9 +2394,11 @@ components:
         created_at: { type: string, format: date-time }
     OwnerPaymentProfile:
       type: object
-      required: [midtrans_configured, manual_qris_configured, onboarding_completed]
+      required: [midtrans_configured, midtrans_is_production, manual_qris_configured, onboarding_completed]
       properties:
         midtrans_configured:
+          type: boolean
+        midtrans_is_production:
           type: boolean
         manual_qris_configured:
           type: boolean

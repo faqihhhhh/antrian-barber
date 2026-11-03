@@ -196,7 +196,10 @@ tetap berfungsi.
 
 Untuk pembayaran owner: buka **Pengaturan outlet → Pembayaran DP**. Pastikan status QRIS manual tampil.
 Pilih gambar QRIS PNG/JPG/WebP maksimal 512 KB dan simpan hanya jika ingin mengganti QRIS aktif.
-Midtrans hanya menampilkan status konfigurasi; jangan isi kunci tanpa akun Midtrans.
+Untuk Midtrans Sandbox, isi **Server Key** dan **Client Key** dari bagian Sandbox pada dashboard Midtrans,
+pilih **Sandbox**, lalu simpan. Pastikan halaman menampilkan lingkungan Sandbox tanpa mengisi ulang kunci.
+Jangan gunakan Signature Secret Key. Buat pemesanan uji, pastikan QR tampil, bayar lewat simulator sandbox,
+dan pastikan tiket aktif setelah webhook atau tombol cek ulang. Pastikan kunci tidak pernah tampil lagi di layar.
 
 Untuk tautan outlet owner: di **Pengaturan outlet**, tekan **Salin tautan** dan pastikan pesan
 konfirmasi tampil serta URL dapat ditempel di tab baru. Tekan **Buka halaman** dan pastikan halaman

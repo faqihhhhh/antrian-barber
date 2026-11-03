@@ -766,6 +766,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/profile/midtrans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Simpan kunci Midtrans tenant
+         * @description Hanya owner. Kunci disimpan terenkripsi dan tidak pernah dikembalikan lewat API.
+         */
+        post: operations["setOwnerMidtransKeys"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/public/outlets/{slug}": {
         parameters: {
             query?: never;
@@ -1627,6 +1647,7 @@ export interface components {
         };
         OwnerPaymentProfile: {
             midtrans_configured: boolean;
+            midtrans_is_production: boolean;
             manual_qris_configured: boolean;
             onboarding_completed: boolean;
         };
@@ -2977,6 +2998,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnerPaymentProfile"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    setOwnerMidtransKeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    server_key: string;
+                    client_key: string;
+                    is_production: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Kunci tersimpan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             default: components["responses"]["Error"];

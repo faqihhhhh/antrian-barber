@@ -56,6 +56,9 @@ function PaymentSettings({ membership }: { membership: Membership }) {
   const fileInput = useRef<HTMLInputElement>(null)
   const [file, setFile] = useState<File | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
+  const [serverKey, setServerKey] = useState('')
+  const [clientKey, setClientKey] = useState('')
+  const [environment, setEnvironment] = useState<'sandbox' | 'production' | null>(null)
 
   const profile = useQuery({
     queryKey: ['owner-payment-profile', membership.tenant_id],
@@ -67,6 +70,9 @@ function PaymentSettings({ membership }: { membership: Membership }) {
       return data
     },
   })
+  const isProduction = environment === null
+    ? Boolean(profile.data?.midtrans_is_production)
+    : environment === 'production'
 
   const upload = useMutation({
     mutationFn: async () => {
@@ -100,6 +106,26 @@ function PaymentSettings({ membership }: { membership: Membership }) {
       upload.reset()
       setFile(null)
       if (fileInput.current) fileInput.current.value = ''
+      await queryClient.invalidateQueries({ queryKey: ['owner-payment-profile', membership.tenant_id] })
+    },
+  })
+
+  const saveMidtrans = useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/profile/midtrans', {
+        params: { path: { tenantID: membership.tenant_id } },
+        body: {
+          server_key: serverKey,
+          client_key: clientKey,
+          is_production: isProduction,
+        },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: async () => {
+      setServerKey('')
+      setClientKey('')
       await queryClient.invalidateQueries({ queryKey: ['owner-payment-profile', membership.tenant_id] })
     },
   })
@@ -170,9 +196,54 @@ function PaymentSettings({ membership }: { membership: Membership }) {
         <h2 className="font-bold">Midtrans</h2>
         <p className="mt-1 text-sm text-body-muted">
           {profile.data.midtrans_configured
-            ? 'Kunci Midtrans sudah tersimpan. Pengaturan kunci tidak ditampilkan di layar ini.'
+            ? `Kunci Midtrans tersimpan untuk lingkungan ${profile.data.midtrans_is_production ? 'Produksi' : 'Sandbox'}. Untuk mengganti kunci, masukkan pasangan kunci baru di bawah.`
             : 'Belum diatur. Pembayaran online Midtrans memerlukan akun dan kunci dari Midtrans.'}
         </p>
+        <form className="mt-4 space-y-4" onSubmit={(event) => { event.preventDefault(); saveMidtrans.mutate() }}>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-body">Server Key</span>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={serverKey}
+              onChange={(event) => setServerKey(event.target.value)}
+              required
+              className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-body">Client Key</span>
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={clientKey}
+              onChange={(event) => setClientKey(event.target.value)}
+              required
+              className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-body">Lingkungan Midtrans</span>
+            <select
+              value={environment ?? (profile.data?.midtrans_is_production ? 'production' : 'sandbox')}
+              onChange={(event) => setEnvironment(event.target.value === 'production' ? 'production' : 'sandbox')}
+              className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base focus-visible:outline-2 focus-visible:outline-brand-ink"
+            >
+              <option value="sandbox">Sandbox untuk pengujian</option>
+              <option value="production">Produksi untuk pembayaran nyata</option>
+            </select>
+            <span className="mt-1 block text-xs text-muted">Gunakan pasangan kunci dari lingkungan yang dipilih. Signature Secret Key tidak diperlukan.</span>
+          </label>
+          {saveMidtrans.isError && <Alert>{messageOf(saveMidtrans.error)}</Alert>}
+          {saveMidtrans.isSuccess && <Alert tone="success">Kunci Midtrans tersimpan. Buat pembayaran uji untuk memastikan pasangan kunci dan lingkungan sudah benar.</Alert>}
+          <Button type="submit" loading={saveMidtrans.isPending} disabled={!serverKey || !clientKey}>
+            {saveMidtrans.isPending ? 'Menyimpan…' : profile.data.midtrans_configured ? 'Ganti kunci Midtrans' : 'Simpan kunci Midtrans'}
+          </Button>
+          <p className="text-xs text-muted">
+            Atur URL notifikasi di dashboard Midtrans ke domain publik aplikasi ditambah{' '}
+            <code className="break-all">/v1/webhooks/midtrans</code>. Koneksi lokal tidak dapat menerima webhook tanpa URL publik.
+          </p>
+        </form>
       </article>
     </section>
   )

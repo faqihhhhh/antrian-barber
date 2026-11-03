@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 	"os"
+	"time"
 )
 
 type Client struct {
@@ -24,6 +24,7 @@ func NewClient() *Client {
 		baseOverride: os.Getenv("MIDTRANS_BASE_URL_OVERRIDE"),
 	}
 }
+
 // baseURL otomatis sandbox kalau server key diawali "SB-", produksi kalau
 // tidak — mengikuti konvensi penamaan kunci Midtrans sendiri.
 func baseURL(isProduction bool) string {
@@ -47,6 +48,7 @@ type ChargeResult struct {
 	TransactionID string
 	QRCodeURL     string
 }
+
 func (c *Client) ChargeQRIS(ctx context.Context, serverKey string, isProduction bool, orderID string, amountRupiah int64) (*ChargeResult, error) {
 
 	body, _ := json.Marshal(map[string]any{
@@ -92,12 +94,22 @@ func (c *Client) ChargeQRIS(ctx context.Context, serverKey string, isProduction 
 	if resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("midtrans menolak charge: %s", parsed.StatusMessage)
 	}
+	if parsed.OrderID != orderID {
+		return nil, fmt.Errorf("midtrans mengembalikan order_id yang tidak sesuai")
+	}
 
 	result := &ChargeResult{OrderID: parsed.OrderID, TransactionID: parsed.TransactionID}
 	for _, a := range parsed.Actions {
-		if a.Name == "generate-qr-code" {
+		if a.Name == "generate-qr-code-v2" && result.QRCodeURL == "" {
 			result.QRCodeURL = a.URL
 		}
+		if a.Name == "generate-qr-code" {
+			result.QRCodeURL = a.URL
+			break
+		}
+	}
+	if result.QRCodeURL == "" {
+		return nil, fmt.Errorf("midtrans tidak mengembalikan URL QRIS")
 	}
 	return result, nil
 }

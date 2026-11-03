@@ -57,6 +57,7 @@ func (s *Service) requireOwner(ctx context.Context, q *db.Queries, tenantID, use
 
 type Info struct {
 	MidtransConfigured   bool `json:"midtrans_configured"`
+	MidtransIsProduction bool `json:"midtrans_is_production"`
 	ManualQRISConfigured bool `json:"manual_qris_configured"`
 	OnboardingCompleted  bool `json:"onboarding_completed"`
 }
@@ -79,6 +80,7 @@ func (s *Service) GetProfile(ctx context.Context, tenantID uuid.UUID) (Info, err
 	}
 	return Info{
 		MidtransConfigured:   p.MidtransConfiguredAt.Valid,
+		MidtransIsProduction: p.MidtransIsProduction,
 		ManualQRISConfigured: p.ManualQrisUpdatedAt.Valid,
 		OnboardingCompleted:  p.OnboardingCompletedAt.Valid,
 	}, nil

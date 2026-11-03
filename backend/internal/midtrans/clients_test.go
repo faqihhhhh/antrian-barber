@@ -27,12 +27,29 @@ func TestChargeQRISUsesFiveMinuteExpiry(t *testing.T) {
 			t.Errorf("custom expiry = %d %s, want 5 minute", body.CustomExpiry.Duration, body.CustomExpiry.Unit)
 		}
 		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"order_id":"test-order","actions":[{"name":"generate-qr-code","url":"https://example.test/qr.png"}]}`))
+	}))
+	defer server.Close()
+
+	client := &Client{httpClient: &http.Client{Timeout: time.Second}, baseOverride: server.URL}
+	result, err := client.ChargeQRIS(context.Background(), "test-key", false, "test-order", 10000)
+	if err != nil {
+		t.Fatalf("ChargeQRIS() error = %v", err)
+	}
+	if result.QRCodeURL != "https://example.test/qr.png" {
+		t.Fatalf("QRCodeURL = %q, want the QR code action URL", result.QRCodeURL)
+	}
+}
+
+func TestChargeQRISRejectsResponseWithoutQR(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"order_id":"test-order","actions":[]}`))
 	}))
 	defer server.Close()
 
 	client := &Client{httpClient: &http.Client{Timeout: time.Second}, baseOverride: server.URL}
-	if _, err := client.ChargeQRIS(context.Background(), "test-key", false, "test-order", 10000); err != nil {
-		t.Fatalf("ChargeQRIS() error = %v", err)
+	if _, err := client.ChargeQRIS(context.Background(), "test-key", false, "test-order", 10000); err == nil {
+		t.Fatal("ChargeQRIS() unexpectedly accepted a response without a QR code URL")
 	}
 }

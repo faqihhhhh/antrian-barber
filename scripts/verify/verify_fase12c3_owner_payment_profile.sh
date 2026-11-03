@@ -19,7 +19,13 @@ check() {
 
 OWNER_STATUS="$(curl -sS -b cookiesB.txt "$API_BASE/v1/tenants/$TENANT_ID/profile" -o "$TMP" -w '%{http_code}')"
 check "owner dapat melihat status pembayaran" "200" "$OWNER_STATUS"
-check "respons profil tidak berisi rahasia" "true" "$(jq -e 'type == "object" and (.midtrans_configured | type == "boolean") and (.manual_qris_configured | type == "boolean") and (.onboarding_completed | type == "boolean") and ((keys - ["midtrans_configured", "manual_qris_configured", "onboarding_completed"]) | length) == 0' "$TMP" >/dev/null && echo true || echo false)"
+check "respons profil tidak berisi rahasia" "true" "$(jq -e 'type == "object" and (.midtrans_configured | type == "boolean") and (.midtrans_is_production | type == "boolean") and (.manual_qris_configured | type == "boolean") and (.onboarding_completed | type == "boolean") and ((keys - ["midtrans_configured", "midtrans_is_production", "manual_qris_configured", "onboarding_completed"]) | length) == 0' "$TMP" >/dev/null && echo true || echo false)"
+
+INVALID_OWNER_MIDTRANS_STATUS="$(curl -sS -b cookiesB.txt -X POST "$API_BASE/v1/tenants/$TENANT_ID/profile/midtrans" -H 'Content-Type: application/json' -d '{"server_key":"","client_key":"","is_production":false}' -o "$TMP.response" -w '%{http_code}')"
+check "owner wajib mengisi kedua kunci Midtrans" "400" "$INVALID_OWNER_MIDTRANS_STATUS"
+
+ADMIN_MIDTRANS_STATUS="$(curl -sS -b cookiesAdminB.txt -X POST "$API_BASE/v1/tenants/$TENANT_ID/profile/midtrans" -H 'Content-Type: application/json' -d '{"server_key":"","client_key":"","is_production":false}' -o "$TMP.response" -w '%{http_code}')"
+check "admin tidak boleh mengubah kunci Midtrans owner" "403" "$ADMIN_MIDTRANS_STATUS"
 
 ADMIN_STATUS="$(curl -sS -b cookiesAdminB.txt "$API_BASE/v1/tenants/$TENANT_ID/profile" -o "$TMP" -w '%{http_code}')"
 check "admin tidak boleh melihat pengaturan pembayaran owner" "403" "$ADMIN_STATUS"
