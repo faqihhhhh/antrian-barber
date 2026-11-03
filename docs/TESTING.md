@@ -187,7 +187,10 @@ serta akses lama dicabut. Coba keluarkan staf dan pastikan akunnya tidak lagi me
 tetapi tiket/ulasan historis tetap tersedia. Pastikan dialog konfirmasi muncul, owner tidak bisa
 dikeluarkan, dan API menolak perubahan/pengeluaran selama staf memiliki tiket berstatus dipanggil atau
 sedang dilayani. Setelah tiket selesai, ulangi dan pastikan aksi berhasil. Undang kembali akun staf
-yang pernah dikeluarkan dan pastikan keanggotaannya aktif lagi dengan peran/outlet baru.
+yang pernah dikeluarkan dan pastikan keanggotaannya aktif lagi dengan peran/outlet baru. Jika ada lebih
+dari tiga ulasan, link undangan, pengajuan, atau staf, pastikan hanya tiga yang tampil awal. Tekan
+**Lihat selengkapnya** lalu **Tampilkan lebih sedikit**; pada ulasan, pastikan pagination berikutnya
+tetap berfungsi.
 
 Untuk pembayaran owner: buka **Pengaturan outlet → Pembayaran DP**. Pastikan status QRIS manual tampil.
 Pilih gambar QRIS PNG/JPG/WebP maksimal 512 KB dan simpan hanya jika ingin mengganti QRIS aktif.

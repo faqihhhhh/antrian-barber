@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
 import { Alert, Button, ConfirmDialog, Field, Spinner } from '../components/ui'
+import { ExpandableList } from '../components/ExpandableList'
 import { useNow } from '../hooks/useNow'
 import type { components } from '../api/schema'
 
@@ -144,14 +145,14 @@ function StaffPanel({ membership }: { membership: Membership }) {
       <Button type="button" loading={createLink.isPending} onClick={() => createLink.mutate()}>Buat link undangan</Button>
       {revokeLink.isError && <Alert>{messageOf(revokeLink.error)}</Alert>}
       {invitations.isError && <Alert>{messageOf(invitations.error)}</Alert>}
-      {invitations.data?.map((link) => {
+      {invitations.data && <ExpandableList key={tenantID} items={invitations.data} getKey={(link) => link.id} renderItem={(link) => {
         const expired = Date.parse(link.expires_at) <= now
         const active = !link.revoked_at && !expired
         return <article key={link.id} className="flex items-center justify-between gap-3 rounded-xl border border-line p-3">
           <div><p className="text-sm font-semibold">{link.revoked_at ? 'Dicabut' : expired ? 'Kedaluwarsa' : 'Aktif'}</p><p className="text-xs text-body-muted">Berlaku sampai {new Date(link.expires_at).toLocaleString('id-ID')}</p></div>
           {active && <Button type="button" variant="secondary" className="w-auto" loading={revokeLink.isPending} onClick={() => revokeLink.mutate(link.id)}>Cabut</Button>}
         </article>
-      })}
+      }} />}
     </section>
 
     <section className="space-y-3">
@@ -159,7 +160,7 @@ function StaffPanel({ membership }: { membership: Membership }) {
       {applications.isPending && <p className="text-center text-sm text-muted" role="status">Memuat pengajuan…</p>}
       {applications.isError && <Alert>{messageOf(applications.error)}</Alert>}
       {applications.data?.length === 0 && <Alert tone="info">Belum ada pengajuan yang menunggu.</Alert>}
-      {applications.data?.map((applicant) => <ApplicantCard key={applicant.application_id} applicant={applicant} outlets={membership.outlets} review={review.mutate} pending={review.isPending} error={review.isError ? messageOf(review.error) : undefined} />)}
+      {applications.data && <ExpandableList key={tenantID} items={applications.data} getKey={(applicant) => applicant.application_id} renderItem={(applicant) => <ApplicantCard applicant={applicant} outlets={membership.outlets} review={review.mutate} pending={review.isPending} error={review.isError ? messageOf(review.error) : undefined} />} />}
     </section>
 
     <section className="space-y-3">
@@ -169,7 +170,7 @@ function StaffPanel({ membership }: { membership: Membership }) {
       {updateStaff.isError && <Alert>{messageOf(updateStaff.error)}</Alert>}
       {removeStaff.isError && <Alert>{messageOf(removeStaff.error)}</Alert>}
       {staff.data?.length === 0 && <Alert tone="info">Belum ada staf di bisnis ini.</Alert>}
-      {staff.data?.map((member) => <StaffCard key={`${member.membership_id}-${member.roles.join('|')}-${member.outlet_ids.join('|')}`} member={member} outlets={membership.outlets} pending={updateStaff.isPending || removeStaff.isPending} onSave={(input) => updateStaff.mutate(input)} onRemove={() => setRemoveTarget(member)} />)}
+      {staff.data && <ExpandableList key={tenantID} items={staff.data} getKey={(member) => member.membership_id} renderItem={(member) => <StaffCard key={`${member.membership_id}-${member.roles.join('|')}-${member.outlet_ids.join('|')}`} member={member} outlets={membership.outlets} pending={updateStaff.isPending || removeStaff.isPending} onSave={(input) => updateStaff.mutate(input)} onRemove={() => setRemoveTarget(member)} />} />}
     </section>
     <ConfirmDialog open={removeTarget !== null} onCancel={() => setRemoveTarget(null)} onConfirm={() => { if (removeTarget) removeStaff.mutate(removeTarget.membership_id) }} title="Keluarkan staf dari bisnis?" description={`Akses ${removeTarget?.display_name || removeTarget?.email || 'staf ini'} ke bisnis akan dicabut. Riwayat tiket dan ulasan tetap tersimpan.`} confirmLabel="Keluarkan staf" loading={removeStaff.isPending} />
   </div>

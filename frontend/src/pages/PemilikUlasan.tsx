@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
 import { Alert, Button, Spinner } from '../components/ui'
+import { ExpandableList } from '../components/ExpandableList'
 import { formatDateTime } from '../lib/format'
 
 export default function PemilikUlasan() {
@@ -42,14 +43,14 @@ export default function PemilikUlasan() {
         <section className="space-y-3" aria-label="Ringkasan rating kapster">
           <h2 className="font-bold">Rating kapster</h2>
           {summary.data.length === 0 && <Alert tone="info">Belum ada data kapster.</Alert>}
-          {summary.data.map((item) => <article key={item.membership_id} className="flex items-center justify-between rounded-2xl border border-line bg-white p-4"><div><p className="font-semibold">{item.kapster_email}</p><p className="text-sm text-body-muted">{item.review_count} ulasan</p></div><strong aria-label={`Rata-rata ${item.avg_rating} dari 5`}>★ {item.avg_rating.toFixed(2)}</strong></article>)}
+          <ExpandableList key={tenantID} items={summary.data} getKey={(item) => item.membership_id} renderItem={(item) => <article className="flex items-center justify-between rounded-2xl border border-line bg-white p-4"><div><p className="font-semibold">{item.kapster_email}</p><p className="text-sm text-body-muted">{item.review_count} ulasan</p></div><strong aria-label={`Rata-rata ${item.avg_rating} dari 5`}>★ {item.avg_rating.toFixed(2)}</strong></article>} />
         </section>
       )}
       <section className="space-y-3" aria-label="Ulasan terbaru">
         <h2 className="font-bold">Ulasan terbaru</h2>
         {reviews.isPending ? <Spinner /> : reviews.isError ? <Alert>{messageOf(reviews.error)}</Alert> : reviews.data.length === 0 ? <Alert tone="info">Belum ada ulasan pelanggan.</Alert> : (
           <>
-            {reviews.data.map((item) => <article key={item.id} className="space-y-2 rounded-2xl border border-line bg-white p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold">{item.kapster_email}</p><p className="text-xs text-muted">{formatDateTime(item.created_at)}</p></div><strong aria-label={`${item.rating} dari 5 bintang`}>{'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}</strong></div><p className="whitespace-pre-wrap text-sm text-body">{item.comment || 'Tanpa komentar.'}</p></article>)}
+            <ExpandableList key={`${tenantID}:${offset}`} items={reviews.data} getKey={(item) => item.id} renderItem={(item) => <article className="space-y-2 rounded-2xl border border-line bg-white p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold">{item.kapster_email}</p><p className="text-xs text-muted">{formatDateTime(item.created_at)}</p></div><strong aria-label={`${item.rating} dari 5 bintang`}>{'★'.repeat(item.rating)}{'☆'.repeat(5 - item.rating)}</strong></div><p className="whitespace-pre-wrap text-sm text-body">{item.comment || 'Tanpa komentar.'}</p></article>} />
             {reviews.data.length === 20 && <Button type="button" variant="ghost" className="border border-line-strong" onClick={() => setOffset((current) => current + 20)}>Muat ulasan berikutnya</Button>}
             {offset > 0 && <Button type="button" variant="ghost" onClick={() => setOffset((current) => Math.max(0, current - 20))}>Kembali ke ulasan sebelumnya</Button>}
           </>
