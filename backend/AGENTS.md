@@ -55,6 +55,10 @@ lain, siaran realtime). Pola ini sudah dipakai di `GetStatusAsSystem`, `GetDecry
 
 Fungsi `SECURITY DEFINER` untuk operasi yang harus atomik lintas hak: `claim_ticket_number_for_booking`
 (ambil nomor tiket dan naikkan `used_quota`) dan `cancel_pending_ticket` (batalkan dan kembalikan kuota).
+Pada database terkelola, pemilik fungsi `SECURITY DEFINER` mungkin tidak punya `BYPASSRLS`.
+`FORCE ROW LEVEL SECURITY` tetap berlaku untuk pemilik fungsi itu; `UPDATE` yang terfilter bisa
+diam-diam mengubah nol baris. Jika operasi sah perlu hak sistem, simpan `app.user_id`, set ke akun
+sistem di dalam fungsi, jalankan perubahan atomik, lalu pulihkan `app.user_id` sebelum kembali.
 
 ### Jebakan RLS yang sudah pernah terjadi
 

@@ -30,11 +30,53 @@ services:
     entrypoint: ["sh", "-ec"]
     command:
       - |
-        result="$$(PGPASSWORD="$${APP_DATABASE_PASSWORD}" psql "postgres://kapsflow_app:$${APP_DATABASE_PASSWORD}@db:5432/kapsflow?sslmode=disable" -Atc 'SELECT NOT rolsuper AND NOT rolbypassrls FROM pg_roles WHERE rolname = current_user')"
+        app_url="postgres://kapsflow_app:$${APP_DATABASE_PASSWORD}@db:5432/kapsflow?sslmode=disable"
+        admin_url="postgres://postgres:$${POSTGRES_PASSWORD}@db:5432/kapsflow?sslmode=disable"
+        result="$$(PGPASSWORD="$${APP_DATABASE_PASSWORD}" psql "$$app_url" -Atc 'SELECT NOT rolsuper AND NOT rolbypassrls FROM pg_roles WHERE rolname = current_user')"
         test "$$result" = "t"
         echo "PASS: migrasi selesai dan role runtime bukan superuser/bypass RLS"
+
+        PGPASSWORD="$${POSTGRES_PASSWORD}" psql "$$admin_url" -v ON_ERROR_STOP=1 <<'SQL'
+        INSERT INTO public.tenants (id, name)
+        VALUES ('10000000-0000-0000-0000-000000000001', 'Booking RLS test');
+        INSERT INTO public.outlets (id, tenant_id, name, timezone, slug)
+        VALUES ('10000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'Booking RLS test', 'Asia/Jakarta', 'booking-rls-test');
+        INSERT INTO public.queue_sessions (id, tenant_id, outlet_id, session_date, max_quota, created_by)
+        VALUES ('10000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000002', DATE '2099-01-01', 3, '00000000-0000-0000-0000-000000000001');
+        GRANT CREATE ON SCHEMA public TO kapsflow_app;
+        ALTER FUNCTION public.claim_ticket_number_for_booking(UUID) OWNER TO kapsflow_app;
+        REVOKE CREATE ON SCHEMA public FROM kapsflow_app;
+        SQL
+
+        PGPASSWORD="$${APP_DATABASE_PASSWORD}" psql "$$app_url" -v ON_ERROR_STOP=1 <<'SQL'
+        BEGIN;
+        SELECT set_config('app.user_id', '20000000-0000-0000-0000-000000000001', true);
+        DO $$test$$
+        DECLARE
+          claimed_number INT;
+          used_quota_value INT;
+        BEGIN
+          claimed_number := public.claim_ticket_number_for_booking('10000000-0000-0000-0000-000000000003');
+          IF claimed_number <> 1 THEN
+            RAISE EXCEPTION 'booking claim returned %, expected 1', claimed_number;
+          END IF;
+          IF public.app_current_user_id() <> '20000000-0000-0000-0000-000000000001'::uuid THEN
+            RAISE EXCEPTION 'booking claim did not restore app.user_id';
+          END IF;
+          SELECT used_quota INTO used_quota_value
+          FROM public.queue_sessions
+          WHERE id = '10000000-0000-0000-0000-000000000003';
+          IF used_quota_value <> 1 THEN
+            RAISE EXCEPTION 'used_quota is %, expected 1', used_quota_value;
+          END IF;
+        END;
+        $$test$$;
+        ROLLBACK;
+        SQL
+        echo "PASS: pelanggan tanpa membership dapat mengklaim kuota lewat fungsi di bawah FORCE RLS"
     depends_on:
       db:
         condition: service_healthy
     environment:
       APP_DATABASE_PASSWORD: migration_test_app_password
+      POSTGRES_PASSWORD: migration_test_password

@@ -108,6 +108,10 @@ penerima atau isi email yang mungkin memuat token verifikasi dan reset sandi.
 
 ## Image Docker backend
 
+`bash scripts/verify/verify_migration_container.sh` menjalankan semua migrasi pada PostgreSQL sementara,
+memastikan role aplikasi bukan superuser/BYPASSRLS, lalu mensimulasikan pelanggan tanpa membership
+mengklaim kuota ketika fungsi pemiliknya tidak punya BYPASSRLS dan tabel memakai FORCE RLS.
+
 Untuk API, jalankan `docker build -f backend/Dockerfile -t kapsflow-api:local backend` dari `~/kapsflow`.
 Build harus sukses. Dockerfile menghasilkan binary statis dan menjalankannya sebagai user non-root;
 berkas `.env` backend tidak dikirim sebagai build context.
