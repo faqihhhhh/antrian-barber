@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
-import { Alert, Button, Field, Spinner } from '../components/ui'
+import { Alert, Button, ConfirmDialog, Field, Spinner } from '../components/ui'
 import { useNow } from '../hooks/useNow'
 import type { components } from '../api/schema'
 
@@ -103,6 +103,30 @@ function StaffPanel({ membership }: { membership: Membership }) {
       queryClient.invalidateQueries({ queryKey: ['owner-staff', tenantID] }),
     ]),
   })
+  const updateStaff = useMutation({
+    mutationFn: async (input: { membershipID: string; roles: StaffRole[]; outletIDs: string[] }) => {
+      const { error, response } = await api.PUT('/v1/tenants/{tenantID}/staff/{membershipID}', {
+        params: { path: { tenantID, membershipID: input.membershipID } },
+        body: { roles: input.roles, outlet_ids: input.outletIDs },
+      })
+      if (!response.ok) throw new ApiError(error)
+    },
+    onSuccess: async () => queryClient.invalidateQueries({ queryKey: ['owner-staff', tenantID] }),
+  })
+  const [removeTarget, setRemoveTarget] = useState<StaffMember | null>(null)
+  const removeStaff = useMutation({
+    mutationFn: async (membershipID: string) => {
+      const { error, response } = await api.DELETE('/v1/tenants/{tenantID}/staff/{membershipID}', {
+        params: { path: { tenantID, membershipID } },
+      })
+      if (!response.ok) throw new ApiError(error)
+    },
+    onSuccess: async () => {
+      setRemoveTarget(null)
+      await queryClient.invalidateQueries({ queryKey: ['owner-staff', tenantID] })
+      await queryClient.invalidateQueries({ queryKey: ['me'] })
+    },
+  })
 
   return <div className="space-y-5">
     <section className="space-y-3 rounded-3xl border border-line bg-white p-5">
@@ -142,16 +166,49 @@ function StaffPanel({ membership }: { membership: Membership }) {
       <h2 className="text-lg font-bold">Staf bisnis</h2>
       {staff.isPending && <p className="text-center text-sm text-muted" role="status">Memuat daftar staf…</p>}
       {staff.isError && <Alert>{messageOf(staff.error)}</Alert>}
+      {updateStaff.isError && <Alert>{messageOf(updateStaff.error)}</Alert>}
+      {removeStaff.isError && <Alert>{messageOf(removeStaff.error)}</Alert>}
       {staff.data?.length === 0 && <Alert tone="info">Belum ada staf di bisnis ini.</Alert>}
-      {staff.data?.map((member) => <article key={member.membership_id} className="rounded-2xl border border-line bg-white p-4">
-        <h3 className="font-semibold">{member.email}</h3>
-        {member.display_name && <p className="mt-1 text-sm text-body-muted">Nama panggilan: {member.display_name}</p>}
-        <p className="mt-1 text-sm text-body-muted">{member.roles.map((role) => ROLE_LABEL[role as StaffRole] ?? role).join(' · ')}</p>
-        <p className="mt-1 text-sm text-body-muted">Outlet: {member.outlet_ids.map((id) => membership.outlets.find((outlet) => outlet.id === id)?.name).filter(Boolean).join(', ') || 'Tidak ada'}</p>
-        <p className="mt-2 text-xs text-muted">Email {member.email_verified ? 'terverifikasi' : 'belum diverifikasi'}</p>
-      </article>)}
+      {staff.data?.map((member) => <StaffCard key={`${member.membership_id}-${member.roles.join('|')}-${member.outlet_ids.join('|')}`} member={member} outlets={membership.outlets} pending={updateStaff.isPending || removeStaff.isPending} onSave={(input) => updateStaff.mutate(input)} onRemove={() => setRemoveTarget(member)} />)}
     </section>
+    <ConfirmDialog open={removeTarget !== null} onCancel={() => setRemoveTarget(null)} onConfirm={() => { if (removeTarget) removeStaff.mutate(removeTarget.membership_id) }} title="Keluarkan staf dari bisnis?" description={`Akses ${removeTarget?.display_name || removeTarget?.email || 'staf ini'} ke bisnis akan dicabut. Riwayat tiket dan ulasan tetap tersimpan.`} confirmLabel="Keluarkan staf" loading={removeStaff.isPending} />
   </div>
+}
+
+function StaffCard({ member, outlets, pending, onSave, onRemove }: {
+  member: StaffMember
+  outlets: Membership['outlets']
+  pending: boolean
+  onSave: (input: { membershipID: string; roles: StaffRole[]; outletIDs: string[] }) => void
+  onRemove: () => void
+}) {
+  const [roles, setRoles] = useState<StaffRole[]>(member.roles.filter((role): role is StaffRole => role === 'admin' || role === 'kapster'))
+  const [outletIDs, setOutletIDs] = useState<string[]>(member.outlet_ids)
+  function toggleRole(role: StaffRole) { setRoles((current) => current.includes(role) ? current.filter((item) => item !== role) : [...current, role]) }
+  function toggleOutlet(id: string) { setOutletIDs((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]) }
+  return <article className="space-y-3 rounded-2xl border border-line bg-white p-4">
+    <div>
+      <h3 className="font-semibold">{member.display_name || member.email}</h3>
+      {member.display_name && <p className="mt-1 text-sm text-body-muted">{member.email}</p>}
+      <p className="mt-2 text-xs text-muted">Email {member.email_verified ? 'terverifikasi' : 'belum diverifikasi'}</p>
+    </div>
+    <fieldset className="space-y-2">
+      <legend className="mb-2 text-sm font-medium text-body">Peran</legend>
+      {(['admin', 'kapster'] as const).map((role) => <label key={role} className="flex items-center gap-3 rounded-xl border border-line px-4 py-3 text-sm">
+        <input type="checkbox" checked={roles.includes(role)} onChange={() => toggleRole(role)} className="size-5 accent-brand" /><span>{ROLE_LABEL[role]}</span>
+      </label>)}
+    </fieldset>
+    <fieldset className="space-y-2">
+      <legend className="mb-2 text-sm font-medium text-body">Outlet tugas</legend>
+      {outlets.map((outlet) => <label key={outlet.id} className="flex items-center gap-3 rounded-xl border border-line px-4 py-3 text-sm">
+        <input type="checkbox" checked={outletIDs.includes(outlet.id)} onChange={() => toggleOutlet(outlet.id)} className="size-5 accent-brand" /><span>{outlet.name}</span>
+      </label>)}
+    </fieldset>
+    <div className="flex flex-col gap-2 sm:flex-row">
+      <Button type="button" disabled={!roles.length || !outletIDs.length} loading={pending} onClick={() => onSave({ membershipID: member.membership_id, roles, outletIDs })}>Simpan perubahan</Button>
+      <Button type="button" variant="secondary" disabled={pending} onClick={onRemove}>Keluarkan dari bisnis</Button>
+    </div>
+  </article>
 }
 
 function ApplicantCard({ applicant, outlets, review, pending, error }: {

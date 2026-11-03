@@ -10,6 +10,8 @@ import (
 func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger, requireActive func(http.Handler) http.Handler) {
 	h := NewHandlers(svc, log)
 	r.Get("/{tenantID}/staff", h.ListStaff)
+	r.With(requireActive).Put("/{tenantID}/staff/{membershipID}", h.UpdateStaff)
+	r.With(requireActive).Delete("/{tenantID}/staff/{membershipID}", h.RemoveStaff)
 	r.With(requireActive).Post("/{tenantID}/staff/invitations", h.CreateInvitationLink)
 	r.Get("/{tenantID}/staff/invitations", h.ListInvitationLinks)
 	r.With(requireActive).Delete("/{tenantID}/staff/invitations/{invitationID}", h.RevokeInvitationLink)

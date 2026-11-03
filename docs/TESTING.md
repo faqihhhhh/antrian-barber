@@ -181,7 +181,13 @@ tidak bisa dipakai lagi; buat link baru untuk melanjutkan. Ajukan diri memakai a
 pastikan pendaftar tampil dengan nama dan email tanpa mendapat akses bisnis, lalu setujui dengan
 peran Admin dan Kapster serta outlet yang dipilih. Pastikan staf muncul di daftar dan mendapat akses
 sesuai penugasan. Uji juga penolakan, peran kosong, outlet dari tenant lain, akun dengan email belum
-terverifikasi, dan pastikan hanya owner yang dapat melihat atau meninjau pengajuan.
+terverifikasi, dan pastikan hanya owner yang dapat melihat atau meninjau pengajuan. Pada daftar staf,
+ubah peran Admin/Kapster dan pilihan outlet lalu simpan; muat ulang dan pastikan perubahan tersimpan
+serta akses lama dicabut. Coba keluarkan staf dan pastikan akunnya tidak lagi mendapat akses tenant,
+tetapi tiket/ulasan historis tetap tersedia. Pastikan dialog konfirmasi muncul, owner tidak bisa
+dikeluarkan, dan API menolak perubahan/pengeluaran selama staf memiliki tiket berstatus dipanggil atau
+sedang dilayani. Setelah tiket selesai, ulangi dan pastikan aksi berhasil. Undang kembali akun staf
+yang pernah dikeluarkan dan pastikan keanggotaannya aktif lagi dengan peran/outlet baru.
 
 Untuk pembayaran owner: buka **Pengaturan outlet → Pembayaran DP**. Pastikan status QRIS manual tampil.
 Pilih gambar QRIS PNG/JPG/WebP maksimal 512 KB dan simpan hanya jika ingin mengganti QRIS aktif.

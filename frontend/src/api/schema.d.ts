@@ -475,6 +475,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/staff/{membershipID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Ubah peran dan outlet kerja staf */
+        put: operations["updateTenantStaff"];
+        post?: never;
+        /** Keluarkan staf dari bisnis */
+        delete: operations["removeTenantStaff"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/staff/invitations": {
         parameters: {
             query?: never;
@@ -2490,6 +2508,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffMember"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    updateTenantStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                membershipID: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    roles: ("admin" | "kapster")[];
+                    outlet_ids: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Data staf diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    removeTenantStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                membershipID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Staf dikeluarkan dari bisnis */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             default: components["responses"]["Error"];

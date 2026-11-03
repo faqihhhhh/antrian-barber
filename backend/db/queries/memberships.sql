@@ -31,6 +31,45 @@ SELECT * FROM memberships WHERE tenant_id = $1 AND user_id = $2;
 -- name: ListMembershipOutletIDs :many
 SELECT outlet_id FROM membership_outlets WHERE membership_id = $1;
 
+-- name: GetStaffMembership :one
+SELECT id, tenant_id, user_id, roles
+FROM memberships
+WHERE id = $1 AND tenant_id = $2
+FOR UPDATE;
+
+-- name: UpdateStaffMembershipRoles :execrows
+UPDATE memberships
+SET roles = $3, updated_at = now()
+WHERE id = $1 AND tenant_id = $2 AND NOT ('owner' = ANY(roles));
+
+-- name: DeleteMembershipOutlets :exec
+DELETE FROM membership_outlets WHERE membership_id = $1;
+
+-- name: AddStaffMembershipOutlet :exec
+INSERT INTO membership_outlets (membership_id, outlet_id)
+SELECT $1, o.id FROM outlets o WHERE o.id = $2 AND o.tenant_id = $3;
+
+-- name: HasActiveTicketForMembership :one
+SELECT EXISTS (
+  SELECT 1 FROM tickets
+  WHERE assigned_membership_id = $1 AND status IN ('called', 'in_progress')
+);
+
+-- name: SetMembershipKapsterStatesIdle :exec
+UPDATE kapster_session_state
+SET status = 'idle', current_ticket_id = NULL, updated_at = now()
+WHERE membership_id = $1 AND status <> 'idle';
+
+-- name: RemoveStaffMembership :execrows
+UPDATE memberships
+SET roles = '{}', updated_at = now()
+WHERE id = $1 AND tenant_id = $2 AND NOT ('owner' = ANY(roles));
+
+-- name: ReactivateStaffMembership :execrows
+UPDATE memberships
+SET roles = $3, updated_at = now()
+WHERE id = $1 AND tenant_id = $2 AND cardinality(roles) = 0;
+
 
 -- name: CreateStaffInvitationLink :one
 INSERT INTO staff_invitation_links (tenant_id, token_hash, created_by, expires_at)

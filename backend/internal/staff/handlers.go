@@ -34,6 +34,59 @@ func (h *Handlers) ListStaff(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, staffList)
 }
 
+func (h *Handlers) UpdateStaff(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenantID"))
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("tenant_id_tidak_valid", "ID bisnis tidak valid", err))
+		return
+	}
+	membershipID, err := uuid.Parse(chi.URLParam(r, "membershipID"))
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("membership_id_tidak_valid", "ID keanggotaan staf tidak valid", err))
+		return
+	}
+	var req struct {
+		Roles     []string `json:"roles"`
+		OutletIDs []string `json:"outlet_ids"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
+		return
+	}
+	outletIDs := make([]uuid.UUID, 0, len(req.OutletIDs))
+	for _, raw := range req.OutletIDs {
+		id, err := uuid.Parse(raw)
+		if err != nil {
+			httpx.Error(w, r, h.log, httpx.BadRequest("outlet_id_tidak_valid", "ID outlet tidak valid", err))
+			return
+		}
+		outletIDs = append(outletIDs, id)
+	}
+	if err := h.svc.UpdateStaff(r.Context(), tenantID, membershipID, req.Roles, outletIDs); err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Data staf diperbarui"})
+}
+
+func (h *Handlers) RemoveStaff(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenantID"))
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("tenant_id_tidak_valid", "ID bisnis tidak valid", err))
+		return
+	}
+	membershipID, err := uuid.Parse(chi.URLParam(r, "membershipID"))
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("membership_id_tidak_valid", "ID keanggotaan staf tidak valid", err))
+		return
+	}
+	if err := h.svc.RemoveStaff(r.Context(), tenantID, membershipID); err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Staf dikeluarkan dari bisnis"})
+}
+
 func (h *Handlers) CreateInvitationLink(w http.ResponseWriter, r *http.Request) {
 	tenantID, err := uuid.Parse(chi.URLParam(r, "tenantID"))
 	if err != nil {

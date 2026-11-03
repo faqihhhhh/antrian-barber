@@ -16,6 +16,7 @@ lalu perbaiki yang salah. Jangan diam-diam mengubah salah satunya.
 Satu pengguna bisa punya beberapa keanggotaan dan satu keanggotaan bisa punya beberapa peran.
 Hak per peran **harus diperiksa di service**, RLS hanya memastikan keanggotaan tenant.
 Owner dapat mengaktifkan peran `admin` dan/atau `kapster` untuk membership miliknya sendiri dari halaman Peran operasional. Peran `owner` tidak dapat dilepas melalui pengaturan ini. Jika kapster sedang menjalankan tiket, peran kapster baru dapat dimatikan setelah tiket diselesaikan; status siap kapster akan diubah menjadi idle.
+Owner juga dapat mengubah peran operasional dan outlet tugas staf dari halaman Kelola staf. Mengeluarkan staf mengosongkan peran dan menghapus penugasan outlet, tetapi mempertahankan baris membership agar riwayat tiket dan ulasan tetap terhubung. Membership tanpa peran tidak memberi akses tenant. Perubahan peran/outlet dan pengeluaran ditolak selama staf memiliki tiket berstatus dipanggil atau sedang dilayani; staf perlu menyelesaikannya lebih dulu. Owner tidak dapat mengeluarkan owner melalui daftar staf.
 
 ## Entitas utama
 

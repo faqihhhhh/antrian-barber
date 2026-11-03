@@ -14,6 +14,7 @@ import (
 type Querier interface {
 	ActivateSubscriptionPeriodFromPayment(ctx context.Context, arg ActivateSubscriptionPeriodFromPaymentParams) (ActivateSubscriptionPeriodFromPaymentRow, error)
 	AddMembershipOutlet(ctx context.Context, arg AddMembershipOutletParams) error
+	AddStaffMembershipOutlet(ctx context.Context, arg AddStaffMembershipOutletParams) error
 	CanCreateRenewalInvoice(ctx context.Context, tenantID uuid.UUID) (pgtype.Bool, error)
 	CancelInvoice(ctx context.Context, id uuid.UUID) (int64, error)
 	CancelPendingTicket(ctx context.Context, pTicketID uuid.UUID) (bool, error)
@@ -48,6 +49,7 @@ type Querier interface {
 	CreateTicketEvent(ctx context.Context, arg CreateTicketEventParams) error
 	CreateTicketPayment(ctx context.Context, arg CreateTicketPaymentParams) (TicketPayment, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteMembershipOutlets(ctx context.Context, membershipID uuid.UUID) error
 	DeletePushSubscription(ctx context.Context, arg DeletePushSubscriptionParams) error
 	DeletePushSubscriptionByEndpoint(ctx context.Context, endpoint string) error
 	DeleteSession(ctx context.Context, tokenHash string) error
@@ -71,6 +73,7 @@ type Querier interface {
 	GetReviewByTicketID(ctx context.Context, ticketID uuid.UUID) (Review, error)
 	GetReviewSummaryByTenant(ctx context.Context, tenantID uuid.UUID) ([]GetReviewSummaryByTenantRow, error)
 	GetStaffApplicationForUser(ctx context.Context, arg GetStaffApplicationForUserParams) (GetStaffApplicationForUserRow, error)
+	GetStaffMembership(ctx context.Context, arg GetStaffMembershipParams) (GetStaffMembershipRow, error)
 	GetSubscriptionByTenant(ctx context.Context, tenantID uuid.UUID) (Subscription, error)
 	GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error)
 	GetTenantProfile(ctx context.Context, tenantID uuid.UUID) (GetTenantProfileRow, error)
@@ -84,6 +87,7 @@ type Querier interface {
 	GetValidPasswordResetToken(ctx context.Context, tokenHash string) (PasswordResetToken, error)
 	GetValidSession(ctx context.Context, tokenHash string) (Session, error)
 	HasActiveKapsterTicketForMembership(ctx context.Context, membershipID uuid.UUID) (bool, error)
+	HasActiveTicketForMembership(ctx context.Context, assignedMembershipID pgtype.UUID) (bool, error)
 	IncreaseQueueQuota(ctx context.Context, arg IncreaseQueueQuotaParams) (QueueSession, error)
 	IsPlatformAdmin(ctx context.Context, userID uuid.UUID) (bool, error)
 	ListActivePlans(ctx context.Context) ([]Plan, error)
@@ -137,13 +141,16 @@ type Querier interface {
 	PlatformSignupsByMonth(ctx context.Context, since pgtype.Timestamptz) ([]PlatformSignupsByMonthRow, error)
 	PlatformTenantStatusCounts(ctx context.Context) (PlatformTenantStatusCountsRow, error)
 	PlatformTotals(ctx context.Context) (PlatformTotalsRow, error)
+	ReactivateStaffMembership(ctx context.Context, arg ReactivateStaffMembershipParams) (int64, error)
 	RecordInvoiceSubscriptionPeriod(ctx context.Context, arg RecordInvoiceSubscriptionPeriodParams) (int64, error)
 	RecordSubscriptionReminder(ctx context.Context, arg RecordSubscriptionReminderParams) error
+	RemoveStaffMembership(ctx context.Context, arg RemoveStaffMembershipParams) (int64, error)
 	RequeueTicketAtEnd(ctx context.Context, arg RequeueTicketAtEndParams) error
 	ReviewStaffApplication(ctx context.Context, arg ReviewStaffApplicationParams) (ReviewStaffApplicationRow, error)
 	RevokeStaffInvitationLink(ctx context.Context, arg RevokeStaffInvitationLinkParams) (int64, error)
 	SetInvoiceMidtransPayment(ctx context.Context, arg SetInvoiceMidtransPaymentParams) (int64, error)
 	SetManualQRIS(ctx context.Context, arg SetManualQRISParams) error
+	SetMembershipKapsterStatesIdle(ctx context.Context, membershipID uuid.UUID) error
 	SetPlatformManualQRIS(ctx context.Context, arg SetPlatformManualQRISParams) error
 	SetReadyKapsterStatesIdleForMembership(ctx context.Context, membershipID uuid.UUID) error
 	SetReadyKapstersIdle(ctx context.Context, queueSessionID uuid.UUID) error
@@ -157,6 +164,7 @@ type Querier interface {
 	UpdateMembershipRoles(ctx context.Context, arg UpdateMembershipRolesParams) (int64, error)
 	UpdateOutletSettings(ctx context.Context, arg UpdateOutletSettingsParams) (Outlet, error)
 	UpdatePlanPrice(ctx context.Context, arg UpdatePlanPriceParams) (Plan, error)
+	UpdateStaffMembershipRoles(ctx context.Context, arg UpdateStaffMembershipRolesParams) (int64, error)
 	UpdateUserDisplayName(ctx context.Context, arg UpdateUserDisplayNameParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpsertKapsterSessionState(ctx context.Context, arg UpsertKapsterSessionStateParams) (KapsterSessionState, error)

@@ -278,8 +278,23 @@ func (s *Service) ReviewApplication(ctx context.Context, tenantID, applicationID
 	if !approve {
 		return nil
 	}
-	if _, err := q.GetMembershipForUserAndTenant(ctx, db.GetMembershipForUserAndTenantParams{TenantID: tenantID, UserID: application.UserID}); err == nil {
-		return httpx.Conflict("sudah_menjadi_anggota", "Pengguna ini sudah menjadi anggota bisnis", nil)
+	previous, err := q.GetMembershipForUserAndTenant(ctx, db.GetMembershipForUserAndTenantParams{TenantID: tenantID, UserID: application.UserID})
+	if err == nil {
+		if len(previous.Roles) > 0 {
+			return httpx.Conflict("sudah_menjadi_anggota", "Pengguna ini sudah menjadi anggota bisnis", nil)
+		}
+		if _, err := q.ReactivateStaffMembership(ctx, db.ReactivateStaffMembershipParams{ID: previous.ID, TenantID: tenantID, Roles: roles}); err != nil {
+			return httpx.Internal(fmt.Errorf("mengaktifkan kembali keanggotaan staf: %w", err))
+		}
+		if err := q.DeleteMembershipOutlets(ctx, previous.ID); err != nil {
+			return httpx.Internal(fmt.Errorf("menghapus penugasan outlet lama: %w", err))
+		}
+		for _, outletID := range outletIDs {
+			if err := q.AddStaffMembershipOutlet(ctx, db.AddStaffMembershipOutletParams{MembershipID: previous.ID, ID: outletID, TenantID: tenantID}); err != nil {
+				return httpx.Internal(fmt.Errorf("menautkan outlet staf: %w", err))
+			}
+		}
+		return nil
 	} else if !errors.Is(err, pgx.ErrNoRows) {
 		return httpx.Internal(fmt.Errorf("memeriksa keanggotaan pendaftar: %w", err))
 	}
@@ -331,4 +346,144 @@ func (s *Service) ListStaff(ctx context.Context, tenantID uuid.UUID) ([]Member, 
 		})
 	}
 	return result, nil
+}
+
+// UpdateStaff mengubah peran operasional dan outlet kerja seorang staf.
+func (s *Service) UpdateStaff(ctx context.Context, tenantID, membershipID uuid.UUID, roles []string, outletIDs []uuid.UUID) error {
+	caller, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	q := s.queries(ctx)
+	if err := authorization.RequireTenantRole(ctx, q, tenantID, caller.ID, "owner"); err != nil {
+		return err
+	}
+	roles, err := normalizeStaffRoles(roles)
+	if err != nil {
+		return err
+	}
+	if len(outletIDs) == 0 {
+		return httpx.BadRequest("outlet_wajib_diisi", "Pilih minimal satu outlet tempat staf bertugas", nil)
+	}
+	member, err := q.GetStaffMembership(ctx, db.GetStaffMembershipParams{ID: membershipID, TenantID: tenantID})
+	if errors.Is(err, pgx.ErrNoRows) || err == nil && (contains(member.Roles, "owner") || !isOperationalStaff(member.Roles)) {
+		return httpx.NotFound("staf_tidak_ditemukan", "Staf tidak ditemukan di bisnis ini", nil)
+	}
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("memeriksa keanggotaan staf: %w", err))
+	}
+	if active, err := q.HasActiveTicketForMembership(ctx, dbx.UUID(membershipID)); err != nil {
+		return httpx.Internal(fmt.Errorf("memeriksa tiket aktif staf: %w", err))
+	} else if active {
+		return httpx.Conflict("staf_masih_melayani", "Staf masih memiliki tiket aktif. Selesaikan tiket sebelum mengubah peran atau outlet tugas", nil)
+	}
+	if err := validateOutletIDs(ctx, q, tenantID, outletIDs); err != nil {
+		return err
+	}
+	if _, err := q.UpdateStaffMembershipRoles(ctx, db.UpdateStaffMembershipRolesParams{ID: membershipID, TenantID: tenantID, Roles: roles}); err != nil {
+		return httpx.Internal(fmt.Errorf("mengubah peran staf: %w", err))
+	}
+	if err := q.DeleteMembershipOutlets(ctx, membershipID); err != nil {
+		return httpx.Internal(fmt.Errorf("menghapus penugasan outlet lama: %w", err))
+	}
+	for _, outletID := range outletIDs {
+		if err := q.AddStaffMembershipOutlet(ctx, db.AddStaffMembershipOutletParams{MembershipID: membershipID, ID: outletID, TenantID: tenantID}); err != nil {
+			return httpx.Internal(fmt.Errorf("menyimpan penugasan outlet staf: %w", err))
+		}
+	}
+	if !contains(roles, "kapster") {
+		if err := q.SetMembershipKapsterStatesIdle(ctx, membershipID); err != nil {
+			return httpx.Internal(fmt.Errorf("mengatur status kapster: %w", err))
+		}
+	}
+	return nil
+}
+
+// RemoveStaff mencabut akses staf sambil mempertahankan referensi riwayat tiket.
+func (s *Service) RemoveStaff(ctx context.Context, tenantID, membershipID uuid.UUID) error {
+	caller, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	q := s.queries(ctx)
+	if err := authorization.RequireTenantRole(ctx, q, tenantID, caller.ID, "owner"); err != nil {
+		return err
+	}
+	member, err := q.GetStaffMembership(ctx, db.GetStaffMembershipParams{ID: membershipID, TenantID: tenantID})
+	if errors.Is(err, pgx.ErrNoRows) || err == nil && (contains(member.Roles, "owner") || !isOperationalStaff(member.Roles)) {
+		return httpx.NotFound("staf_tidak_ditemukan", "Staf tidak ditemukan di bisnis ini", nil)
+	}
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("memeriksa keanggotaan staf: %w", err))
+	}
+	if active, err := q.HasActiveTicketForMembership(ctx, dbx.UUID(membershipID)); err != nil {
+		return httpx.Internal(fmt.Errorf("memeriksa tiket aktif staf: %w", err))
+	} else if active {
+		return httpx.Conflict("staf_masih_melayani", "Staf masih memiliki tiket aktif. Selesaikan tiket sebelum mengeluarkannya", nil)
+	}
+	if _, err := q.RemoveStaffMembership(ctx, db.RemoveStaffMembershipParams{ID: membershipID, TenantID: tenantID}); err != nil {
+		return httpx.Internal(fmt.Errorf("mengeluarkan staf dari bisnis: %w", err))
+	}
+	if err := q.DeleteMembershipOutlets(ctx, membershipID); err != nil {
+		return httpx.Internal(fmt.Errorf("menghapus penugasan outlet staf: %w", err))
+	}
+	if err := q.SetMembershipKapsterStatesIdle(ctx, membershipID); err != nil {
+		return httpx.Internal(fmt.Errorf("mengatur status kapster: %w", err))
+	}
+	return nil
+}
+
+func normalizeStaffRoles(roles []string) ([]string, error) {
+	if len(roles) == 0 {
+		return nil, httpx.BadRequest("peran_wajib_diisi", "Pilih minimal satu peran: admin dan/atau kapster", nil)
+	}
+	set := make(map[string]struct{}, len(roles))
+	for _, role := range roles {
+		if !validRoles[role] {
+			return nil, httpx.BadRequest("peran_tidak_valid", "Peran hanya boleh admin atau kapster", nil)
+		}
+		set[role] = struct{}{}
+	}
+	result := make([]string, 0, len(set))
+	for _, role := range []string{"admin", "kapster"} {
+		if _, ok := set[role]; ok {
+			result = append(result, role)
+		}
+	}
+	return result, nil
+}
+
+func validateOutletIDs(ctx context.Context, q *db.Queries, tenantID uuid.UUID, outletIDs []uuid.UUID) error {
+	outlets, err := q.ListOutletsByTenant(ctx, tenantID)
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("memeriksa outlet staf: %w", err))
+	}
+	allowed := make(map[uuid.UUID]struct{}, len(outlets))
+	for _, outlet := range outlets {
+		allowed[outlet.ID] = struct{}{}
+	}
+	seen := make(map[uuid.UUID]struct{}, len(outletIDs))
+	for _, outletID := range outletIDs {
+		if _, ok := allowed[outletID]; !ok {
+			return httpx.BadRequest("outlet_tidak_valid", "Pilih outlet yang dimiliki bisnis ini", nil)
+		}
+		if _, duplicate := seen[outletID]; duplicate {
+			return httpx.BadRequest("outlet_ganda", "Outlet yang sama tidak boleh dipilih dua kali", nil)
+		}
+		seen[outletID] = struct{}{}
+	}
+	return nil
+}
+
+func contains(values []string, value string) bool {
+	for _, item := range values {
+		if item == value {
+			return true
+		}
+	}
+	return false
+}
+
+func isOperationalStaff(roles []string) bool {
+	return contains(roles, "admin") || contains(roles, "kapster")
 }

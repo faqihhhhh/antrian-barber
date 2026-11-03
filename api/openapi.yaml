@@ -607,6 +607,63 @@ paths:
                   $ref: '#/components/schemas/StaffMember'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/staff/{membershipID}:
+    put:
+      operationId: updateTenantStaff
+      tags: [staf]
+      summary: Ubah peran dan outlet kerja staf
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - name: membershipID
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roles, outlet_ids]
+              properties:
+                roles:
+                  type: array
+                  minItems: 1
+                  items: { type: string, enum: [admin, kapster] }
+                outlet_ids:
+                  type: array
+                  minItems: 1
+                  items: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Data staf diperbarui
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: removeTenantStaff
+      tags: [staf]
+      summary: Keluarkan staf dari bisnis
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - name: membershipID
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Staf dikeluarkan dari bisnis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/staff/invitations:
     get:
       operationId: listStaffInvitationLinks

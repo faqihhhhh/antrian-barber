@@ -33,6 +33,7 @@ SELECT m.id AS membership_id, m.tenant_id, t.name AS tenant_name, m.roles
 FROM memberships m
 JOIN tenants t ON t.id = m.tenant_id
 WHERE m.user_id = $1
+  AND cardinality(m.roles) > 0
 ORDER BY t.name
 `
 

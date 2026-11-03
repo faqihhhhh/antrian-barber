@@ -64,6 +64,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 16-1 | Ganti username dengan nama panggilan akun, izinkan nama tidak unik, dan tampilkan nama kapster pada tiket pelanggan |
 | 17-1 | Link undangan staf bertoken hash dan kedaluwarsa, pengajuan staf, serta endpoint owner untuk meninjau dan memberi peran/outlet |
 | 17-2 | Layar pendaftar staf dan owner untuk membuat/mencabut link, meninjau pendaftar, dan menetapkan akses; build dan lint lulus, checklist browser menunggu pemeriksaan |
+| 17-4 | Owner dapat mengubah peran dan outlet staf atau mengeluarkannya dari bisnis; riwayat dipertahankan dan tiket aktif menghalangi perubahan |
 
 ## Berikutnya (urutan wajib)
 

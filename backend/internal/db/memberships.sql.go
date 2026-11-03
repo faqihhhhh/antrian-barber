@@ -26,6 +26,22 @@ func (q *Queries) AddMembershipOutlet(ctx context.Context, arg AddMembershipOutl
 	return err
 }
 
+const addStaffMembershipOutlet = `-- name: AddStaffMembershipOutlet :exec
+INSERT INTO membership_outlets (membership_id, outlet_id)
+SELECT $1, o.id FROM outlets o WHERE o.id = $2 AND o.tenant_id = $3
+`
+
+type AddStaffMembershipOutletParams struct {
+	MembershipID uuid.UUID `json:"membership_id"`
+	ID           uuid.UUID `json:"id"`
+	TenantID     uuid.UUID `json:"tenant_id"`
+}
+
+func (q *Queries) AddStaffMembershipOutlet(ctx context.Context, arg AddStaffMembershipOutletParams) error {
+	_, err := q.db.Exec(ctx, addStaffMembershipOutlet, arg.MembershipID, arg.ID, arg.TenantID)
+	return err
+}
+
 const createMembership = `-- name: CreateMembership :one
 INSERT INTO memberships (tenant_id, user_id, roles)
 VALUES ($1, $2, $3)
@@ -105,6 +121,15 @@ func (q *Queries) CreateStaffInvitationLink(ctx context.Context, arg CreateStaff
 	return i, err
 }
 
+const deleteMembershipOutlets = `-- name: DeleteMembershipOutlets :exec
+DELETE FROM membership_outlets WHERE membership_id = $1
+`
+
+func (q *Queries) DeleteMembershipOutlets(ctx context.Context, membershipID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteMembershipOutlets, membershipID)
+	return err
+}
+
 const getMembershipForUserAndTenant = `-- name: GetMembershipForUserAndTenant :one
 SELECT id, tenant_id, user_id, roles, created_at, updated_at FROM memberships WHERE tenant_id = $1 AND user_id = $2
 `
@@ -158,6 +183,51 @@ func (q *Queries) GetStaffApplicationForUser(ctx context.Context, arg GetStaffAp
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getStaffMembership = `-- name: GetStaffMembership :one
+SELECT id, tenant_id, user_id, roles
+FROM memberships
+WHERE id = $1 AND tenant_id = $2
+FOR UPDATE
+`
+
+type GetStaffMembershipParams struct {
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
+}
+
+type GetStaffMembershipRow struct {
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
+	UserID   uuid.UUID `json:"user_id"`
+	Roles    []string  `json:"roles"`
+}
+
+func (q *Queries) GetStaffMembership(ctx context.Context, arg GetStaffMembershipParams) (GetStaffMembershipRow, error) {
+	row := q.db.QueryRow(ctx, getStaffMembership, arg.ID, arg.TenantID)
+	var i GetStaffMembershipRow
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.UserID,
+		&i.Roles,
+	)
+	return i, err
+}
+
+const hasActiveTicketForMembership = `-- name: HasActiveTicketForMembership :one
+SELECT EXISTS (
+  SELECT 1 FROM tickets
+  WHERE assigned_membership_id = $1 AND status IN ('called', 'in_progress')
+)
+`
+
+func (q *Queries) HasActiveTicketForMembership(ctx context.Context, assignedMembershipID pgtype.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, hasActiveTicketForMembership, assignedMembershipID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const listMembershipOutletIDs = `-- name: ListMembershipOutletIDs :many
@@ -374,6 +444,45 @@ func (q *Queries) LookupStaffInvitation(ctx context.Context, dollar_1 []byte) (L
 	return i, err
 }
 
+const reactivateStaffMembership = `-- name: ReactivateStaffMembership :execrows
+UPDATE memberships
+SET roles = $3, updated_at = now()
+WHERE id = $1 AND tenant_id = $2 AND cardinality(roles) = 0
+`
+
+type ReactivateStaffMembershipParams struct {
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
+	Roles    []string  `json:"roles"`
+}
+
+func (q *Queries) ReactivateStaffMembership(ctx context.Context, arg ReactivateStaffMembershipParams) (int64, error) {
+	result, err := q.db.Exec(ctx, reactivateStaffMembership, arg.ID, arg.TenantID, arg.Roles)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const removeStaffMembership = `-- name: RemoveStaffMembership :execrows
+UPDATE memberships
+SET roles = '{}', updated_at = now()
+WHERE id = $1 AND tenant_id = $2 AND NOT ('owner' = ANY(roles))
+`
+
+type RemoveStaffMembershipParams struct {
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
+}
+
+func (q *Queries) RemoveStaffMembership(ctx context.Context, arg RemoveStaffMembershipParams) (int64, error) {
+	result, err := q.db.Exec(ctx, removeStaffMembership, arg.ID, arg.TenantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const reviewStaffApplication = `-- name: ReviewStaffApplication :one
 UPDATE staff_applications
 SET status = $3, reviewed_by = $4, reviewed_at = now()
@@ -427,6 +536,37 @@ type RevokeStaffInvitationLinkParams struct {
 
 func (q *Queries) RevokeStaffInvitationLink(ctx context.Context, arg RevokeStaffInvitationLinkParams) (int64, error) {
 	result, err := q.db.Exec(ctx, revokeStaffInvitationLink, arg.ID, arg.TenantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const setMembershipKapsterStatesIdle = `-- name: SetMembershipKapsterStatesIdle :exec
+UPDATE kapster_session_state
+SET status = 'idle', current_ticket_id = NULL, updated_at = now()
+WHERE membership_id = $1 AND status <> 'idle'
+`
+
+func (q *Queries) SetMembershipKapsterStatesIdle(ctx context.Context, membershipID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, setMembershipKapsterStatesIdle, membershipID)
+	return err
+}
+
+const updateStaffMembershipRoles = `-- name: UpdateStaffMembershipRoles :execrows
+UPDATE memberships
+SET roles = $3, updated_at = now()
+WHERE id = $1 AND tenant_id = $2 AND NOT ('owner' = ANY(roles))
+`
+
+type UpdateStaffMembershipRolesParams struct {
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
+	Roles    []string  `json:"roles"`
+}
+
+func (q *Queries) UpdateStaffMembershipRoles(ctx context.Context, arg UpdateStaffMembershipRolesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateStaffMembershipRoles, arg.ID, arg.TenantID, arg.Roles)
 	if err != nil {
 		return 0, err
 	}
