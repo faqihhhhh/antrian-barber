@@ -369,13 +369,13 @@ function SessionCalendar({
               className={`relative mx-auto flex min-h-11 w-full max-w-12 flex-col items-center justify-center rounded-xl text-sm focus-visible:outline-2 focus-visible:outline-brand-ink ${selected ? 'bg-ink font-semibold text-white' : 'text-ink hover:bg-paper-raised'}`}
             >
               {day}
-              {session && <span aria-hidden="true" className={`mt-0.5 h-1.5 w-1.5 rounded-full ${selected ? 'bg-white' : session.status === 'open' ? 'bg-emerald-600' : 'bg-muted'}`} />}
+              {session && <span aria-hidden="true" className={`mt-0.5 h-1.5 w-1.5 rounded-full ${selected ? 'bg-white' : session.status === 'open' ? 'bg-accent' : 'bg-muted'}`} />}
             </button>
           )
         })}
       </div>
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-body-muted">
-        <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-600" /> Sesi dibuka</span>
+        <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-accent" /> Sesi dibuka</span>
         <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-muted" /> Sesi ditutup</span>
       </div>
     </div>

@@ -163,7 +163,7 @@ function StatusBody({ ticket }: { ticket: MyTicket }) {
 
     case 'called':
       return (
-        <section className="rounded-3xl border border-emerald-300 bg-emerald-50 p-6 text-emerald-900" aria-live="assertive">
+        <section className="rounded-3xl border border-accent/30 bg-accent-soft p-6 text-accent-ink" aria-live="assertive">
           <h2 className="text-3xl font-extrabold">Giliran Anda!</h2>
           {ticket.kapster_name && <p className="mt-2 font-semibold">Kapster Anda: {ticket.kapster_name}</p>}
           <p className="mt-1 text-base">Tunjukkan kode pada tiket ini ke kapster.</p>

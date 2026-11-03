@@ -18,7 +18,7 @@ export default function QueueNow({ today, live }: { today: SessionSnapshot | nul
         <h2 className="font-semibold">Antrian hari ini</h2>
         {live && !closed && (
           <span className="flex items-center gap-2 text-paper-muted">
-            <span aria-hidden className="h-2 w-2 rounded-full bg-emerald-400" />
+            <span aria-hidden className="h-2 w-2 rounded-full bg-accent-on-dark" />
             Diperbarui langsung
           </span>
         )}

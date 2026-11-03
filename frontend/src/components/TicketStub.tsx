@@ -6,7 +6,7 @@ import type { MyTicket } from '../hooks/useMyTickets'
 export default function TicketStub({ ticket, showCode }: { ticket: MyTicket; showCode: boolean }) {
   const called = ticket.status === 'called'
   return (
-    <section aria-label={`Tiket nomor ${ticket.ticket_number}`} className={`relative overflow-hidden rounded-3xl text-white ${called ? 'bg-emerald-800' : 'bg-ink'}`}>
+    <section aria-label={`Tiket nomor ${ticket.ticket_number}`} className={`relative overflow-hidden rounded-3xl text-white ${called ? 'bg-ink-brand' : 'bg-ink'}`}>
       <div className="px-5 pb-5 pt-4 sm:px-6 sm:pb-7 sm:pt-6">
         <p className="text-sm text-white/90">{ticket.outlet_name}</p>
         <p className="text-sm text-white/80">{formatLongDate(ticket.session_date)} · {timezoneLabel(ticket.outlet_timezone)}</p>

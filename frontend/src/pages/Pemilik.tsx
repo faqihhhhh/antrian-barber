@@ -233,7 +233,7 @@ function OutletSettings({ tenantID, outlet }: { tenantID: string; outlet: Outlet
         <Button type="button" variant="ghost" className="border border-line-strong" onClick={copyPublicURL}>Salin tautan</Button>
         <a className="inline-flex w-full items-center justify-center rounded-xl border border-line-strong px-4 py-3 text-sm font-semibold text-ink hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink" href={`/o/${outlet.slug}`} target="_blank" rel="noreferrer">Buka halaman</a>
       </div>
-      {linkCopied && <p className="mt-2 text-sm text-emerald-700" role="status">Tautan outlet disalin.</p>}
+      {linkCopied && <p className="mt-2 text-sm text-accent-ink" role="status">Tautan outlet disalin.</p>}
       {copyError && <p className="mt-2 text-sm text-red-700" role="alert">Tautan tidak bisa disalin. Pilih dan salin alamat di atas.</p>}
       <form className="mt-5 space-y-4" onSubmit={submit}>
         <Field

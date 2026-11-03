@@ -147,7 +147,7 @@ type AlertTone = 'error' | 'success' | 'info' | 'warning'
 export function Alert({ tone = 'error', children }: { tone?: AlertTone; children: ReactNode }) {
   const tones: Record<AlertTone, string> = {
     error: 'border-red-200 bg-red-50 text-red-800',
-    success: 'border-emerald-200 bg-emerald-50 text-emerald-900',
+    success: 'border-accent/20 bg-accent-soft text-accent-ink',
     info: 'border border-accent/20 bg-accent-soft text-body',
     warning: 'border-amber-300 bg-amber-50 text-amber-900',
   }
@@ -170,11 +170,11 @@ export function RetryAlert({ children, onRetry }: { children: ReactNode; onRetry
 export function ConnectionStatus({ connected }: { connected: boolean }) {
   return (
     <span
-      className={`inline-flex items-center gap-2 text-xs ${connected ? 'text-emerald-800' : 'text-amber-800'}`}
+      className={`inline-flex items-center gap-2 text-xs ${connected ? 'text-accent-ink' : 'text-amber-800'}`}
       role="status"
       data-connection-status
     >
-      <span aria-hidden="true" className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-600' : 'bg-amber-700'}`} data-connection-dot />
+      <span aria-hidden="true" className={`h-2 w-2 rounded-full ${connected ? 'bg-accent' : 'bg-amber-700'}`} data-connection-dot />
       {connected ? 'Terhubung langsung' : 'Menyambungkan ulang…'}
     </span>
   )
@@ -184,7 +184,7 @@ export type BadgeTone = 'success' | 'warning' | 'danger' | 'neutral' | 'accent'
 
 export function Badge({ tone = 'neutral', children }: { tone?: BadgeTone; children: ReactNode }) {
   const tones: Record<BadgeTone, string> = {
-    success: 'bg-emerald-100 text-emerald-900',
+    success: 'bg-accent-soft text-accent-ink',
     warning: 'bg-amber-100 text-amber-950',
     danger: 'bg-red-100 text-red-900',
     neutral: 'bg-paper-raised text-body',
