@@ -218,7 +218,7 @@ function OutletAddonPriceSettings({ monthly, yearly }: { monthly: number; yearly
 type TransferForm = { recipient_name: string; bank_name: string; bank_account: string; dana_number: string; gopay_number: string }
 
 function TransferSettings({ initial, saving, error, saved, onSave }: { initial: TransferForm; saving: boolean; error: string | null; saved: boolean; onSave: (details: TransferForm) => void }) {
-  const [form, setForm] = useState<TransferForm>(initial)
+  const [form, setForm] = useState<TransferForm>(() => transferFormFrom(initial))
   const update = (key: keyof TransferForm, value: string) => setForm((current) => ({ ...current, [key]: value }))
   const same = (Object.keys(form) as (keyof TransferForm)[]).every((key) => form[key] === initial[key])
   const inputClass = 'w-full rounded-xl border border-line-strong bg-white px-3 py-2.5 text-base'
@@ -232,9 +232,25 @@ function TransferSettings({ initial, saving, error, saved, onSave }: { initial: 
       <label className="block"><span className="mb-1 block text-sm font-medium">Nomor GoPay</span><input className={inputClass} maxLength={24} value={form.gopay_number} onChange={(event) => update('gopay_number', event.target.value)} placeholder="08xxxxxxxxxx" inputMode="tel" /></label>
     </div>
     {error && <Alert>{error}</Alert>}{saved && same && <Alert tone="success">Informasi transfer tersimpan.</Alert>}
-    <button type="button" className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" disabled={saving || same} onClick={() => onSave(Object.fromEntries(Object.entries(form).map(([key, value]) => [key, value.trim()])) as TransferForm)}>{saving ? 'Menyimpan…' : 'Simpan informasi transfer'}</button>
+    <button type="button" className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" disabled={saving || same} onClick={() => onSave({
+      recipient_name: form.recipient_name.trim(),
+      bank_name: form.bank_name.trim(),
+      bank_account: form.bank_account.trim(),
+      dana_number: form.dana_number.trim(),
+      gopay_number: form.gopay_number.trim(),
+    })}>{saving ? 'Menyimpan…' : 'Simpan informasi transfer'}</button>
     <p className="text-xs text-muted">Detail tidak dapat diubah selama ada tagihan manual yang menunggu pembayaran.</p>
   </section>
+}
+
+function transferFormFrom(value: TransferForm): TransferForm {
+  return {
+    recipient_name: String(value.recipient_name ?? ''),
+    bank_name: String(value.bank_name ?? ''),
+    bank_account: String(value.bank_account ?? ''),
+    dana_number: String(value.dana_number ?? ''),
+    gopay_number: String(value.gopay_number ?? ''),
+  }
 }
 
 function PlanPricing() {
