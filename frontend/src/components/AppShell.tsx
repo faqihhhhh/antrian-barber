@@ -5,14 +5,16 @@ import { api } from '../api/client'
 import { useMe } from '../auth/useMe'
 import { removePushSubscription } from '../hooks/usePushNotifications'
 import { Logo } from './Logo'
-import { Button } from './ui'
 
 type NavigationItem = { to: string; label: string; end?: boolean }
 type Workspace = { to: string; label: string }
 
 export default function AppShell() {
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false)
   const workspaceTriggerRef = useRef<HTMLButtonElement>(null)
+  const settingsMenuRef = useRef<HTMLDivElement>(null)
+  const settingsTriggerRef = useRef<HTMLButtonElement>(null)
   const me = useMe()
   const queryClient = useQueryClient()
   const location = useLocation()
@@ -60,7 +62,7 @@ export default function AppShell() {
               : undefined
   const items = activeWorkspace
     ? navigationFor(activeWorkspace, workspaces.find((workspace) => workspace.label === activeWorkspace)?.to)
-    : [{ to: '/', label: 'Beranda', end: true }, { to: '/akun', label: 'Akun', end: true }]
+    : [{ to: '/', label: 'Beranda', end: true }]
   const hasWorkspaceSwitcher = workspaces.length > 1
 
   useEffect(() => {
@@ -73,6 +75,24 @@ export default function AppShell() {
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [workspaceMenuOpen])
+
+  useEffect(() => {
+    if (!settingsMenuOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setSettingsMenuOpen(false)
+      settingsTriggerRef.current?.focus()
+    }
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!settingsMenuRef.current?.contains(event.target as Node)) setSettingsMenuOpen(false)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    window.addEventListener('pointerdown', closeOnOutsideClick)
+    return () => {
+      window.removeEventListener('keydown', closeOnEscape)
+      window.removeEventListener('pointerdown', closeOnOutsideClick)
+    }
+  }, [settingsMenuOpen])
 
   const logout = useMutation({
     mutationFn: async () => {
@@ -133,9 +153,41 @@ export default function AppShell() {
             <span className="hidden max-w-40 truncate text-right text-sm text-body-muted sm:block">
               {user?.display_name || user?.email}
             </span>
-            <Button type="button" variant="secondary" className="w-auto px-3" loading={logout.isPending} onClick={() => logout.mutate()}>
-              Keluar
-            </Button>
+            <div ref={settingsMenuRef} className="relative">
+              <button
+                ref={settingsTriggerRef}
+                type="button"
+                aria-expanded={settingsMenuOpen}
+                aria-controls="account-settings-menu"
+                aria-haspopup="true"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-white px-3 text-sm font-semibold text-ink hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
+                onClick={() => setSettingsMenuOpen((open) => !open)}
+              >
+                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="size-4" stroke="currentColor" strokeWidth="1.7">
+                  <circle cx="10" cy="10" r="3" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.1 11.8 1.1.9-1.2 2.1-1.4-.5a6.7 6.7 0 0 1-1.4.8l-.3 1.5h-2.4l-.3-1.5a6.7 6.7 0 0 1-1.4-.8l-1.4.5-1.2-2.1 1.1-.9a6 6 0 0 1 0-1.6l-1.1-.9 1.2-2.1 1.4.5a6.7 6.7 0 0 1 1.4-.8l.3-1.5h2.4l.3 1.5a6.7 6.7 0 0 1 1.4.8l1.4-.5 1.2 2.1-1.1.9a6 6 0 0 1 0 1.6Z" />
+                </svg>
+                Pengaturan
+                <span aria-hidden="true" className="text-xs">{settingsMenuOpen ? '▲' : '▼'}</span>
+              </button>
+              {settingsMenuOpen && <div id="account-settings-menu" className="absolute right-0 top-full z-50 mt-2 min-w-44 rounded-xl border border-line bg-white p-1 shadow-lg">
+                <Link
+                  to={customerContext ? '/pelanggan/akun' : '/akun'}
+                  className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
+                  onClick={() => setSettingsMenuOpen(false)}
+                >
+                  Akun
+                </Link>
+                <button
+                  type="button"
+                  className="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm font-semibold text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink disabled:opacity-60"
+                  disabled={logout.isPending}
+                  onClick={() => { setSettingsMenuOpen(false); logout.mutate() }}
+                >
+                  {logout.isPending ? 'Memproses…' : 'Keluar'}
+                </button>
+              </div>}
+            </div>
           </div>
         </div>
       </header>
@@ -164,22 +216,21 @@ function NavigationLink({ item, mobile = false }: { item: NavigationItem; mobile
 }
 
 function navigationFor(workspace: string, workspacePath?: string): NavigationItem[] {
-  const account: NavigationItem = { to: '/akun', label: 'Akun', end: true }
   const home: NavigationItem = { to: '/', label: 'Beranda', end: true }
   const customerHome: NavigationItem = { to: '/pelanggan', label: 'Beranda', end: true }
 
   switch (workspace) {
     case 'Owner':
-      return [home, { to: '/pemilik', label: 'Bisnis', end: true }, account]
+      return [home, { to: '/pemilik', label: 'Bisnis', end: true }]
     case 'Admin':
-      return [home, { to: workspacePath ?? '/admin', label: 'Kelola antrean' }, account]
+      return [home, { to: workspacePath ?? '/admin', label: 'Kelola antrean' }]
     case 'Kapster':
-      return [home, { to: '/kapster', label: 'Antrean kapster', end: true }, account]
+      return [home, { to: '/kapster', label: 'Antrean kapster', end: true }]
     case 'Pelanggan':
-      return [customerHome, { to: '/tiket', label: 'Tiket saya' }, { to: '/pelanggan/akun', label: 'Akun', end: true }]
+      return [customerHome, { to: '/tiket', label: 'Tiket saya' }]
     case 'Platform':
-      return [home, { to: '/pemilik-saas', label: 'Ringkasan platform', end: true }, account]
+      return [home, { to: '/pemilik-saas', label: 'Ringkasan platform', end: true }]
     default:
-      return [home, account]
+      return [home]
   }
 }
