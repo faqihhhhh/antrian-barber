@@ -31,6 +31,15 @@ func (h *Handlers) ListPlans(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, plans)
 }
 
+func (h *Handlers) GetPublicPricing(w http.ResponseWriter, r *http.Request) {
+	pricing, err := h.svc.GetPublicPricing(r.Context())
+	if err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, pricing)
+}
+
 func (h *Handlers) UpdatePlanPrice(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		PriceRupiah int64 `json:"price_rupiah"`

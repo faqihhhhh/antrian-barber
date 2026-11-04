@@ -18,6 +18,11 @@
 
 {$WEBSITE_DOMAIN} {
 	encode zstd gzip
+
+	handle /v1/plans/pricing {
+		reverse_proxy api:8080
+	}
+
 	root * /srv/website
 	file_server
 }

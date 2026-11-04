@@ -9,6 +9,7 @@ import (
 func RegisterPublicRoutes(r chi.Router, svc *Service, log *slog.Logger) {
 	h := NewHandlers(svc, log)
 	r.Get("/", h.ListPlans)
+	r.Get("/pricing", h.GetPublicPricing)
 }
 
 func RegisterTenantRoutes(r chi.Router, svc *Service, log *slog.Logger) {

@@ -284,6 +284,9 @@ Untuk website profil, dari `~/kapsflow/website` jalankan `npm run dev`, lalu buk
 `http://localhost:4321`. Periksa tampilan desktop dan lebar ponsel: menu, judul, ilustrasi antrean,
 bagian cara kerja, dan CTA harus terbaca tanpa gulir horizontal. Pastikan **Masuk**, **Buat akun**,
 dan kedua CTA pendaftaran mengarah ke `http://localhost:5173/masuk` atau `/daftar` yang sesuai.
+Bagian harga harus memuat harga paket dan outlet tambahan dari API, lalu berubah maksimal 30 detik
+setelah harga diperbarui di panel SaaS. Pastikan jalur `/v1/plans/pricing` di domain website
+mengembalikan data yang sama dengan panel admin tanpa menampilkan rekening transfer.
 Build statis dibuktikan dengan `npm run build`; hasilnya harus memuat `/index.html`.
 Periksa `/syarat` dan `/privasi` dari footer: kedua halaman harus memuat penanda draf, navigasi kembali,
 daftar informasi yang diproses, dan kontak yang jelas ditandai belum tersedia. Jangan publikasikan

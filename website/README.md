@@ -3,14 +3,18 @@
 Website statis berbasis Astro untuk profil produk Trimwait. Aplikasi operasional tetap berada di
 `frontend/` (React + Vite); CTA website diarahkan ke `PUBLIC_APP_URL`.
 
-Jalankan frontend aplikasi dan website profil di dua terminal WSL. Pratinjau di halaman utama
-website memuat halaman masuk aplikasi dari `PUBLIC_APP_URL`.
+Jalankan API, frontend aplikasi, dan website profil. Bagian harga di website membaca harga publik
+dari API dan memperbaruinya otomatis setiap 30 detik. Saat pengembangan, Astro meneruskan
+`/v1/plans/pricing` ke API lokal. Di produksi, Caddy menyediakan jalur proxy dengan path yang sama
+pada domain website, jadi browser tidak perlu akses lintas domain.
 
 Terminal pertama, dari `~/kapsflow/frontend`:
 
 ```bash
 npm run dev -- --host 0.0.0.0
 ```
+
+Pastikan API Trimwait juga berjalan di `http://localhost:8080`.
 
 Terminal kedua, dari `~/kapsflow/website`:
 

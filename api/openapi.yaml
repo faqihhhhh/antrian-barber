@@ -26,6 +26,19 @@ paths:
                 items: { $ref: '#/components/schemas/PublicPlan' }
         default:
           $ref: '#/components/responses/Error'
+  /v1/plans/pricing:
+    get:
+      operationId: getPublicPricing
+      tags: [langganan]
+      summary: Harga paket dan outlet tambahan untuk ditampilkan di website
+      responses:
+        '200':
+          description: Harga publik Trimwait
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicPricing' }
+        default:
+          $ref: '#/components/responses/Error'
   /v1/admin/stats:
     get:
       operationId: getPlatformStats
@@ -2540,6 +2553,15 @@ components:
         name: { type: string }
         price_rupiah: { type: integer, format: int64 }
         billing_interval: { type: string, enum: [monthly, yearly] }
+    PublicPricing:
+      type: object
+      required: [plans, additional_outlet_monthly_price_rupiah, additional_outlet_yearly_price_rupiah]
+      properties:
+        plans:
+          type: array
+          items: { $ref: '#/components/schemas/PublicPlan' }
+        additional_outlet_monthly_price_rupiah: { type: integer, format: int64 }
+        additional_outlet_yearly_price_rupiah: { type: integer, format: int64 }
     SubscribeRequest:
       type: object
       required: [plan_code, payment_method]

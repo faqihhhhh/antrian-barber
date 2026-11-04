@@ -21,6 +21,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/plans/pricing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Harga paket dan outlet tambahan untuk ditampilkan di website */
+        get: operations["getPublicPricing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/stats": {
         parameters: {
             query?: never;
@@ -1793,6 +1810,13 @@ export interface components {
             /** @enum {string} */
             billing_interval: "monthly" | "yearly";
         };
+        PublicPricing: {
+            plans: components["schemas"]["PublicPlan"][];
+            /** Format: int64 */
+            additional_outlet_monthly_price_rupiah: number;
+            /** Format: int64 */
+            additional_outlet_yearly_price_rupiah: number;
+        };
         SubscribeRequest: {
             plan_code: string;
             /** @enum {string} */
@@ -1955,6 +1979,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicPlan"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getPublicPricing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Harga publik Trimwait */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicPricing"];
                 };
             };
             default: components["responses"]["Error"];

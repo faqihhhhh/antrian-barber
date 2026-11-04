@@ -73,6 +73,12 @@ type PublicPlan struct {
 	BillingInterval string `json:"billing_interval"`
 }
 
+type PublicPricing struct {
+	Plans                              []PublicPlan `json:"plans"`
+	AdditionalOutletMonthlyPriceRupiah int64        `json:"additional_outlet_monthly_price_rupiah"`
+	AdditionalOutletYearlyPriceRupiah  int64        `json:"additional_outlet_yearly_price_rupiah"`
+}
+
 func publicPlan(plan db.Plan) PublicPlan {
 	return PublicPlan{Code: plan.Code, Name: plan.Name, PriceRupiah: plan.PriceRupiah, BillingInterval: plan.BillingInterval}
 }
@@ -130,6 +136,32 @@ func (s *Service) ListPlans(ctx context.Context) ([]PublicPlan, error) {
 		result = append(result, publicPlan(plan))
 	}
 	return result, nil
+}
+
+// GetPublicPricing hanya membuka harga paket dan outlet tambahan, tanpa
+// mengembalikan informasi pembayaran pribadi milik platform.
+func (s *Service) GetPublicPricing(ctx context.Context) (PublicPricing, error) {
+	plans, err := s.ListPlans(ctx)
+	if err != nil {
+		return PublicPricing{}, err
+	}
+	pricing := PublicPricing{Plans: plans}
+	err = rls.RunAsSystem(ctx, s.pool, func(sysCtx context.Context) error {
+		settings, err := s.queries(sysCtx).GetPlatformPaymentSettings(sysCtx)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil
+			}
+			return err
+		}
+		pricing.AdditionalOutletMonthlyPriceRupiah = settings.AdditionalOutletMonthlyPriceRupiah
+		pricing.AdditionalOutletYearlyPriceRupiah = settings.AdditionalOutletYearlyPriceRupiah
+		return nil
+	})
+	if err != nil {
+		return PublicPricing{}, httpx.Internal(fmt.Errorf("ambil harga publik: %w", err))
+	}
+	return pricing, nil
 }
 
 // UpdatePlanPrice hanya dipanggil dari rute admin yang sudah dilindungi
