@@ -74,8 +74,8 @@ SELECT (COALESCE(SUM(
     CASE WHEN p.billing_interval = 'yearly' THEN p.price_rupiah / 12.0 ELSE p.price_rupiah::numeric END
 ), 0) + (
     COALESCE((
-        SELECT COALESCE(COUNT(*) FILTER (WHERE o.additional_billing_interval = 'monthly') * p.additional_outlet_monthly_price_rupiah::numeric, 0)
-             + COALESCE(COUNT(*) FILTER (WHERE o.additional_billing_interval = 'yearly') * p.additional_outlet_yearly_price_rupiah::numeric / 12.0, 0)
+        SELECT COALESCE(COUNT(*) FILTER (WHERE o.additional_billing_interval = 'monthly') * MAX(p.additional_outlet_monthly_price_rupiah)::numeric, 0)
+             + COALESCE(COUNT(*) FILTER (WHERE o.additional_billing_interval = 'yearly') * MAX(p.additional_outlet_yearly_price_rupiah)::numeric / 12.0, 0)
         FROM outlets o
         CROSS JOIN platform_payment_settings p
         WHERE o.is_additional AND o.additional_period_end >= now()
