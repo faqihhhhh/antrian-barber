@@ -268,6 +268,13 @@ ditolak. Ulangi dengan Midtrans:
 QR dinamis tampil, nominal sama dengan harga paket, masa berlaku 30 menit terlihat, dan webhook
 mengaktifkan periode otomatis. Di panel SaaS, pastikan jumlah pending tampil dan ubah harga paket
 bulanan/tahunan; pilihan owner harus memakai harga baru sementara invoice lama tetap memakai nominal awal.
+Untuk outlet tambahan: atur harga bulanan dan tahunan di panel SaaS. Dari **Atur outlet**, pastikan
+outlet pertama dapat dibuat tanpa invoice, tetapi pembuatan outlet kedua menghasilkan invoice sesuai
+periode yang dipilih. Sebelum invoice dikonfirmasi, outlet kedua tidak boleh muncul. Setelah pembayaran
+manual dikonfirmasi (atau webhook Midtrans tervalidasi), pastikan outlet muncul dan masa aktifnya
+tercatat. Uji masa aktif berakhir dengan mengatur `additional_period_end` outlet uji di database:
+booking online dan pembukaan sesi/penambahan tiket harus ditolak, halaman owner tetap menampilkan
+outlet dan tombol perpanjangan, lalu konfirmasi invoice perpanjangan harus mengaktifkannya kembali.
 Di Render, set `PLATFORM_MIDTRANS_SERVER_KEY` ke Server Key akun merchant Trimwait dan
 `PLATFORM_MIDTRANS_IS_PRODUCTION=true` untuk akun produksi (`false` untuk Sandbox). Daftarkan
 notifikasi pembayaran Midtrans ke `https://<domain-api>/v1/webhooks/midtrans`. Jangan memakai Server Key

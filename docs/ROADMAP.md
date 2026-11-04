@@ -68,6 +68,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 17-5 | Daftar ulasan/komentar, riwayat link undangan, pengajuan, dan staf menampilkan tiga item awal dengan kontrol untuk membuka sisanya |
 | 17-6 | Tombol simpan aktif hanya jika ada perubahan valid; owner dapat menambah outlet setelah outlet pertama |
 | 18-2 | Pembayaran langganan manual mendukung rekening bank, DANA, dan GoPay dengan instruksi khusus di layar tagihan owner |
+| 18-3 | Paket mencakup satu outlet; outlet tambahan dibeli/perpanjang bulanan atau tahunan, diverifikasi via invoice, dan dikunci saat masa aktif habis |
 
 ## Berikutnya (urutan wajib)
 

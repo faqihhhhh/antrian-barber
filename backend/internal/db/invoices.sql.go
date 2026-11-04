@@ -41,7 +41,7 @@ const createInvoice = `-- name: CreateInvoice :one
 INSERT INTO invoices (tenant_id, plan_id, amount_rupiah, unique_code, expires_at, payment_method)
 VALUES ($1, $2, $3, $4, now() + interval '30 minutes', $5)
 ON CONFLICT DO NOTHING
-RETURNING id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url, payment_method
+RETURNING id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url, payment_method, invoice_kind, outlet_id, requested_outlet_name, requested_outlet_timezone, requested_outlet_address, outlet_billing_interval
 `
 
 type CreateInvoiceParams struct {
@@ -78,6 +78,77 @@ func (q *Queries) CreateInvoice(ctx context.Context, arg CreateInvoiceParams) (I
 		&i.MidtransOrderID,
 		&i.QrCodeUrl,
 		&i.PaymentMethod,
+		&i.InvoiceKind,
+		&i.OutletID,
+		&i.RequestedOutletName,
+		&i.RequestedOutletTimezone,
+		&i.RequestedOutletAddress,
+		&i.OutletBillingInterval,
+	)
+	return i, err
+}
+
+const createOutletAddonInvoice = `-- name: CreateOutletAddonInvoice :one
+INSERT INTO invoices (
+    tenant_id, plan_id, amount_rupiah, unique_code, expires_at, payment_method,
+    invoice_kind, outlet_id, requested_outlet_name, requested_outlet_timezone,
+    requested_outlet_address, outlet_billing_interval
+) VALUES ($1, $2, $3, $4, now() + interval '30 minutes', $5,
+          'outlet_addon', $6, $7, $8, $9, $10)
+ON CONFLICT DO NOTHING
+RETURNING id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url, payment_method, invoice_kind, outlet_id, requested_outlet_name, requested_outlet_timezone, requested_outlet_address, outlet_billing_interval
+`
+
+type CreateOutletAddonInvoiceParams struct {
+	TenantID                uuid.UUID   `json:"tenant_id"`
+	PlanID                  uuid.UUID   `json:"plan_id"`
+	AmountRupiah            int64       `json:"amount_rupiah"`
+	UniqueCode              int16       `json:"unique_code"`
+	PaymentMethod           string      `json:"payment_method"`
+	OutletID                pgtype.UUID `json:"outlet_id"`
+	RequestedOutletName     pgtype.Text `json:"requested_outlet_name"`
+	RequestedOutletTimezone pgtype.Text `json:"requested_outlet_timezone"`
+	RequestedOutletAddress  pgtype.Text `json:"requested_outlet_address"`
+	OutletBillingInterval   pgtype.Text `json:"outlet_billing_interval"`
+}
+
+func (q *Queries) CreateOutletAddonInvoice(ctx context.Context, arg CreateOutletAddonInvoiceParams) (Invoice, error) {
+	row := q.db.QueryRow(ctx, createOutletAddonInvoice,
+		arg.TenantID,
+		arg.PlanID,
+		arg.AmountRupiah,
+		arg.UniqueCode,
+		arg.PaymentMethod,
+		arg.OutletID,
+		arg.RequestedOutletName,
+		arg.RequestedOutletTimezone,
+		arg.RequestedOutletAddress,
+		arg.OutletBillingInterval,
+	)
+	var i Invoice
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.PlanID,
+		&i.AmountRupiah,
+		&i.UniqueCode,
+		&i.Status,
+		&i.ExpiresAt,
+		&i.PaidAt,
+		&i.ConfirmedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.PeriodStart,
+		&i.PeriodEnd,
+		&i.MidtransOrderID,
+		&i.QrCodeUrl,
+		&i.PaymentMethod,
+		&i.InvoiceKind,
+		&i.OutletID,
+		&i.RequestedOutletName,
+		&i.RequestedOutletTimezone,
+		&i.RequestedOutletAddress,
+		&i.OutletBillingInterval,
 	)
 	return i, err
 }
@@ -109,7 +180,7 @@ func (q *Queries) ExpireTenantInvoices(ctx context.Context, tenantID uuid.UUID) 
 }
 
 const getInvoiceByID = `-- name: GetInvoiceByID :one
-SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url, payment_method FROM invoices WHERE id = $1
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url, payment_method, invoice_kind, outlet_id, requested_outlet_name, requested_outlet_timezone, requested_outlet_address, outlet_billing_interval FROM invoices WHERE id = $1
 `
 
 func (q *Queries) GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, error) {
@@ -132,12 +203,18 @@ func (q *Queries) GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, er
 		&i.MidtransOrderID,
 		&i.QrCodeUrl,
 		&i.PaymentMethod,
+		&i.InvoiceKind,
+		&i.OutletID,
+		&i.RequestedOutletName,
+		&i.RequestedOutletTimezone,
+		&i.RequestedOutletAddress,
+		&i.OutletBillingInterval,
 	)
 	return i, err
 }
 
 const getInvoiceByMidtransOrderID = `-- name: GetInvoiceByMidtransOrderID :one
-SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url, payment_method FROM invoices WHERE midtrans_order_id = $1
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url, payment_method, invoice_kind, outlet_id, requested_outlet_name, requested_outlet_timezone, requested_outlet_address, outlet_billing_interval FROM invoices WHERE midtrans_order_id = $1
 `
 
 func (q *Queries) GetInvoiceByMidtransOrderID(ctx context.Context, midtransOrderID pgtype.Text) (Invoice, error) {
@@ -160,12 +237,18 @@ func (q *Queries) GetInvoiceByMidtransOrderID(ctx context.Context, midtransOrder
 		&i.MidtransOrderID,
 		&i.QrCodeUrl,
 		&i.PaymentMethod,
+		&i.InvoiceKind,
+		&i.OutletID,
+		&i.RequestedOutletName,
+		&i.RequestedOutletTimezone,
+		&i.RequestedOutletAddress,
+		&i.OutletBillingInterval,
 	)
 	return i, err
 }
 
 const getPendingInvoiceByTenant = `-- name: GetPendingInvoiceByTenant :one
-SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url, payment_method FROM invoices WHERE tenant_id = $1 AND status = 'pending'
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url, payment_method, invoice_kind, outlet_id, requested_outlet_name, requested_outlet_timezone, requested_outlet_address, outlet_billing_interval FROM invoices WHERE tenant_id = $1 AND status = 'pending'
 `
 
 func (q *Queries) GetPendingInvoiceByTenant(ctx context.Context, tenantID uuid.UUID) (Invoice, error) {
@@ -188,12 +271,18 @@ func (q *Queries) GetPendingInvoiceByTenant(ctx context.Context, tenantID uuid.U
 		&i.MidtransOrderID,
 		&i.QrCodeUrl,
 		&i.PaymentMethod,
+		&i.InvoiceKind,
+		&i.OutletID,
+		&i.RequestedOutletName,
+		&i.RequestedOutletTimezone,
+		&i.RequestedOutletAddress,
+		&i.OutletBillingInterval,
 	)
 	return i, err
 }
 
 const listInvoicesByTenant = `-- name: ListInvoicesByTenant :many
-SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url, payment_method FROM invoices WHERE tenant_id = $1 ORDER BY created_at DESC
+SELECT id, tenant_id, plan_id, amount_rupiah, unique_code, status, expires_at, paid_at, confirmed_by, created_at, updated_at, period_start, period_end, midtrans_order_id, qr_code_url, payment_method, invoice_kind, outlet_id, requested_outlet_name, requested_outlet_timezone, requested_outlet_address, outlet_billing_interval FROM invoices WHERE tenant_id = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) ([]Invoice, error) {
@@ -222,6 +311,12 @@ func (q *Queries) ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) 
 			&i.MidtransOrderID,
 			&i.QrCodeUrl,
 			&i.PaymentMethod,
+			&i.InvoiceKind,
+			&i.OutletID,
+			&i.RequestedOutletName,
+			&i.RequestedOutletTimezone,
+			&i.RequestedOutletAddress,
+			&i.OutletBillingInterval,
 		); err != nil {
 			return nil, err
 		}
@@ -235,10 +330,12 @@ func (q *Queries) ListInvoicesByTenant(ctx context.Context, tenantID uuid.UUID) 
 
 const listPendingInvoices = `-- name: ListPendingInvoices :many
 SELECT i.id, i.tenant_id, t.name AS tenant_name, i.plan_id, p.name AS plan_name,
-       i.amount_rupiah, i.unique_code, i.payment_method, i.status, i.expires_at, i.created_at
+       i.amount_rupiah, i.unique_code, i.payment_method, i.status, i.expires_at, i.created_at,
+       i.invoice_kind, COALESCE(i.requested_outlet_name, o.name, '') AS outlet_name
 FROM invoices i
 JOIN tenants t ON t.id = i.tenant_id
 JOIN plans p ON p.id = i.plan_id
+LEFT JOIN outlets o ON o.id = i.outlet_id
 WHERE i.status = 'pending' OR (i.status = 'expired' AND i.expires_at > now() - interval '14 days')
 ORDER BY i.created_at
 `
@@ -255,6 +352,8 @@ type ListPendingInvoicesRow struct {
 	Status        string             `json:"status"`
 	ExpiresAt     pgtype.Timestamptz `json:"expires_at"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	InvoiceKind   string             `json:"invoice_kind"`
+	OutletName    string             `json:"outlet_name"`
 }
 
 func (q *Queries) ListPendingInvoices(ctx context.Context) ([]ListPendingInvoicesRow, error) {
@@ -278,6 +377,8 @@ func (q *Queries) ListPendingInvoices(ctx context.Context) ([]ListPendingInvoice
 			&i.Status,
 			&i.ExpiresAt,
 			&i.CreatedAt,
+			&i.InvoiceKind,
+			&i.OutletName,
 		); err != nil {
 			return nil, err
 		}

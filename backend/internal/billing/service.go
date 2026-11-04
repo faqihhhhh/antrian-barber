@@ -73,10 +73,16 @@ type PublicPlan struct {
 	BillingInterval string `json:"billing_interval"`
 }
 
+func publicPlan(plan db.Plan) PublicPlan {
+	return PublicPlan{Code: plan.Code, Name: plan.Name, PriceRupiah: plan.PriceRupiah, BillingInterval: plan.BillingInterval}
+}
+
 type PaymentOptions struct {
-	ManualQRISConfigured     bool `json:"manual_qris_configured"`
-	ManualTransferConfigured bool `json:"manual_transfer_configured"`
-	MidtransConfigured       bool `json:"midtrans_configured"`
+	ManualQRISConfigured               bool  `json:"manual_qris_configured"`
+	ManualTransferConfigured           bool  `json:"manual_transfer_configured"`
+	MidtransConfigured                 bool  `json:"midtrans_configured"`
+	AdditionalOutletMonthlyPriceRupiah int64 `json:"additional_outlet_monthly_price_rupiah"`
+	AdditionalOutletYearlyPriceRupiah  int64 `json:"additional_outlet_yearly_price_rupiah"`
 	TransferDetails
 }
 
@@ -88,15 +94,19 @@ type AdminInvoice struct {
 	AmountRupiah  int64      `json:"amount_rupiah"`
 	UniqueCode    int16      `json:"unique_code"`
 	PaymentMethod string     `json:"payment_method"`
+	InvoiceKind   string     `json:"invoice_kind"`
+	OutletName    string     `json:"outlet_name"`
 	Status        string     `json:"status"`
 	ExpiresAt     *time.Time `json:"expires_at"`
 	CreatedAt     time.Time  `json:"created_at"`
 }
 
 type PlatformPaymentInfo struct {
-	ManualQRISConfigured     bool `json:"manual_qris_configured"`
-	ManualTransferConfigured bool `json:"manual_transfer_configured"`
-	MidtransConfigured       bool `json:"midtrans_configured"`
+	ManualQRISConfigured               bool  `json:"manual_qris_configured"`
+	ManualTransferConfigured           bool  `json:"manual_transfer_configured"`
+	MidtransConfigured                 bool  `json:"midtrans_configured"`
+	AdditionalOutletMonthlyPriceRupiah int64 `json:"additional_outlet_monthly_price_rupiah"`
+	AdditionalOutletYearlyPriceRupiah  int64 `json:"additional_outlet_yearly_price_rupiah"`
 	TransferDetails
 }
 
@@ -117,7 +127,7 @@ func (s *Service) ListPlans(ctx context.Context) ([]PublicPlan, error) {
 	}
 	result := make([]PublicPlan, 0, len(plans))
 	for _, plan := range plans {
-		result = append(result, PublicPlan{Code: plan.Code, Name: plan.Name, PriceRupiah: plan.PriceRupiah, BillingInterval: plan.BillingInterval})
+		result = append(result, publicPlan(plan))
 	}
 	return result, nil
 }
@@ -138,7 +148,7 @@ func (s *Service) UpdatePlanPrice(ctx context.Context, code string, price int64)
 		}
 		return PublicPlan{}, httpx.Internal(fmt.Errorf("mengubah harga paket: %w", err))
 	}
-	return PublicPlan{Code: plan.Code, Name: plan.Name, PriceRupiah: plan.PriceRupiah, BillingInterval: plan.BillingInterval}, nil
+	return publicPlan(plan), nil
 }
 
 func (s *Service) platformAdmin(ctx context.Context) error {
@@ -163,6 +173,22 @@ func (s *Service) PlatformPaymentInfo(ctx context.Context) (PlatformPaymentInfo,
 	return s.getPlatformPaymentInfo(ctx)
 }
 
+func (s *Service) SetPlatformOutletAddonPrices(ctx context.Context, monthly, yearly int64) error {
+	if err := s.platformAdmin(ctx); err != nil {
+		return err
+	}
+	if monthly < 0 || yearly < 0 {
+		return httpx.BadRequest("harga_tidak_valid", "Harga outlet tambahan tidak boleh negatif", nil)
+	}
+	if err := s.queries(ctx).SetPlatformOutletAddonPrices(ctx, db.SetPlatformOutletAddonPricesParams{
+		AdditionalOutletMonthlyPriceRupiah: monthly,
+		AdditionalOutletYearlyPriceRupiah:  yearly,
+	}); err != nil {
+		return httpx.Internal(fmt.Errorf("simpan harga outlet tambahan: %w", err))
+	}
+	return nil
+}
+
 func platformQRISContentType(data []byte) string {
 	contentType := http.DetectContentType(data)
 	if contentType == "image/png" || contentType == "image/jpeg" || contentType == "image/webp" {
@@ -179,6 +205,8 @@ func (s *Service) getPlatformPaymentInfo(ctx context.Context) (PlatformPaymentIn
 	}
 	info.ManualQRISConfigured = err == nil && len(row.ManualQrisImage) > 0 && row.ManualQrisContentType.Valid
 	if err == nil {
+		info.AdditionalOutletMonthlyPriceRupiah = row.AdditionalOutletMonthlyPriceRupiah
+		info.AdditionalOutletYearlyPriceRupiah = row.AdditionalOutletYearlyPriceRupiah
 		info.TransferDetails = TransferDetails{
 			RecipientName: nullableText(row.TransferRecipientName),
 			BankName:      nullableText(row.TransferBankName),
@@ -478,6 +506,145 @@ func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode, p
 	return ownerInvoiceFromDB(invoice), nil
 }
 
+type OutletAddonRequest struct {
+	OutletID        *uuid.UUID `json:"outlet_id"`
+	Name            string     `json:"name"`
+	Timezone        string     `json:"timezone"`
+	Address         string     `json:"address"`
+	BillingInterval string     `json:"billing_interval"`
+	PaymentMethod   string     `json:"payment_method"`
+}
+
+func (s *Service) CreateOutletAddonInvoice(ctx context.Context, tenantID uuid.UUID, req OutletAddonRequest) (OwnerInvoice, error) {
+	user, ok := identity.UserFromContext(ctx)
+	if !ok {
+		return OwnerInvoice{}, httpx.Unauthorized("belum_masuk", "Silakan masuk terlebih dahulu", nil)
+	}
+	q := s.queries(ctx)
+	if err := authorization.RequireTenantRole(ctx, q, tenantID, user.ID, "owner"); err != nil {
+		return OwnerInvoice{}, err
+	}
+	status, err := s.GetOwnerStatus(ctx, tenantID)
+	if err != nil {
+		return OwnerInvoice{}, err
+	}
+	if status.Status != StatusActive && status.Status != StatusGrace {
+		return OwnerInvoice{}, httpx.PaymentRequired("berlangganan_diperlukan", "Aktifkan langganan bisnis sebelum membeli outlet tambahan", nil)
+	}
+	if req.BillingInterval != "monthly" && req.BillingInterval != "yearly" {
+		return OwnerInvoice{}, httpx.BadRequest("periode_tidak_valid", "Pilih tagihan bulanan atau tahunan", nil)
+	}
+	if req.PaymentMethod == "" {
+		req.PaymentMethod = "manual"
+	}
+	if req.PaymentMethod != "manual" && req.PaymentMethod != "midtrans" {
+		return OwnerInvoice{}, httpx.BadRequest("metode_pembayaran_tidak_valid", "Pilih pembayaran manual atau QRIS otomatis", nil)
+	}
+	options, err := s.OwnerPaymentOptions(ctx, tenantID)
+	if err != nil {
+		return OwnerInvoice{}, err
+	}
+	if req.PaymentMethod == "manual" && !options.ManualQRISConfigured && !options.ManualTransferConfigured {
+		return OwnerInvoice{}, httpx.Conflict("pembayaran_manual_belum_diatur", "Pembayaran manual platform belum disiapkan", nil)
+	}
+	if req.PaymentMethod == "midtrans" && !options.MidtransConfigured {
+		return OwnerInvoice{}, httpx.Conflict("midtrans_belum_diatur", "QRIS otomatis belum tersedia", nil)
+	}
+	if req.OutletID == nil {
+		count, err := q.CountOutletsByTenant(ctx, tenantID)
+		if err != nil {
+			return OwnerInvoice{}, httpx.Internal(fmt.Errorf("menghitung outlet bisnis: %w", err))
+		}
+		if count == 0 {
+			return OwnerInvoice{}, httpx.BadRequest("outlet_pertama_tidak_valid", "Outlet pertama sudah termasuk paket bisnis dan dibuat dari halaman Atur outlet", nil)
+		}
+		req.Name = strings.TrimSpace(req.Name)
+		if req.Name == "" || len([]rune(req.Name)) > 100 {
+			return OwnerInvoice{}, httpx.BadRequest("nama_outlet_tidak_valid", "Nama outlet wajib diisi dan maksimal 100 karakter", nil)
+		}
+		if _, err := time.LoadLocation(req.Timezone); err != nil {
+			return OwnerInvoice{}, httpx.BadRequest("zona_waktu_tidak_valid", "Pilih zona waktu outlet yang tersedia", err)
+		}
+		req.Address = strings.TrimSpace(req.Address)
+		if len([]rune(req.Address)) > 300 {
+			return OwnerInvoice{}, httpx.BadRequest("alamat_terlalu_panjang", "Alamat outlet maksimal 300 karakter", nil)
+		}
+	} else {
+		outlet, err := q.GetOutletByID(ctx, *req.OutletID)
+		if err != nil || outlet.TenantID != tenantID || !outlet.IsAdditional {
+			return OwnerInvoice{}, httpx.NotFound("outlet_tidak_ditemukan", "Outlet tambahan tidak ditemukan", err)
+		}
+	}
+	plan, err := q.GetActivePlanByInterval(ctx, req.BillingInterval)
+	if err != nil {
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("ambil harga outlet tambahan: %w", err))
+	}
+	amount := options.AdditionalOutletMonthlyPriceRupiah
+	if req.BillingInterval == "yearly" {
+		amount = options.AdditionalOutletYearlyPriceRupiah
+	}
+	if amount <= 0 {
+		return OwnerInvoice{}, httpx.Conflict("harga_outlet_belum_diatur", "Harga outlet tambahan untuk periode ini belum diatur", nil)
+	}
+	if _, err := q.ExpireTenantInvoices(ctx, tenantID); err != nil {
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("kedaluwarsakan invoice lama: %w", err))
+	}
+	if _, err := q.GetPendingInvoiceByTenant(ctx, tenantID); err == nil {
+		return OwnerInvoice{}, httpx.Conflict("tagihan_masih_pending", "Selesaikan tagihan yang masih menunggu sebelum membuat tagihan lain", nil)
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return OwnerInvoice{}, httpx.Internal(fmt.Errorf("cek tagihan aktif: %w", err))
+	}
+
+	for attempt := 0; attempt < 10; attempt++ {
+		uniqueCode := int16(0)
+		invoiceAmount := amount
+		if req.PaymentMethod == "manual" {
+			uniqueCode = int16(1 + rand.IntN(998))
+			invoiceAmount += int64(uniqueCode)
+		}
+		params := db.CreateOutletAddonInvoiceParams{
+			TenantID: tenantID, PlanID: plan.ID, AmountRupiah: invoiceAmount, UniqueCode: uniqueCode,
+			PaymentMethod: req.PaymentMethod, OutletBillingInterval: pgtype.Text{String: req.BillingInterval, Valid: true},
+		}
+		if req.OutletID != nil {
+			params.OutletID = dbx.UUID(*req.OutletID)
+		} else {
+			params.RequestedOutletName = pgtype.Text{String: req.Name, Valid: true}
+			params.RequestedOutletTimezone = pgtype.Text{String: req.Timezone, Valid: true}
+			params.RequestedOutletAddress = pgtype.Text{String: req.Address, Valid: req.Address != ""}
+		}
+		invoice, err := q.CreateOutletAddonInvoice(ctx, params)
+		if errors.Is(err, pgx.ErrNoRows) && req.PaymentMethod == "manual" {
+			continue
+		}
+		if err != nil {
+			return OwnerInvoice{}, httpx.Internal(fmt.Errorf("membuat tagihan outlet tambahan: %w", err))
+		}
+		if req.PaymentMethod == "manual" {
+			return ownerInvoiceFromDB(invoice), nil
+		}
+		orderID := "tw-add-" + invoice.ID.String()
+		charge, chargeErr := s.midtrans.ChargeQRIS(ctx, s.platformServerKey, s.platformProduction, orderID, amount)
+		if chargeErr != nil {
+			_, _ = q.CancelInvoice(ctx, invoice.ID)
+			return OwnerInvoice{}, httpx.Internal(fmt.Errorf("membuat pembayaran outlet tambahan: %w", chargeErr))
+		}
+		if charge.QRCodeURL == "" {
+			_, _ = q.CancelInvoice(ctx, invoice.ID)
+			return OwnerInvoice{}, httpx.Internal(fmt.Errorf("Midtrans tidak mengembalikan QR untuk invoice outlet %s", invoice.ID))
+		}
+		rows, saveErr := q.SetInvoiceMidtransPayment(ctx, db.SetInvoiceMidtransPaymentParams{ID: invoice.ID, MidtransOrderID: pgtype.Text{String: orderID, Valid: true}, QrCodeUrl: pgtype.Text{String: charge.QRCodeURL, Valid: true}})
+		if saveErr != nil || rows != 1 {
+			_, _ = q.CancelInvoice(ctx, invoice.ID)
+			return OwnerInvoice{}, httpx.Internal(fmt.Errorf("menyimpan pembayaran outlet: rows=%d err=%w", rows, saveErr))
+		}
+		invoice.MidtransOrderID = pgtype.Text{String: orderID, Valid: true}
+		invoice.QrCodeUrl = pgtype.Text{String: charge.QRCodeURL, Valid: true}
+		return ownerInvoiceFromDB(invoice), nil
+	}
+	return OwnerInvoice{}, httpx.Conflict("nominal_tagihan_bentrok", "Gagal membuat nominal unik, coba lagi", nil)
+}
+
 func computeStatus(currentPeriodEnd *time.Time) SubscriptionStatus {
 	if currentPeriodEnd == nil {
 		return StatusNeverSubscribed
@@ -533,23 +700,40 @@ func (s *Service) GetOwnerStatus(ctx context.Context, tenantID uuid.UUID) (Subsc
 }
 
 type OwnerInvoice struct {
-	ID            uuid.UUID  `json:"id"`
-	AmountRupiah  int64      `json:"amount_rupiah"`
-	UniqueCode    int16      `json:"unique_code"`
-	PaymentMethod string     `json:"payment_method"`
-	Status        string     `json:"status"`
-	ExpiresAt     *time.Time `json:"expires_at"`
-	PaidAt        *time.Time `json:"paid_at"`
-	PeriodStart   *time.Time `json:"period_start"`
-	PeriodEnd     *time.Time `json:"period_end"`
-	QRCodeURL     *string    `json:"qr_code_url"`
-	CreatedAt     time.Time  `json:"created_at"`
+	ID              uuid.UUID  `json:"id"`
+	AmountRupiah    int64      `json:"amount_rupiah"`
+	UniqueCode      int16      `json:"unique_code"`
+	PaymentMethod   string     `json:"payment_method"`
+	InvoiceKind     string     `json:"invoice_kind"`
+	OutletID        *uuid.UUID `json:"outlet_id"`
+	OutletName      *string    `json:"outlet_name"`
+	BillingInterval *string    `json:"billing_interval"`
+	Status          string     `json:"status"`
+	ExpiresAt       *time.Time `json:"expires_at"`
+	PaidAt          *time.Time `json:"paid_at"`
+	PeriodStart     *time.Time `json:"period_start"`
+	PeriodEnd       *time.Time `json:"period_end"`
+	QRCodeURL       *string    `json:"qr_code_url"`
+	CreatedAt       time.Time  `json:"created_at"`
 }
 
 func ownerInvoiceFromDB(invoice db.Invoice) OwnerInvoice {
 	item := OwnerInvoice{
 		ID: invoice.ID, AmountRupiah: invoice.AmountRupiah, UniqueCode: invoice.UniqueCode,
-		PaymentMethod: invoice.PaymentMethod, Status: invoice.Status, CreatedAt: invoice.CreatedAt.Time,
+		PaymentMethod: invoice.PaymentMethod, InvoiceKind: invoice.InvoiceKind, Status: invoice.Status, CreatedAt: invoice.CreatedAt.Time,
+	}
+	if invoice.OutletID.Valid {
+		value := invoice.OutletID.Bytes
+		id := uuid.UUID(value)
+		item.OutletID = &id
+	}
+	if invoice.RequestedOutletName.Valid {
+		value := invoice.RequestedOutletName.String
+		item.OutletName = &value
+	}
+	if invoice.OutletBillingInterval.Valid {
+		value := invoice.OutletBillingInterval.String
+		item.BillingInterval = &value
 	}
 	if invoice.ExpiresAt.Valid {
 		value := invoice.ExpiresAt.Time
@@ -607,6 +791,7 @@ func (s *Service) ListPendingInvoices(ctx context.Context) ([]AdminInvoice, erro
 			ID: invoice.ID, TenantID: invoice.TenantID, TenantName: invoice.TenantName,
 			PlanName: invoice.PlanName, AmountRupiah: invoice.AmountRupiah,
 			UniqueCode: invoice.UniqueCode, PaymentMethod: invoice.PaymentMethod,
+			InvoiceKind: invoice.InvoiceKind, OutletName: invoice.OutletName,
 			Status: invoice.Status, CreatedAt: invoice.CreatedAt.Time,
 		}
 		if invoice.ExpiresAt.Valid {
@@ -654,6 +839,16 @@ func (s *Service) ConfirmInvoicePayment(ctx context.Context, invoiceID, adminUse
 	if inv.PaymentMethod != "manual" {
 		return httpx.Conflict("konfirmasi_manual_tidak_berlaku", "Tagihan QRIS otomatis dikonfirmasi Midtrans", nil)
 	}
+	if inv.InvoiceKind == "outlet_addon" {
+		paid, err := q.MarkInvoicePaid(ctx, db.MarkInvoicePaidParams{ID: invoiceID, ConfirmedBy: dbx.UUID(adminUserID)})
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return httpx.Conflict("invoice_sudah_diproses", "Invoice ini sudah dibayar atau dibatalkan", nil)
+			}
+			return httpx.Internal(fmt.Errorf("menandai invoice outlet lunas: %w", err))
+		}
+		return activateOutletAddon(ctx, q, inv, paid.PaidAt)
+	}
 
 	plan, err := q.GetPlanByID(ctx, inv.PlanID)
 	if err != nil {
@@ -690,7 +885,7 @@ func (s *Service) ConfirmInvoicePayment(ctx context.Context, invoiceID, adminUse
 // ProcessMidtransWebhook mengaktifkan langganan hanya setelah tanda tangan
 // Midtrans valid dan nominal notifikasi sama persis dengan invoice.
 func (s *Service) ProcessMidtransWebhook(ctx context.Context, orderID, statusCode, grossAmount, signature, txStatus, fraudStatus string) error {
-	if !strings.HasPrefix(orderID, "tw-sub-") || s.platformServerKey == "" {
+	if (!strings.HasPrefix(orderID, "tw-sub-") && !strings.HasPrefix(orderID, "tw-add-")) || s.platformServerKey == "" {
 		return httpx.NotFound("tagihan_tidak_ditemukan", "Tagihan langganan tidak ditemukan", nil)
 	}
 	if !midtrans.VerifySignature(orderID, statusCode, grossAmount, s.platformServerKey, signature) {
@@ -719,6 +914,9 @@ func (s *Service) ProcessMidtransWebhook(ctx context.Context, orderID, statusCod
 		}
 		return httpx.Internal(fmt.Errorf("menandai tagihan QR lunas: %w", err))
 	}
+	if invoice.InvoiceKind == "outlet_addon" {
+		return activateOutletAddon(ctx, q, invoice, paid.PaidAt)
+	}
 	plan, err := q.GetPlanByID(ctx, paid.PlanID)
 	if err != nil {
 		return httpx.Internal(fmt.Errorf("ambil paket langganan: %w", err))
@@ -737,6 +935,69 @@ func (s *Service) ProcessMidtransWebhook(ctx context.Context, orderID, statusCod
 	return nil
 }
 
+func addonSlug(name string) string {
+	var b strings.Builder
+	separator := false
+	for _, r := range strings.ToLower(name) {
+		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
+			if separator && b.Len() > 0 {
+				b.WriteByte('-')
+			}
+			b.WriteRune(r)
+			separator = false
+		} else {
+			separator = true
+		}
+		if b.Len() >= 36 {
+			break
+		}
+	}
+	base := strings.Trim(b.String(), "-")
+	if base == "" {
+		base = "outlet"
+	}
+	return base + "-" + strings.ReplaceAll(uuid.NewString()[:8], "-", "")
+}
+
+func activateOutletAddon(ctx context.Context, q *db.Queries, invoice db.Invoice, paidAt pgtype.Timestamptz) error {
+	if !invoice.OutletBillingInterval.Valid {
+		return httpx.Internal(fmt.Errorf("periode outlet tidak tercatat pada invoice %s", invoice.ID))
+	}
+	interval := invoice.OutletBillingInterval.String
+	var periodStart, periodEnd pgtype.Timestamptz
+	if invoice.OutletID.Valid {
+		renewed, err := q.RenewAdditionalOutlet(ctx, db.RenewAdditionalOutletParams{
+			ID: uuid.UUID(invoice.OutletID.Bytes), TenantID: invoice.TenantID, PaidAt: paidAt,
+			BillingInterval: interval,
+		})
+		if err != nil {
+			return httpx.Internal(fmt.Errorf("memperpanjang outlet tambahan: %w", err))
+		}
+		periodStart, periodEnd = renewed.PeriodStart, renewed.AdditionalPeriodEnd
+	} else {
+		if !invoice.RequestedOutletName.Valid || !invoice.RequestedOutletTimezone.Valid {
+			return httpx.Internal(fmt.Errorf("detail outlet tidak lengkap pada invoice %s", invoice.ID))
+		}
+		outlet, err := q.CreatePaidAdditionalOutlet(ctx, db.CreatePaidAdditionalOutletParams{
+			TenantID: invoice.TenantID, Name: invoice.RequestedOutletName.String,
+			Timezone: invoice.RequestedOutletTimezone.String, Address: invoice.RequestedOutletAddress,
+			Slug: addonSlug(invoice.RequestedOutletName.String), PaidAt: paidAt, BillingInterval: interval,
+		})
+		if err != nil {
+			return httpx.Internal(fmt.Errorf("membuat outlet setelah pembayaran: %w", err))
+		}
+		periodStart, periodEnd = paidAt, outlet.AdditionalPeriodEnd
+	}
+	updated, err := q.RecordInvoiceSubscriptionPeriod(ctx, db.RecordInvoiceSubscriptionPeriodParams{ID: invoice.ID, PeriodStart: periodStart, PeriodEnd: periodEnd})
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("mencatat periode outlet invoice: %w", err))
+	}
+	if updated != 1 {
+		return httpx.Internal(fmt.Errorf("mencatat periode outlet invoice: jumlah baris berubah %d", updated))
+	}
+	return nil
+}
+
 // GetStatusAsSystem sama seperti GetStatus, tapi lewat rls.RunAsSystem —
 // dipakai RequireActiveSubscription karena pemanggilnya bisa jadi BUKAN
 // anggota tenant sama sekali (pelanggan yang memesan tiket online), yang
@@ -750,4 +1011,34 @@ func (s *Service) GetStatusAsSystem(ctx context.Context, tenantID uuid.UUID) (Su
 		return err
 	})
 	return info, err
+}
+
+func (s *Service) IsAdditionalOutletActiveAsSystem(ctx context.Context, outletID uuid.UUID) (bool, error) {
+	active := false
+	err := rls.RunAsSystem(ctx, s.pool, func(sysCtx context.Context) error {
+		outlet, err := s.queries(sysCtx).GetOutletByID(sysCtx, outletID)
+		if err != nil {
+			return err
+		}
+		active = !outlet.IsAdditional || outlet.AdditionalPeriodEnd.Valid && outlet.AdditionalPeriodEnd.Time.After(time.Now())
+		return nil
+	})
+	return active, err
+}
+
+func (s *Service) IsQueueSessionOutletActiveAsSystem(ctx context.Context, sessionID uuid.UUID) (bool, error) {
+	active := false
+	err := rls.RunAsSystem(ctx, s.pool, func(sysCtx context.Context) error {
+		session, err := s.queries(sysCtx).GetQueueSessionByID(sysCtx, sessionID)
+		if err != nil {
+			return err
+		}
+		outlet, err := s.queries(sysCtx).GetOutletByID(sysCtx, session.OutletID)
+		if err != nil {
+			return err
+		}
+		active = !outlet.IsAdditional || outlet.AdditionalPeriodEnd.Valid && outlet.AdditionalPeriodEnd.Time.After(time.Now())
+		return nil
+	})
+	return active, err
 }

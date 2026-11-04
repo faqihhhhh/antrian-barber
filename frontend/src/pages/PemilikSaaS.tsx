@@ -178,12 +178,40 @@ function PlatformBilling() {
       <div className="flex flex-wrap gap-2"><button className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" disabled={!file || upload.isPending} onClick={() => upload.mutate()}>{upload.isPending ? 'Menyimpan…' : 'Simpan QRIS'}</button>{settings.data.manual_qris_configured && <button className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold disabled:opacity-50" disabled={clear.isPending} onClick={() => clear.mutate()}>{clear.isPending ? 'Menghapus…' : 'Hapus QRIS'}</button>}</div>
     </div>}
     {settings.data && <TransferSettings key={[settings.data.recipient_name, settings.data.bank_name, settings.data.bank_account, settings.data.dana_number, settings.data.gopay_number].join('|')} initial={settings.data} saving={saveTransfer.isPending} error={saveTransfer.isError ? messageOf(saveTransfer.error) : null} saved={saveTransfer.isSuccess} onSave={(details) => saveTransfer.mutate(details)} />}
+    {settings.data && <OutletAddonPriceSettings key={`${settings.data.additional_outlet_monthly_price_rupiah}-${settings.data.additional_outlet_yearly_price_rupiah}`} monthly={settings.data.additional_outlet_monthly_price_rupiah} yearly={settings.data.additional_outlet_yearly_price_rupiah} />}
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3"><h3 className="font-semibold">Tagihan owner</h3>{invoices.data && <span className="rounded-full bg-paper-raised px-3 py-1 text-sm">{invoices.data.filter((invoice) => invoice.status === 'pending').length} menunggu</span>}</div>
-      {invoices.isPending ? <Spinner /> : invoices.isError ? <Alert>{messageOf(invoices.error)}</Alert> : invoices.data.length === 0 ? <Alert tone="info">Tidak ada tagihan tertunda.</Alert> : invoices.data.map((invoice) => <article key={invoice.id} className="space-y-2 rounded-2xl border border-line p-4"><div className="flex items-start justify-between gap-3"><div><strong>{invoice.tenant_name}</strong><p className="text-sm text-body-muted">{invoice.plan_name} · {invoice.payment_method === 'manual' ? 'QRIS manual' : 'QRIS otomatis'}</p></div><span className="text-right text-sm">{invoice.status === 'pending' ? 'Menunggu' : 'Kedaluwarsa'}</span></div><p className="text-lg font-bold tabular-nums">{formatRupiah(invoice.amount_rupiah)}</p>{invoice.unique_code > 0 && <p className="text-sm text-body-muted">Kode unik: {invoice.unique_code}</p>}<p className="text-xs text-muted">Dibuat {formatDateTime(invoice.created_at)} · ID {invoice.id}</p>{invoice.payment_method === 'manual' ? <button className="w-full rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-50" disabled={confirm.isPending} onClick={() => setConfirmInvoiceID(invoice.id)}>{confirm.isPending && confirm.variables === invoice.id ? 'Memproses…' : 'Konfirmasi pembayaran manual'}</button> : <p className="text-sm text-body-muted">Pembayaran QRIS otomatis dikonfirmasi oleh Midtrans.</p>}</article>)}
+      {invoices.isPending ? <Spinner /> : invoices.isError ? <Alert>{messageOf(invoices.error)}</Alert> : invoices.data.length === 0 ? <Alert tone="info">Tidak ada tagihan tertunda.</Alert> : invoices.data.map((invoice) => <article key={invoice.id} className="space-y-2 rounded-2xl border border-line p-4"><div className="flex items-start justify-between gap-3"><div><strong>{invoice.tenant_name}</strong><p className="text-sm text-body-muted">{invoice.invoice_kind === 'outlet_addon' ? `Outlet tambahan${invoice.outlet_name ? ` · ${invoice.outlet_name}` : ''}` : invoice.plan_name} · {invoice.payment_method === 'manual' ? 'Pembayaran manual' : 'QRIS otomatis'}</p></div><span className="text-right text-sm">{invoice.status === 'pending' ? 'Menunggu' : 'Kedaluwarsa'}</span></div><p className="text-lg font-bold tabular-nums">{formatRupiah(invoice.amount_rupiah)}</p>{invoice.unique_code > 0 && <p className="text-sm text-body-muted">Kode unik: {invoice.unique_code}</p>}<p className="text-xs text-muted">Dibuat {formatDateTime(invoice.created_at)} · ID {invoice.id}</p>{invoice.payment_method === 'manual' ? <button className="w-full rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-50" disabled={confirm.isPending} onClick={() => setConfirmInvoiceID(invoice.id)}>{confirm.isPending && confirm.variables === invoice.id ? 'Memproses…' : 'Konfirmasi pembayaran manual'}</button> : <p className="text-sm text-body-muted">Pembayaran QRIS otomatis dikonfirmasi oleh Midtrans.</p>}</article>)}
       {confirm.isError && <Alert>{messageOf(confirm.error)}</Alert>}
     </div>
-    <ConfirmDialog open={confirmInvoiceID !== null} onCancel={() => setConfirmInvoiceID(null)} onConfirm={() => { if (confirmInvoiceID) confirm.mutate(confirmInvoiceID) }} title="Konfirmasi pembayaran manual?" description="Pastikan dana dari QRIS, rekening bank, atau e-wallet sudah masuk dan nominalnya cocok dengan tagihan. Setelah dikonfirmasi, langganan owner langsung aktif." confirmLabel="Ya, pembayaran diterima" loading={confirm.isPending} />
+    <ConfirmDialog open={confirmInvoiceID !== null} onCancel={() => setConfirmInvoiceID(null)} onConfirm={() => { if (confirmInvoiceID) confirm.mutate(confirmInvoiceID) }} title="Konfirmasi pembayaran manual?" description="Pastikan dana dari QRIS, rekening bank, atau e-wallet sudah masuk dan nominalnya cocok dengan tagihan. Setelah dikonfirmasi, langganan bisnis atau outlet tambahan akan aktif." confirmLabel="Ya, pembayaran diterima" loading={confirm.isPending} />
+  </section>
+}
+
+function OutletAddonPriceSettings({ monthly, yearly }: { monthly: number; yearly: number }) {
+  const queryClient = useQueryClient()
+  const [monthlyPrice, setMonthlyPrice] = useState(String(monthly))
+  const [yearlyPrice, setYearlyPrice] = useState(String(yearly))
+  const save = useMutation({
+    mutationFn: async () => {
+      const { data, error, response } = await api.PUT('/v1/admin/payment-settings/outlet-addon-prices', {
+        body: { monthly_price_rupiah: Number(monthlyPrice), yearly_price_rupiah: Number(yearlyPrice) },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['platform-payment-settings'] }) },
+  })
+  const same = Number(monthlyPrice) === monthly && Number(yearlyPrice) === yearly
+  const valid = [Number(monthlyPrice), Number(yearlyPrice)].every((price) => Number.isSafeInteger(price) && price >= 0)
+  const inputClass = 'mt-1 w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base'
+  return <section className="space-y-3 rounded-2xl border border-line bg-white p-4" aria-label="Harga outlet tambahan">
+    <div><h3 className="font-semibold">Harga outlet tambahan</h3><p className="mt-1 text-sm text-body-muted">Paket bisnis mencakup satu outlet. Harga ini berlaku untuk setiap outlet berikutnya.</p></div>
+    <label className="block text-sm font-medium">Bulanan (rupiah)<input className={inputClass} type="number" min="0" step="1" required value={monthlyPrice} onChange={(event) => setMonthlyPrice(event.target.value)} /></label>
+    <label className="block text-sm font-medium">Tahunan (rupiah)<input className={inputClass} type="number" min="0" step="1" required value={yearlyPrice} onChange={(event) => setYearlyPrice(event.target.value)} /></label>
+    {save.isError && <Alert>{messageOf(save.error)}</Alert>}{save.isSuccess && same && <Alert tone="success">Harga outlet tambahan tersimpan.</Alert>}
+    <button type="button" className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" disabled={save.isPending || same || !valid} onClick={() => save.mutate()}>{save.isPending ? 'Menyimpan…' : 'Simpan harga outlet'}</button>
+    <p className="text-xs text-muted">Isi 0 untuk menonaktifkan pembelian pada periode tersebut.</p>
   </section>
 }
 

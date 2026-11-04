@@ -14,6 +14,7 @@ func RegisterPublicRoutes(r chi.Router, svc *Service, log *slog.Logger) {
 func RegisterTenantRoutes(r chi.Router, svc *Service, log *slog.Logger) {
 	h := NewHandlers(svc, log)
 	r.Post("/{tenantID}/subscribe", h.Subscribe)
+	r.Post("/{tenantID}/outlet-subscriptions", h.CreateOutletAddonInvoice)
 	r.Get("/{tenantID}/subscription", h.GetSubscription)
 	r.Get("/{tenantID}/invoices", h.ListInvoices)
 	r.Get("/{tenantID}/subscription/payment-options", h.GetOwnerPaymentOptions)
@@ -24,6 +25,7 @@ func RegisterAdminRoutes(r chi.Router, svc *Service, log *slog.Logger) {
 	h := NewHandlers(svc, log)
 	r.Put("/plans/{planCode}", h.UpdatePlanPrice)
 	r.Get("/payment-settings", h.GetPlatformPaymentInfo)
+	r.Put("/payment-settings/outlet-addon-prices", h.SetPlatformOutletAddonPrices)
 	r.Put("/payment-settings/transfer", h.SetPlatformTransferDetails)
 	r.Get("/payment-settings/manual-qris/image", h.GetPlatformManualQRIS)
 	r.Put("/payment-settings/manual-qris", h.SetPlatformManualQRIS)

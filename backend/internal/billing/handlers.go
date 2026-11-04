@@ -47,6 +47,41 @@ func (h *Handlers) UpdatePlanPrice(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, plan)
 }
 
+func (h *Handlers) SetPlatformOutletAddonPrices(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		MonthlyPriceRupiah int64 `json:"monthly_price_rupiah"`
+		YearlyPriceRupiah  int64 `json:"yearly_price_rupiah"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
+		return
+	}
+	if err := h.svc.SetPlatformOutletAddonPrices(r.Context(), req.MonthlyPriceRupiah, req.YearlyPriceRupiah); err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Harga outlet tambahan tersimpan"})
+}
+
+func (h *Handlers) CreateOutletAddonInvoice(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := uuid.Parse(chi.URLParam(r, "tenantID"))
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("tenant_id_tidak_valid", "ID tenant tidak valid", err))
+		return
+	}
+	var req OutletAddonRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
+		return
+	}
+	invoice, err := h.svc.CreateOutletAddonInvoice(r.Context(), tenantID, req)
+	if err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusCreated, invoice)
+}
+
 type subscribeRequest struct {
 	PlanCode      string `json:"plan_code"`
 	PaymentMethod string `json:"payment_method"`

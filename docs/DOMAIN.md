@@ -31,7 +31,7 @@ Owner juga dapat mengubah peran operasional dan outlet tugas staf dari halaman K
 - `tenant_profiles`: kunci Midtrans terenkripsi, `midtrans_is_production`, gambar QRIS manual
   (`manual_qris_image`, `_content_type`, `_updated_at`), status onboarding.
 - `plans`, `subscriptions`, `invoices`, `subscription_reminders`: langganan tenant ke platform.
-- `platform_payment_settings`: QRIS manual platform, dibatasi RLS untuk pemilik SaaS.
+- `platform_payment_settings`: QRIS, transfer manual, dan harga outlet tambahan platform; dibatasi RLS untuk pemilik SaaS.
 - `queue_sessions`: satu per outlet per tanggal lokal. `max_quota`, `used_quota`, `next_ticket_number`,
   status `open` atau `closed`.
 - `tickets`: `ticket_number`, `queue_position`, `status`, `match_code`, `customer_name` (maks 60),
@@ -46,6 +46,12 @@ Owner juga dapat mengubah peran operasional dan outlet tugas staf dari halaman K
 Status: `belum_berlangganan`, `aktif`, `masa_tenggang`, `baca_saja`. Endpoint menulis milik tenant
 dijaga middleware `requireActive`. Pelanggan tidak dihukum oleh status langganan owner, kecuali
 pemesanan online baru ditutup (`accepting_bookings=false`, alasan `langganan_tidak_aktif`).
+Paket bisnis mencakup satu outlet. Outlet berikutnya memerlukan invoice tambahan dengan harga bulanan
+atau tahunan yang ditetapkan pemilik SaaS. Outlet baru dibuat hanya setelah pembayaran manual
+dikonfirmasi atau Midtrans memvalidasi webhook. Masa aktif outlet tambahan berjalan terpisah; saat
+berakhir, outlet tidak menerima booking baru dan tidak bisa memulai sesi/menambah tiket, tetapi data
+dan riwayatnya tetap tersimpan. Owner dapat memperpanjangnya dengan invoice yang sama. Outlet yang
+sudah ada sebelum aturan ini dimigrasikan tetap dianggap termasuk paket agar tidak memutus bisnis lama.
 Owner memilih pembayaran manual (QRIS, transfer bank, DANA, atau GoPay) atau Midtrans. Informasi
 rekening dan nomor tujuan dikelola pemilik SaaS; hanya owner tenant yang berhak melihatnya. Nominal
 invoice manual ditambah kode unik dan langganan aktif setelah pemilik SaaS mencocokkan pembayaran

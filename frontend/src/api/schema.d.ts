@@ -64,7 +64,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Konfirmasi pembayaran QRIS manual */
+        /** Konfirmasi pembayaran manual langganan */
         post: operations["confirmPlatformManualInvoice"];
         delete?: never;
         options?: never;
@@ -82,6 +82,23 @@ export interface paths {
         /** Status metode pembayaran langganan platform */
         get: operations["getPlatformPaymentSettings"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/payment-settings/outlet-addon-prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Atur harga outlet tambahan bulanan dan tahunan */
+        put: operations["setPlatformOutletAddonPrices"];
         post?: never;
         delete?: never;
         options?: never;
@@ -760,6 +777,23 @@ export interface paths {
         get: operations["listOwnerInvoices"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/outlet-subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buat tagihan untuk menambah atau memperpanjang outlet */
+        post: operations["createOwnerOutletAddonInvoice"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1592,6 +1626,10 @@ export interface components {
             dp_price_rupiah: number;
             /** Format: int32 */
             default_duration_minutes: number;
+            is_additional: boolean;
+            /** Format: date-time */
+            additional_period_end: string | null;
+            additional_billing_interval: string;
         };
         CreateTenantRequest: {
             name: string;
@@ -1760,6 +1798,17 @@ export interface components {
             /** @enum {string} */
             payment_method: "manual" | "midtrans";
         };
+        OutletAddonRequest: {
+            /** Format: uuid */
+            outlet_id?: string | null;
+            name: string;
+            timezone: string;
+            address: string;
+            /** @enum {string} */
+            billing_interval: "monthly" | "yearly";
+            /** @enum {string} */
+            payment_method: "manual" | "midtrans";
+        };
         OwnerInvoice: {
             /** Format: uuid */
             id: string;
@@ -1769,6 +1818,13 @@ export interface components {
             unique_code: number;
             /** @enum {string} */
             payment_method: "manual" | "midtrans";
+            /** @enum {string} */
+            invoice_kind: "subscription" | "outlet_addon";
+            /** Format: uuid */
+            outlet_id?: string | null;
+            outlet_name?: string | null;
+            /** @enum {string|null} */
+            billing_interval?: "monthly" | "yearly" | null;
             /** @enum {string} */
             status: "pending" | "paid" | "expired" | "canceled";
             /** Format: date-time */
@@ -1788,6 +1844,10 @@ export interface components {
             manual_qris_configured: boolean;
             manual_transfer_configured: boolean;
             midtrans_configured: boolean;
+            /** Format: int64 */
+            additional_outlet_monthly_price_rupiah: number;
+            /** Format: int64 */
+            additional_outlet_yearly_price_rupiah: number;
             recipient_name: string;
             bank_name: string;
             bank_account: string;
@@ -1815,6 +1875,9 @@ export interface components {
             unique_code: number;
             /** @enum {string} */
             payment_method: "manual" | "midtrans";
+            /** @enum {string} */
+            invoice_kind: "subscription" | "outlet_addon";
+            outlet_name: string;
             /** @enum {string} */
             status: "pending" | "expired";
             /** Format: date-time */
@@ -1978,6 +2041,36 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlatformPaymentInfo"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    setPlatformOutletAddonPrices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    monthly_price_rupiah: number;
+                    /** Format: int64 */
+                    yearly_price_rupiah: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Harga outlet tambahan tersimpan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             default: components["responses"]["Error"];
@@ -3030,6 +3123,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OwnerInvoice"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    createOwnerOutletAddonInvoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutletAddonRequest"];
+            };
+        };
+        responses: {
+            /** @description Tagihan outlet tambahan dibuat */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OwnerInvoice"];
                 };
             };
             default: components["responses"]["Error"];

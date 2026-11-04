@@ -743,6 +743,9 @@ func (s *Service) BookOnline(ctx context.Context, tenantID, outletID, customerUs
 	if outlet.TenantID != tenantID {
 		return nil, httpx.NotFound("outlet_tidak_ditemukan", "Outlet tidak ditemukan", nil)
 	}
+	if outlet.IsAdditional && (!outlet.AdditionalPeriodEnd.Valid || !outlet.AdditionalPeriodEnd.Time.After(time.Now())) {
+		return nil, httpx.PaymentRequired("outlet_langganan_tidak_aktif", "Masa aktif outlet tambahan ini sudah habis", nil)
+	}
 	if outlet.DpPriceRupiah <= 0 {
 		return nil, httpx.Conflict("harga_dp_belum_diatur", "Harga DP outlet ini belum diatur oleh admin", nil)
 	}

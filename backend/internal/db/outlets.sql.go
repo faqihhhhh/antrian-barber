@@ -12,10 +12,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countOutletsByTenant = `-- name: CountOutletsByTenant :one
+SELECT count(*)::bigint FROM outlets WHERE tenant_id = $1
+`
+
+func (q *Queries) CountOutletsByTenant(ctx context.Context, tenantID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countOutletsByTenant, tenantID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const createOutlet = `-- name: CreateOutlet :one
 INSERT INTO outlets (tenant_id, name, timezone, address, slug)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug
+RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug, is_additional, additional_period_end, additional_billing_interval
 `
 
 type CreateOutletParams struct {
@@ -46,12 +57,62 @@ func (q *Queries) CreateOutlet(ctx context.Context, arg CreateOutletParams) (Out
 		&i.DpPriceRupiah,
 		&i.DefaultDurationMinutes,
 		&i.Slug,
+		&i.IsAdditional,
+		&i.AdditionalPeriodEnd,
+		&i.AdditionalBillingInterval,
+	)
+	return i, err
+}
+
+const createPaidAdditionalOutlet = `-- name: CreatePaidAdditionalOutlet :one
+INSERT INTO outlets (tenant_id, name, timezone, address, slug, is_additional, additional_period_end, additional_billing_interval)
+VALUES ($1, $2, $3, $4, $5, true,
+        $6::timestamptz + CASE WHEN $7::text = 'yearly' THEN interval '1 year' ELSE interval '1 month' END,
+        $7::text)
+RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug, is_additional, additional_period_end, additional_billing_interval
+`
+
+type CreatePaidAdditionalOutletParams struct {
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	Name            string             `json:"name"`
+	Timezone        string             `json:"timezone"`
+	Address         pgtype.Text        `json:"address"`
+	Slug            string             `json:"slug"`
+	PaidAt          pgtype.Timestamptz `json:"paid_at"`
+	BillingInterval string             `json:"billing_interval"`
+}
+
+func (q *Queries) CreatePaidAdditionalOutlet(ctx context.Context, arg CreatePaidAdditionalOutletParams) (Outlet, error) {
+	row := q.db.QueryRow(ctx, createPaidAdditionalOutlet,
+		arg.TenantID,
+		arg.Name,
+		arg.Timezone,
+		arg.Address,
+		arg.Slug,
+		arg.PaidAt,
+		arg.BillingInterval,
+	)
+	var i Outlet
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Name,
+		&i.Timezone,
+		&i.Address,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DpPriceRupiah,
+		&i.DefaultDurationMinutes,
+		&i.Slug,
+		&i.IsAdditional,
+		&i.AdditionalPeriodEnd,
+		&i.AdditionalBillingInterval,
 	)
 	return i, err
 }
 
 const getOutletByID = `-- name: GetOutletByID :one
-SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug FROM outlets WHERE id = $1
+SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug, is_additional, additional_period_end, additional_billing_interval FROM outlets WHERE id = $1
 `
 
 func (q *Queries) GetOutletByID(ctx context.Context, id uuid.UUID) (Outlet, error) {
@@ -68,12 +129,15 @@ func (q *Queries) GetOutletByID(ctx context.Context, id uuid.UUID) (Outlet, erro
 		&i.DpPriceRupiah,
 		&i.DefaultDurationMinutes,
 		&i.Slug,
+		&i.IsAdditional,
+		&i.AdditionalPeriodEnd,
+		&i.AdditionalBillingInterval,
 	)
 	return i, err
 }
 
 const getOutletBySlug = `-- name: GetOutletBySlug :one
-SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug FROM outlets WHERE slug = $1
+SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug, is_additional, additional_period_end, additional_billing_interval FROM outlets WHERE slug = $1
 `
 
 func (q *Queries) GetOutletBySlug(ctx context.Context, slug string) (Outlet, error) {
@@ -90,12 +154,15 @@ func (q *Queries) GetOutletBySlug(ctx context.Context, slug string) (Outlet, err
 		&i.DpPriceRupiah,
 		&i.DefaultDurationMinutes,
 		&i.Slug,
+		&i.IsAdditional,
+		&i.AdditionalPeriodEnd,
+		&i.AdditionalBillingInterval,
 	)
 	return i, err
 }
 
 const listOutletsByTenant = `-- name: ListOutletsByTenant :many
-SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug FROM outlets WHERE tenant_id = $1 ORDER BY created_at
+SELECT id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug, is_additional, additional_period_end, additional_billing_interval FROM outlets WHERE tenant_id = $1 ORDER BY created_at
 `
 
 func (q *Queries) ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Outlet, error) {
@@ -118,6 +185,9 @@ func (q *Queries) ListOutletsByTenant(ctx context.Context, tenantID uuid.UUID) (
 			&i.DpPriceRupiah,
 			&i.DefaultDurationMinutes,
 			&i.Slug,
+			&i.IsAdditional,
+			&i.AdditionalPeriodEnd,
+			&i.AdditionalBillingInterval,
 		); err != nil {
 			return nil, err
 		}
@@ -133,6 +203,7 @@ const listPublicOutletDirectory = `-- name: ListPublicOutletDirectory :many
 SELECT t.name AS business_name, o.name AS outlet_name, o.slug
 FROM outlets o
 JOIN tenants t ON t.id = o.tenant_id
+WHERE NOT o.is_additional OR o.additional_period_end > now()
 ORDER BY t.name, o.name
 `
 
@@ -162,6 +233,44 @@ func (q *Queries) ListPublicOutletDirectory(ctx context.Context) ([]ListPublicOu
 	return items, nil
 }
 
+const renewAdditionalOutlet = `-- name: RenewAdditionalOutlet :one
+WITH basis AS (
+    SELECT id, GREATEST(COALESCE(additional_period_end, $2::timestamptz), $2::timestamptz) AS period_start
+    FROM outlets WHERE id = $3::uuid AND tenant_id = $4::uuid AND is_additional
+    FOR UPDATE
+)
+UPDATE outlets o
+SET additional_period_end = basis.period_start + CASE WHEN $1::text = 'yearly' THEN interval '1 year' ELSE interval '1 month' END,
+    additional_billing_interval = $1::text,
+    updated_at = now()
+FROM basis WHERE o.id = basis.id
+RETURNING basis.period_start::timestamptz AS period_start, o.additional_period_end
+`
+
+type RenewAdditionalOutletParams struct {
+	BillingInterval string             `json:"billing_interval"`
+	PaidAt          pgtype.Timestamptz `json:"paid_at"`
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+}
+
+type RenewAdditionalOutletRow struct {
+	PeriodStart         pgtype.Timestamptz `json:"period_start"`
+	AdditionalPeriodEnd pgtype.Timestamptz `json:"additional_period_end"`
+}
+
+func (q *Queries) RenewAdditionalOutlet(ctx context.Context, arg RenewAdditionalOutletParams) (RenewAdditionalOutletRow, error) {
+	row := q.db.QueryRow(ctx, renewAdditionalOutlet,
+		arg.BillingInterval,
+		arg.PaidAt,
+		arg.ID,
+		arg.TenantID,
+	)
+	var i RenewAdditionalOutletRow
+	err := row.Scan(&i.PeriodStart, &i.AdditionalPeriodEnd)
+	return i, err
+}
+
 const slugExists = `-- name: SlugExists :one
 SELECT EXISTS(SELECT 1 FROM outlets WHERE slug = $1)
 `
@@ -175,7 +284,7 @@ func (q *Queries) SlugExists(ctx context.Context, slug string) (bool, error) {
 
 const updateOutletSettings = `-- name: UpdateOutletSettings :one
 UPDATE outlets SET dp_price_rupiah = $3, default_duration_minutes = $4, updated_at = now()
-WHERE id = $1 AND tenant_id = $2 RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug
+WHERE id = $1 AND tenant_id = $2 RETURNING id, tenant_id, name, timezone, address, created_at, updated_at, dp_price_rupiah, default_duration_minutes, slug, is_additional, additional_period_end, additional_billing_interval
 `
 
 type UpdateOutletSettingsParams struct {
@@ -204,6 +313,9 @@ func (q *Queries) UpdateOutletSettings(ctx context.Context, arg UpdateOutletSett
 		&i.DpPriceRupiah,
 		&i.DefaultDurationMinutes,
 		&i.Slug,
+		&i.IsAdditional,
+		&i.AdditionalPeriodEnd,
+		&i.AdditionalBillingInterval,
 	)
 	return i, err
 }

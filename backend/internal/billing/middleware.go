@@ -3,6 +3,7 @@ package billing
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -33,6 +34,35 @@ func RequireActiveSubscription(svc *Service, log *slog.Logger) func(http.Handler
 			if info.Status == StatusReadOnly || info.Status == StatusNeverSubscribed {
 				httpx.Error(w, r, log, httpx.PaymentRequired("berlangganan_diperlukan", "Bisnis ini perlu berlangganan aktif untuk melakukan perubahan", nil))
 				return
+			}
+			outletIDText := chi.URLParam(r, "outletID")
+			sessionIDText := chi.URLParam(r, "sessionID")
+			checkSessionOutlet := strings.HasSuffix(r.URL.Path, "/increase-quota") || strings.HasSuffix(r.URL.Path, "/tickets")
+			if outletIDText != "" || sessionIDText != "" && checkSessionOutlet {
+				var active bool
+				if outletIDText != "" {
+					outletID, parseErr := uuid.Parse(outletIDText)
+					if parseErr != nil {
+						httpx.Error(w, r, log, httpx.BadRequest("outlet_id_tidak_valid", "ID outlet tidak valid", parseErr))
+						return
+					}
+					active, err = svc.IsAdditionalOutletActiveAsSystem(r.Context(), outletID)
+				} else {
+					sessionID, parseErr := uuid.Parse(sessionIDText)
+					if parseErr != nil {
+						httpx.Error(w, r, log, httpx.BadRequest("sesi_id_tidak_valid", "ID sesi tidak valid", parseErr))
+						return
+					}
+					active, err = svc.IsQueueSessionOutletActiveAsSystem(r.Context(), sessionID)
+				}
+				if err != nil {
+					httpx.Error(w, r, log, httpx.Internal(err))
+					return
+				}
+				if !active {
+					httpx.Error(w, r, log, httpx.PaymentRequired("outlet_langganan_tidak_aktif", "Masa aktif outlet tambahan ini sudah habis. Perpanjang outlet untuk melanjutkan operasional.", nil))
+					return
+				}
 			}
 			next.ServeHTTP(w, r)
 		})

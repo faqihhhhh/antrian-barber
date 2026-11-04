@@ -11,6 +11,26 @@ import (
 	"github.com/google/uuid"
 )
 
+const getActivePlanByInterval = `-- name: GetActivePlanByInterval :one
+SELECT id, code, name, price_rupiah, billing_interval, is_active, created_at, updated_at FROM plans WHERE billing_interval = $1 AND is_active = true ORDER BY price_rupiah LIMIT 1
+`
+
+func (q *Queries) GetActivePlanByInterval(ctx context.Context, billingInterval string) (Plan, error) {
+	row := q.db.QueryRow(ctx, getActivePlanByInterval, billingInterval)
+	var i Plan
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.PriceRupiah,
+		&i.BillingInterval,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getPlanByCode = `-- name: GetPlanByCode :one
 SELECT id, code, name, price_rupiah, billing_interval, is_active, created_at, updated_at FROM plans WHERE code = $1
 `

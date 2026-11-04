@@ -26,19 +26,22 @@ func (q *Queries) ClearPlatformManualQRIS(ctx context.Context) error {
 const getPlatformPaymentSettings = `-- name: GetPlatformPaymentSettings :one
 SELECT manual_qris_image, manual_qris_content_type, manual_qris_updated_at,
        transfer_recipient_name, transfer_bank_name, transfer_bank_account,
-       transfer_dana_number, transfer_gopay_number
+       transfer_dana_number, transfer_gopay_number,
+       additional_outlet_monthly_price_rupiah, additional_outlet_yearly_price_rupiah
 FROM platform_payment_settings WHERE id = true
 `
 
 type GetPlatformPaymentSettingsRow struct {
-	ManualQrisImage       []byte             `json:"manual_qris_image"`
-	ManualQrisContentType pgtype.Text        `json:"manual_qris_content_type"`
-	ManualQrisUpdatedAt   pgtype.Timestamptz `json:"manual_qris_updated_at"`
-	TransferRecipientName pgtype.Text        `json:"transfer_recipient_name"`
-	TransferBankName      pgtype.Text        `json:"transfer_bank_name"`
-	TransferBankAccount   pgtype.Text        `json:"transfer_bank_account"`
-	TransferDanaNumber    pgtype.Text        `json:"transfer_dana_number"`
-	TransferGopayNumber   pgtype.Text        `json:"transfer_gopay_number"`
+	ManualQrisImage                    []byte             `json:"manual_qris_image"`
+	ManualQrisContentType              pgtype.Text        `json:"manual_qris_content_type"`
+	ManualQrisUpdatedAt                pgtype.Timestamptz `json:"manual_qris_updated_at"`
+	TransferRecipientName              pgtype.Text        `json:"transfer_recipient_name"`
+	TransferBankName                   pgtype.Text        `json:"transfer_bank_name"`
+	TransferBankAccount                pgtype.Text        `json:"transfer_bank_account"`
+	TransferDanaNumber                 pgtype.Text        `json:"transfer_dana_number"`
+	TransferGopayNumber                pgtype.Text        `json:"transfer_gopay_number"`
+	AdditionalOutletMonthlyPriceRupiah int64              `json:"additional_outlet_monthly_price_rupiah"`
+	AdditionalOutletYearlyPriceRupiah  int64              `json:"additional_outlet_yearly_price_rupiah"`
 }
 
 func (q *Queries) GetPlatformPaymentSettings(ctx context.Context) (GetPlatformPaymentSettingsRow, error) {
@@ -53,6 +56,8 @@ func (q *Queries) GetPlatformPaymentSettings(ctx context.Context) (GetPlatformPa
 		&i.TransferBankAccount,
 		&i.TransferDanaNumber,
 		&i.TransferGopayNumber,
+		&i.AdditionalOutletMonthlyPriceRupiah,
+		&i.AdditionalOutletYearlyPriceRupiah,
 	)
 	return i, err
 }
@@ -75,6 +80,26 @@ type SetPlatformManualQRISParams struct {
 
 func (q *Queries) SetPlatformManualQRIS(ctx context.Context, arg SetPlatformManualQRISParams) error {
 	_, err := q.db.Exec(ctx, setPlatformManualQRIS, arg.ManualQrisImage, arg.ManualQrisContentType)
+	return err
+}
+
+const setPlatformOutletAddonPrices = `-- name: SetPlatformOutletAddonPrices :exec
+INSERT INTO platform_payment_settings (
+    id, additional_outlet_monthly_price_rupiah, additional_outlet_yearly_price_rupiah, updated_at
+) VALUES (true, $1, $2, now())
+ON CONFLICT (id) DO UPDATE SET
+    additional_outlet_monthly_price_rupiah = EXCLUDED.additional_outlet_monthly_price_rupiah,
+    additional_outlet_yearly_price_rupiah = EXCLUDED.additional_outlet_yearly_price_rupiah,
+    updated_at = now()
+`
+
+type SetPlatformOutletAddonPricesParams struct {
+	AdditionalOutletMonthlyPriceRupiah int64 `json:"additional_outlet_monthly_price_rupiah"`
+	AdditionalOutletYearlyPriceRupiah  int64 `json:"additional_outlet_yearly_price_rupiah"`
+}
+
+func (q *Queries) SetPlatformOutletAddonPrices(ctx context.Context, arg SetPlatformOutletAddonPricesParams) error {
+	_, err := q.db.Exec(ctx, setPlatformOutletAddonPrices, arg.AdditionalOutletMonthlyPriceRupiah, arg.AdditionalOutletYearlyPriceRupiah)
 	return err
 }
 

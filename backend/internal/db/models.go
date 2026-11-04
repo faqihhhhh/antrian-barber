@@ -19,22 +19,28 @@ type EmailVerificationToken struct {
 }
 
 type Invoice struct {
-	ID              uuid.UUID          `json:"id"`
-	TenantID        uuid.UUID          `json:"tenant_id"`
-	PlanID          uuid.UUID          `json:"plan_id"`
-	AmountRupiah    int64              `json:"amount_rupiah"`
-	UniqueCode      int16              `json:"unique_code"`
-	Status          string             `json:"status"`
-	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
-	PaidAt          pgtype.Timestamptz `json:"paid_at"`
-	ConfirmedBy     pgtype.UUID        `json:"confirmed_by"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
-	PeriodStart     pgtype.Timestamptz `json:"period_start"`
-	PeriodEnd       pgtype.Timestamptz `json:"period_end"`
-	MidtransOrderID pgtype.Text        `json:"midtrans_order_id"`
-	QrCodeUrl       pgtype.Text        `json:"qr_code_url"`
-	PaymentMethod   string             `json:"payment_method"`
+	ID                      uuid.UUID          `json:"id"`
+	TenantID                uuid.UUID          `json:"tenant_id"`
+	PlanID                  uuid.UUID          `json:"plan_id"`
+	AmountRupiah            int64              `json:"amount_rupiah"`
+	UniqueCode              int16              `json:"unique_code"`
+	Status                  string             `json:"status"`
+	ExpiresAt               pgtype.Timestamptz `json:"expires_at"`
+	PaidAt                  pgtype.Timestamptz `json:"paid_at"`
+	ConfirmedBy             pgtype.UUID        `json:"confirmed_by"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+	PeriodStart             pgtype.Timestamptz `json:"period_start"`
+	PeriodEnd               pgtype.Timestamptz `json:"period_end"`
+	MidtransOrderID         pgtype.Text        `json:"midtrans_order_id"`
+	QrCodeUrl               pgtype.Text        `json:"qr_code_url"`
+	PaymentMethod           string             `json:"payment_method"`
+	InvoiceKind             string             `json:"invoice_kind"`
+	OutletID                pgtype.UUID        `json:"outlet_id"`
+	RequestedOutletName     pgtype.Text        `json:"requested_outlet_name"`
+	RequestedOutletTimezone pgtype.Text        `json:"requested_outlet_timezone"`
+	RequestedOutletAddress  pgtype.Text        `json:"requested_outlet_address"`
+	OutletBillingInterval   pgtype.Text        `json:"outlet_billing_interval"`
 }
 
 type KapsterSessionState struct {
@@ -63,16 +69,19 @@ type MembershipOutlet struct {
 }
 
 type Outlet struct {
-	ID                     uuid.UUID          `json:"id"`
-	TenantID               uuid.UUID          `json:"tenant_id"`
-	Name                   string             `json:"name"`
-	Timezone               string             `json:"timezone"`
-	Address                pgtype.Text        `json:"address"`
-	CreatedAt              pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
-	DpPriceRupiah          int64              `json:"dp_price_rupiah"`
-	DefaultDurationMinutes int32              `json:"default_duration_minutes"`
-	Slug                   string             `json:"slug"`
+	ID                        uuid.UUID          `json:"id"`
+	TenantID                  uuid.UUID          `json:"tenant_id"`
+	Name                      string             `json:"name"`
+	Timezone                  string             `json:"timezone"`
+	Address                   pgtype.Text        `json:"address"`
+	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                 pgtype.Timestamptz `json:"updated_at"`
+	DpPriceRupiah             int64              `json:"dp_price_rupiah"`
+	DefaultDurationMinutes    int32              `json:"default_duration_minutes"`
+	Slug                      string             `json:"slug"`
+	IsAdditional              bool               `json:"is_additional"`
+	AdditionalPeriodEnd       pgtype.Timestamptz `json:"additional_period_end"`
+	AdditionalBillingInterval pgtype.Text        `json:"additional_billing_interval"`
 }
 
 type PasswordResetToken struct {
@@ -101,16 +110,18 @@ type PlatformAdmin struct {
 }
 
 type PlatformPaymentSetting struct {
-	ID                    bool               `json:"id"`
-	ManualQrisImage       []byte             `json:"manual_qris_image"`
-	ManualQrisContentType pgtype.Text        `json:"manual_qris_content_type"`
-	ManualQrisUpdatedAt   pgtype.Timestamptz `json:"manual_qris_updated_at"`
-	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
-	TransferRecipientName pgtype.Text        `json:"transfer_recipient_name"`
-	TransferBankName      pgtype.Text        `json:"transfer_bank_name"`
-	TransferBankAccount   pgtype.Text        `json:"transfer_bank_account"`
-	TransferDanaNumber    pgtype.Text        `json:"transfer_dana_number"`
-	TransferGopayNumber   pgtype.Text        `json:"transfer_gopay_number"`
+	ID                                 bool               `json:"id"`
+	ManualQrisImage                    []byte             `json:"manual_qris_image"`
+	ManualQrisContentType              pgtype.Text        `json:"manual_qris_content_type"`
+	ManualQrisUpdatedAt                pgtype.Timestamptz `json:"manual_qris_updated_at"`
+	UpdatedAt                          pgtype.Timestamptz `json:"updated_at"`
+	TransferRecipientName              pgtype.Text        `json:"transfer_recipient_name"`
+	TransferBankName                   pgtype.Text        `json:"transfer_bank_name"`
+	TransferBankAccount                pgtype.Text        `json:"transfer_bank_account"`
+	TransferDanaNumber                 pgtype.Text        `json:"transfer_dana_number"`
+	TransferGopayNumber                pgtype.Text        `json:"transfer_gopay_number"`
+	AdditionalOutletMonthlyPriceRupiah int64              `json:"additional_outlet_monthly_price_rupiah"`
+	AdditionalOutletYearlyPriceRupiah  int64              `json:"additional_outlet_yearly_price_rupiah"`
 }
 
 type PushSubscription struct {

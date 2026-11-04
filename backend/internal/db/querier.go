@@ -29,6 +29,7 @@ type Querier interface {
 	ConfirmTicketFinalPayment(ctx context.Context, arg ConfirmTicketFinalPaymentParams) error
 	CountActiveKapsters(ctx context.Context, queueSessionID uuid.UUID) (int64, error)
 	CountActiveTicketsInQueueSession(ctx context.Context, queueSessionID uuid.UUID) (int64, error)
+	CountOutletsByTenant(ctx context.Context, tenantID uuid.UUID) (int64, error)
 	CountPendingManualInvoices(ctx context.Context) (int64, error)
 	CountWaitingAheadOf(ctx context.Context, arg CountWaitingAheadOfParams) (int64, error)
 	CountWaitingInSession(ctx context.Context, queueSessionID uuid.UUID) (int64, error)
@@ -37,6 +38,8 @@ type Querier interface {
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (Membership, error)
 	CreateOnlineTicket(ctx context.Context, arg CreateOnlineTicketParams) (Ticket, error)
 	CreateOutlet(ctx context.Context, arg CreateOutletParams) (Outlet, error)
+	CreateOutletAddonInvoice(ctx context.Context, arg CreateOutletAddonInvoiceParams) (Invoice, error)
+	CreatePaidAdditionalOutlet(ctx context.Context, arg CreatePaidAdditionalOutletParams) (Outlet, error)
 	CreatePasswordResetToken(ctx context.Context, arg CreatePasswordResetTokenParams) (PasswordResetToken, error)
 	CreatePushSubscription(ctx context.Context, arg CreatePushSubscriptionParams) error
 	CreateQueueSession(ctx context.Context, arg CreateQueueSessionParams) (QueueSession, error)
@@ -55,6 +58,7 @@ type Querier interface {
 	DeleteSession(ctx context.Context, tokenHash string) error
 	ExpireStaleInvoices(ctx context.Context) (int64, error)
 	ExpireTenantInvoices(ctx context.Context, tenantID uuid.UUID) (int64, error)
+	GetActivePlanByInterval(ctx context.Context, billingInterval string) (Plan, error)
 	GetAverageServiceDurationMinutes(ctx context.Context, outletID uuid.UUID) (float64, error)
 	GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, error)
 	GetInvoiceByMidtransOrderID(ctx context.Context, midtransOrderID pgtype.Text) (Invoice, error)
@@ -145,6 +149,7 @@ type Querier interface {
 	RecordInvoiceSubscriptionPeriod(ctx context.Context, arg RecordInvoiceSubscriptionPeriodParams) (int64, error)
 	RecordSubscriptionReminder(ctx context.Context, arg RecordSubscriptionReminderParams) error
 	RemoveStaffMembership(ctx context.Context, arg RemoveStaffMembershipParams) (int64, error)
+	RenewAdditionalOutlet(ctx context.Context, arg RenewAdditionalOutletParams) (RenewAdditionalOutletRow, error)
 	RequeueTicketAtEnd(ctx context.Context, arg RequeueTicketAtEndParams) error
 	ReviewStaffApplication(ctx context.Context, arg ReviewStaffApplicationParams) (ReviewStaffApplicationRow, error)
 	RevokeStaffInvitationLink(ctx context.Context, arg RevokeStaffInvitationLinkParams) (int64, error)
@@ -152,6 +157,7 @@ type Querier interface {
 	SetManualQRIS(ctx context.Context, arg SetManualQRISParams) error
 	SetMembershipKapsterStatesIdle(ctx context.Context, membershipID uuid.UUID) error
 	SetPlatformManualQRIS(ctx context.Context, arg SetPlatformManualQRISParams) error
+	SetPlatformOutletAddonPrices(ctx context.Context, arg SetPlatformOutletAddonPricesParams) error
 	SetPlatformTransferDetails(ctx context.Context, arg SetPlatformTransferDetailsParams) error
 	SetReadyKapsterStatesIdleForMembership(ctx context.Context, membershipID uuid.UUID) error
 	SetReadyKapstersIdle(ctx context.Context, queueSessionID uuid.UUID) error

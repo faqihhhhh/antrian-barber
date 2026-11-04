@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -19,13 +20,16 @@ import (
 )
 
 type OutletSettings struct {
-	ID                     uuid.UUID `json:"id"`
-	Name                   string    `json:"name"`
-	Slug                   string    `json:"slug"`
-	Timezone               string    `json:"timezone"`
-	Address                string    `json:"address"`
-	DPPriceRupiah          int64     `json:"dp_price_rupiah"`
-	DefaultDurationMinutes int32     `json:"default_duration_minutes"`
+	ID                        uuid.UUID  `json:"id"`
+	Name                      string     `json:"name"`
+	Slug                      string     `json:"slug"`
+	Timezone                  string     `json:"timezone"`
+	Address                   string     `json:"address"`
+	DPPriceRupiah             int64      `json:"dp_price_rupiah"`
+	DefaultDurationMinutes    int32      `json:"default_duration_minutes"`
+	IsAdditional              bool       `json:"is_additional"`
+	AdditionalPeriodEnd       *time.Time `json:"additional_period_end"`
+	AdditionalBillingInterval string     `json:"additional_billing_interval"`
 }
 
 // TenantInfo adalah respons aman untuk bisnis yang baru dibuat.
@@ -35,11 +39,17 @@ type TenantInfo struct {
 }
 
 func outletSettings(outlet db.Outlet) OutletSettings {
-	return OutletSettings{
+	settings := OutletSettings{
 		ID: outlet.ID, Name: outlet.Name, Slug: outlet.Slug, Timezone: outlet.Timezone,
 		Address: outlet.Address.String, DPPriceRupiah: outlet.DpPriceRupiah,
 		DefaultDurationMinutes: outlet.DefaultDurationMinutes,
+		IsAdditional:           outlet.IsAdditional, AdditionalBillingInterval: outlet.AdditionalBillingInterval.String,
 	}
+	if outlet.AdditionalPeriodEnd.Valid {
+		value := outlet.AdditionalPeriodEnd.Time
+		settings.AdditionalPeriodEnd = &value
+	}
+	return settings
 }
 
 type Service struct {
@@ -120,6 +130,13 @@ func (s *Service) CreateOutlet(ctx context.Context, tenantID uuid.UUID, name, ti
 	q := s.queries(ctx)
 	if err := authorization.RequireTenantRole(ctx, q, tenantID, user.ID, "owner"); err != nil {
 		return OutletSettings{}, err
+	}
+	count, err := q.CountOutletsByTenant(ctx, tenantID)
+	if err != nil {
+		return OutletSettings{}, httpx.Internal(fmt.Errorf("menghitung outlet bisnis: %w", err))
+	}
+	if count > 0 {
+		return OutletSettings{}, httpx.Conflict("outlet_addon_diperlukan", "Outlet pertama termasuk paket bisnis. Untuk menambah outlet lain, buat tagihan outlet tambahan.", nil)
 	}
 
 	slug, err := s.uniqueSlug(ctx, q, name)

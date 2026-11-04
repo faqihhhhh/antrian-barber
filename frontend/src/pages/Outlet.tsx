@@ -22,6 +22,7 @@ async function fetchOutlet(slug: string) {
 
 const UNAVAILABLE_TEXT: Record<string, string> = {
   langganan_tidak_aktif: 'Outlet ini sedang tidak menerima pemesanan online.',
+  outlet_langganan_tidak_aktif: 'Masa aktif outlet ini berakhir. Hubungi pemilik bisnis untuk memperpanjangnya.',
   harga_dp_belum_diatur: 'Pemesanan online belum dibuka oleh outlet ini.',
   pembayaran_belum_diatur: 'Pemesanan online belum dibuka oleh outlet ini.',
 }

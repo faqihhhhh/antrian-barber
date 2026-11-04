@@ -466,7 +466,7 @@ func (h *WebhookHandlers) Midtrans(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := rls.RunAsSystem(r.Context(), h.pool, func(ctx context.Context) error {
-		if strings.HasPrefix(payload.OrderID, "tw-sub-") {
+		if strings.HasPrefix(payload.OrderID, "tw-sub-") || strings.HasPrefix(payload.OrderID, "tw-add-") {
 			return h.billingSvc.ProcessMidtransWebhook(ctx, payload.OrderID, payload.StatusCode, payload.GrossAmount, payload.SignatureKey, payload.TransactionStatus, payload.FraudStatus)
 		}
 		return h.svc.ProcessMidtransWebhook(ctx, payload.OrderID, payload.StatusCode, payload.GrossAmount, payload.SignatureKey, payload.TransactionStatus, payload.FraudStatus)

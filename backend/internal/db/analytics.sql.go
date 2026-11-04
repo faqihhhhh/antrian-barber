@@ -70,9 +70,15 @@ func (q *Queries) PlatformBillingQueue(ctx context.Context) (PlatformBillingQueu
 }
 
 const platformMRR = `-- name: PlatformMRR :one
-SELECT COALESCE(SUM(
+SELECT (COALESCE(SUM(
     CASE WHEN p.billing_interval = 'yearly' THEN p.price_rupiah / 12.0 ELSE p.price_rupiah::numeric END
-), 0)::float8 AS mrr_rupiah
+), 0) + (
+    SELECT COALESCE(COUNT(*) FILTER (WHERE o.additional_billing_interval = 'monthly') * p.additional_outlet_monthly_price_rupiah::numeric, 0)
+         + COALESCE(COUNT(*) FILTER (WHERE o.additional_billing_interval = 'yearly') * p.additional_outlet_yearly_price_rupiah::numeric / 12.0, 0)
+    FROM outlets o
+    CROSS JOIN platform_payment_settings p
+    WHERE o.is_additional AND o.additional_period_end >= now()
+))::float8 AS mrr_rupiah
 FROM subscriptions s
 JOIN plans p ON p.id = s.plan_id
 WHERE s.current_period_end >= now()

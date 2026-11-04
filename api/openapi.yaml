@@ -94,6 +94,31 @@ paths:
               schema: { $ref: '#/components/schemas/PlatformPaymentInfo' }
         default:
           $ref: '#/components/responses/Error'
+  /v1/admin/payment-settings/outlet-addon-prices:
+    put:
+      operationId: setPlatformOutletAddonPrices
+      tags: [platform]
+      summary: Atur harga outlet tambahan bulanan dan tahunan
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [monthly_price_rupiah, yearly_price_rupiah]
+              properties:
+                monthly_price_rupiah: { type: integer, format: int64, minimum: 0 }
+                yearly_price_rupiah: { type: integer, format: int64, minimum: 0 }
+      responses:
+        '200':
+          description: Harga outlet tambahan tersimpan
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        default:
+          $ref: '#/components/responses/Error'
   /v1/admin/payment-settings/manual-qris:
     put:
       operationId: uploadPlatformManualQRIS
@@ -1014,6 +1039,28 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/OwnerInvoice' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/outlet-subscriptions:
+    post:
+      operationId: createOwnerOutletAddonInvoice
+      tags: [langganan]
+      summary: Buat tagihan untuk menambah atau memperpanjang outlet
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OutletAddonRequest' }
+      responses:
+        '201':
+          description: Tagihan outlet tambahan dibuat
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OwnerInvoice' }
         default:
           $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/profile:
@@ -2292,7 +2339,7 @@ components:
           description: Nama zona waktu IANA, misalnya `Asia/Jakarta`.
     OwnerOutlet:
       type: object
-      required: [id, name, slug, timezone, address, dp_price_rupiah, default_duration_minutes]
+      required: [id, name, slug, timezone, address, dp_price_rupiah, default_duration_minutes, is_additional, additional_period_end, additional_billing_interval]
       properties:
         id:
           type: string
@@ -2311,6 +2358,9 @@ components:
         default_duration_minutes:
           type: integer
           format: int32
+        is_additional: { type: boolean }
+        additional_period_end: { type: string, format: date-time, nullable: true }
+        additional_billing_interval: { type: string }
     CreateTenantRequest:
       type: object
       required: [name]
@@ -2496,14 +2546,28 @@ components:
       properties:
         plan_code: { type: string }
         payment_method: { type: string, enum: [manual, midtrans] }
+    OutletAddonRequest:
+      type: object
+      required: [name, timezone, address, billing_interval, payment_method]
+      properties:
+        outlet_id: { type: string, format: uuid, nullable: true }
+        name: { type: string, maxLength: 100 }
+        timezone: { type: string }
+        address: { type: string, maxLength: 300 }
+        billing_interval: { type: string, enum: [monthly, yearly] }
+        payment_method: { type: string, enum: [manual, midtrans] }
     OwnerInvoice:
       type: object
-      required: [id, amount_rupiah, unique_code, payment_method, status, expires_at, paid_at, period_start, period_end, created_at, qr_code_url]
+      required: [id, amount_rupiah, unique_code, payment_method, invoice_kind, status, expires_at, paid_at, period_start, period_end, created_at, qr_code_url]
       properties:
         id: { type: string, format: uuid }
         amount_rupiah: { type: integer, format: int64 }
         unique_code: { type: integer, format: int32 }
         payment_method: { type: string, enum: [manual, midtrans] }
+        invoice_kind: { type: string, enum: [subscription, outlet_addon] }
+        outlet_id: { type: string, format: uuid, nullable: true }
+        outlet_name: { type: string, nullable: true }
+        billing_interval: { type: string, enum: [monthly, yearly], nullable: true }
         status: { type: string, enum: [pending, paid, expired, canceled] }
         expires_at: { type: string, format: date-time, nullable: true }
         paid_at: { type: string, format: date-time, nullable: true }
@@ -2513,11 +2577,13 @@ components:
         created_at: { type: string, format: date-time }
     PaymentOptions:
       type: object
-      required: [manual_qris_configured, manual_transfer_configured, midtrans_configured, recipient_name, bank_name, bank_account, dana_number, gopay_number]
+      required: [manual_qris_configured, manual_transfer_configured, midtrans_configured, additional_outlet_monthly_price_rupiah, additional_outlet_yearly_price_rupiah, recipient_name, bank_name, bank_account, dana_number, gopay_number]
       properties:
         manual_qris_configured: { type: boolean }
         manual_transfer_configured: { type: boolean }
         midtrans_configured: { type: boolean }
+        additional_outlet_monthly_price_rupiah: { type: integer, format: int64 }
+        additional_outlet_yearly_price_rupiah: { type: integer, format: int64 }
         recipient_name: { type: string }
         bank_name: { type: string }
         bank_account: { type: string }
@@ -2536,7 +2602,7 @@ components:
       $ref: '#/components/schemas/PaymentOptions'
     AdminInvoice:
       type: object
-      required: [id, tenant_id, tenant_name, plan_name, amount_rupiah, unique_code, payment_method, status, expires_at, created_at]
+      required: [id, tenant_id, tenant_name, plan_name, amount_rupiah, unique_code, payment_method, invoice_kind, outlet_name, status, expires_at, created_at]
       properties:
         id: { type: string, format: uuid }
         tenant_id: { type: string, format: uuid }
@@ -2545,6 +2611,8 @@ components:
         amount_rupiah: { type: integer, format: int64 }
         unique_code: { type: integer, format: int32 }
         payment_method: { type: string, enum: [manual, midtrans] }
+        invoice_kind: { type: string, enum: [subscription, outlet_addon] }
+        outlet_name: { type: string }
         status: { type: string, enum: [pending, expired] }
         expires_at: { type: string, format: date-time, nullable: true }
         created_at: { type: string, format: date-time }

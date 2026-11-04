@@ -4,6 +4,16 @@ VALUES ($1, $2, $3, $4, now() + interval '30 minutes', $5)
 ON CONFLICT DO NOTHING
 RETURNING *;
 
+-- name: CreateOutletAddonInvoice :one
+INSERT INTO invoices (
+    tenant_id, plan_id, amount_rupiah, unique_code, expires_at, payment_method,
+    invoice_kind, outlet_id, requested_outlet_name, requested_outlet_timezone,
+    requested_outlet_address, outlet_billing_interval
+) VALUES ($1, $2, $3, $4, now() + interval '30 minutes', $5,
+          'outlet_addon', $6, $7, $8, $9, $10)
+ON CONFLICT DO NOTHING
+RETURNING *;
+
 -- name: ExpireTenantInvoices :execrows
 UPDATE invoices SET status = 'expired', updated_at = now()
 WHERE tenant_id = $1 AND status = 'pending' AND expires_at < now();
@@ -35,10 +45,12 @@ SELECT * FROM invoices WHERE tenant_id = $1 ORDER BY created_at DESC;
 
 -- name: ListPendingInvoices :many
 SELECT i.id, i.tenant_id, t.name AS tenant_name, i.plan_id, p.name AS plan_name,
-       i.amount_rupiah, i.unique_code, i.payment_method, i.status, i.expires_at, i.created_at
+       i.amount_rupiah, i.unique_code, i.payment_method, i.status, i.expires_at, i.created_at,
+       i.invoice_kind, COALESCE(i.requested_outlet_name, o.name, '') AS outlet_name
 FROM invoices i
 JOIN tenants t ON t.id = i.tenant_id
 JOIN plans p ON p.id = i.plan_id
+LEFT JOIN outlets o ON o.id = i.outlet_id
 WHERE i.status = 'pending' OR (i.status = 'expired' AND i.expires_at > now() - interval '14 days')
 ORDER BY i.created_at;
 

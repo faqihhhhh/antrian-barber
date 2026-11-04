@@ -165,6 +165,8 @@ func (s *Service) GetOutletPage(ctx context.Context, slug string) (OutletPage, e
 	switch {
 	case sub.Status != billing.StatusActive && sub.Status != billing.StatusGrace:
 		setReason("langganan_tidak_aktif")
+	case outlet.IsAdditional && (!outlet.AdditionalPeriodEnd.Valid || !outlet.AdditionalPeriodEnd.Time.After(time.Now())):
+		setReason("outlet_langganan_tidak_aktif")
 	case outlet.DpPriceRupiah <= 0:
 		setReason("harga_dp_belum_diatur")
 	case mode == "none":

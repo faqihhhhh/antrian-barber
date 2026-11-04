@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useLocation } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError, messageOf } from '../api/client'
 import { useMe } from '../auth/useMe'
@@ -83,6 +83,7 @@ function ManagementLink({ to, title, currentPath }: { to: string; title: string;
 
 function OutletList({ membership }: { membership: Membership }) {
   const [showCreateOutlet, setShowCreateOutlet] = useState(false)
+  const [renewOutlet, setRenewOutlet] = useState<Outlet | null>(null)
   const outlets = useQuery({
     queryKey: ['owner-outlets', membership.tenant_id],
     queryFn: async (): Promise<Outlet[]> => {
@@ -121,15 +122,81 @@ function OutletList({ membership }: { membership: Membership }) {
           key={outlet.id}
           tenantID={membership.tenant_id}
           outlet={outlet}
+          onRenew={() => setRenewOutlet(outlet)}
         />
       ))}
+      {renewOutlet && <CreateOutletAddon tenantID={membership.tenant_id} existingOutlet={renewOutlet} onCancel={() => setRenewOutlet(null)} />}
       {showCreateOutlet ? (
-        <CreateOutlet tenantID={membership.tenant_id} title="Tambah outlet" onCancel={() => setShowCreateOutlet(false)} onCreated={() => setShowCreateOutlet(false)} />
+        <CreateOutletAddon tenantID={membership.tenant_id} onCancel={() => setShowCreateOutlet(false)} />
       ) : (
         <Button type="button" variant="secondary" onClick={() => setShowCreateOutlet(true)}>Tambah outlet</Button>
       )}
     </section>
   )
+}
+
+function CreateOutletAddon({ tenantID, existingOutlet, onCancel }: { tenantID: string; existingOutlet?: Outlet; onCancel: () => void }) {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [name, setName] = useState('')
+  const [timezone, setTimezone] = useState('Asia/Jakarta')
+  const [address, setAddress] = useState('')
+  const [interval, setInterval] = useState<'monthly' | 'yearly'>('monthly')
+  const [method, setMethod] = useState<'manual' | 'midtrans' | ''>('')
+  const paymentOptions = useQuery({
+    queryKey: ['owner-subscription-payment-options', tenantID],
+    queryFn: async () => {
+      const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/subscription/payment-options', { params: { path: { tenantID } } })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+  })
+  const invoice = useMutation({
+    mutationFn: async () => {
+      const selectedMethod = method || (paymentOptions.data?.manual_qris_configured || paymentOptions.data?.manual_transfer_configured ? 'manual' : 'midtrans')
+      const { data, error, response } = await api.POST('/v1/tenants/{tenantID}/outlet-subscriptions', {
+        params: { path: { tenantID } },
+        body: {
+          outlet_id: existingOutlet?.id ?? null,
+          name: existingOutlet ? '' : name.trim(),
+          timezone: existingOutlet ? '' : timezone,
+          address: existingOutlet ? '' : address.trim(),
+          billing_interval: interval,
+          payment_method: selectedMethod,
+        },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['owner-invoices', tenantID] })
+      await queryClient.invalidateQueries({ queryKey: ['owner-outlets', tenantID] })
+      navigate(`/pemilik/langganan?tenant=${tenantID}`)
+    },
+  })
+  const addonPrice = interval === 'monthly' ? paymentOptions.data?.additional_outlet_monthly_price_rupiah : paymentOptions.data?.additional_outlet_yearly_price_rupiah
+  const manualAvailable = !!(paymentOptions.data?.manual_qris_configured || paymentOptions.data?.manual_transfer_configured)
+  const midtransAvailable = !!paymentOptions.data?.midtrans_configured
+  const selectedMethod = method || (manualAvailable ? 'manual' : 'midtrans')
+  return <section className="space-y-4 rounded-3xl border border-line bg-white p-5">
+    <div><h2 className="text-lg font-bold">{existingOutlet ? `Perpanjang ${existingOutlet.name}` : 'Tambah outlet'}</h2><p className="mt-1 text-sm leading-6 text-body-muted">{existingOutlet ? 'Perpanjangan menambah masa aktif dari tanggal akhir sekarang.' : 'Outlet tambahan aktif setelah tagihan dibayar dan dikonfirmasi.'}</p></div>
+    {!existingOutlet && <>
+      <Field label="Nama outlet" name="addonOutletName" required maxLength={100} value={name} onChange={(event) => setName(event.target.value)} />
+      <label className="block"><span className="mb-1 block text-sm font-medium text-body">Zona waktu outlet</span><select aria-label="Zona waktu outlet" className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base" value={timezone} onChange={(event) => setTimezone(event.target.value)}><option value="Asia/Jakarta">WIB — Asia/Jakarta</option><option value="Asia/Makassar">WITA — Asia/Makassar</option><option value="Asia/Jayapura">WIT — Asia/Jayapura</option></select></label>
+      <Field label="Alamat outlet (opsional)" name="addonOutletAddress" value={address} onChange={(event) => setAddress(event.target.value)} />
+    </>}
+    <label className="block"><span className="mb-1 block text-sm font-medium text-body">Periode outlet</span><select aria-label="Periode outlet" className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base" value={interval} onChange={(event) => setInterval(event.target.value as 'monthly' | 'yearly')}><option value="monthly">Bulanan</option><option value="yearly">Tahunan</option></select></label>
+    {paymentOptions.isPending ? <Spinner /> : paymentOptions.isError ? <Alert>{messageOf(paymentOptions.error)}</Alert> : <>
+      <p className="rounded-xl bg-paper p-3 text-sm">Biaya outlet tambahan: <strong>{addonPrice ? formatRupiah(addonPrice) : 'Belum diatur'}</strong> / {interval === 'monthly' ? 'bulan' : 'tahun'}</p>
+      <fieldset className="space-y-2"><legend className="mb-1 text-sm font-medium text-body">Cara bayar</legend>
+        {manualAvailable && <label className="flex items-start gap-3 rounded-xl border border-line p-3"><input type="radio" name="addon-payment-method" value="manual" checked={selectedMethod === 'manual'} onChange={() => setMethod('manual')} /><span><strong className="block text-sm">QRIS atau transfer manual</strong><span className="text-xs text-body-muted">Aktif setelah pemilik Trimwait mencocokkan pembayaran.</span></span></label>}
+        {midtransAvailable && <label className="flex items-start gap-3 rounded-xl border border-line p-3"><input type="radio" name="addon-payment-method" value="midtrans" checked={selectedMethod === 'midtrans'} onChange={() => setMethod('midtrans')} /><span><strong className="block text-sm">QRIS otomatis</strong><span className="text-xs text-body-muted">Aktif otomatis setelah pembayaran diterima.</span></span></label>}
+        {!manualAvailable && !midtransAvailable && <Alert tone="info">Metode pembayaran langganan belum disiapkan.</Alert>}
+      </fieldset>
+    </>}
+    {invoice.isError && <Alert>{messageOf(invoice.error)}</Alert>}
+    <div className="flex gap-2"><Button type="button" variant="secondary" onClick={onCancel}>Batal</Button><Button type="button" loading={invoice.isPending} disabled={!existingOutlet && !name.trim() || !addonPrice || (!manualAvailable && !midtransAvailable)} onClick={() => invoice.mutate()}>{existingOutlet ? 'Buat tagihan perpanjangan' : 'Buat tagihan outlet'}</Button></div>
+  </section>
 }
 
 function CreateOutlet({ tenantID, title = 'Buat outlet pertama', onCancel, onCreated }: { tenantID: string; title?: string; onCancel?: () => void; onCreated?: () => void }) {
@@ -186,7 +253,7 @@ function CreateOutlet({ tenantID, title = 'Buat outlet pertama', onCancel, onCre
   )
 }
 
-function OutletSettings({ tenantID, outlet }: { tenantID: string; outlet: Outlet }) {
+function OutletSettings({ tenantID, outlet, onRenew }: { tenantID: string; outlet: Outlet; onRenew: () => void }) {
   const queryClient = useQueryClient()
   const [dpPrice, setDpPrice] = useState(String(outlet.dp_price_rupiah))
   const [duration, setDuration] = useState(String(outlet.default_duration_minutes))
@@ -235,6 +302,7 @@ function OutletSettings({ tenantID, outlet }: { tenantID: string; outlet: Outlet
     <article className="rounded-3xl border border-line bg-white p-5">
       <h2 className="text-lg font-bold">{outlet.name}</h2>
       <p className="mt-1 text-sm text-body-muted">{outlet.address || 'Alamat belum diisi'} · {outlet.timezone}</p>
+      {outlet.is_additional && <div className="rounded-xl bg-paper p-3 text-sm"><p>Outlet tambahan · {outlet.additional_billing_interval === 'yearly' ? 'Tahunan' : 'Bulanan'}</p><p className="mt-1">Masa aktif sampai: <strong>{outlet.additional_period_end ? new Date(outlet.additional_period_end).toLocaleDateString('id-ID') : 'Belum aktif'}</strong></p><button type="button" className="mt-2 font-semibold underline" onClick={onRenew}>Perpanjang outlet</button></div>}
       <p className="mt-2 text-sm text-body-muted">
         Tautan publik: <a className="font-semibold underline" href={`/o/${outlet.slug}`}>{publicURL}</a>
       </p>
