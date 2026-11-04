@@ -55,7 +55,7 @@ type Querier interface {
 	DeleteSession(ctx context.Context, tokenHash string) error
 	ExpireStaleInvoices(ctx context.Context) (int64, error)
 	ExpireTenantInvoices(ctx context.Context, tenantID uuid.UUID) (int64, error)
-	GetAverageCallIntervalMinutes(ctx context.Context, outletID uuid.UUID) (float64, error)
+	GetAverageServiceDurationMinutes(ctx context.Context, outletID uuid.UUID) (float64, error)
 	GetInvoiceByID(ctx context.Context, id uuid.UUID) (Invoice, error)
 	GetInvoiceByMidtransOrderID(ctx context.Context, midtransOrderID pgtype.Text) (Invoice, error)
 	GetKapsterSessionState(ctx context.Context, arg GetKapsterSessionStateParams) (KapsterSessionState, error)

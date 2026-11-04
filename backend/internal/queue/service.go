@@ -1084,7 +1084,7 @@ func (s *Service) buildSnapshot(ctx context.Context, q *db.Queries, sessionID uu
 	if err != nil {
 		return SessionSnapshot{}, err
 	}
-	avgMinutes, err := q.GetAverageCallIntervalMinutes(ctx, session.OutletID)
+	avgMinutes, err := q.GetAverageServiceDurationMinutes(ctx, session.OutletID)
 	if err != nil {
 		return SessionSnapshot{}, err
 	}
@@ -1210,7 +1210,7 @@ func (s *Service) estimateAhead(ctx context.Context, sessionID, outletID uuid.UU
 		if err != nil {
 			return fmt.Errorf("menghitung kapster aktif: %w", err)
 		}
-		avgMinutes, err := q.GetAverageCallIntervalMinutes(c, outletID)
+		avgMinutes, err := q.GetAverageServiceDurationMinutes(c, outletID)
 		if err != nil {
 			return fmt.Errorf("menghitung rata-rata waktu: %w", err)
 		}

@@ -112,9 +112,10 @@ DP manual yang masih berlaku. Sesi baru tidak boleh dibuat untuk tanggal yang su
 
 ## Estimasi menunggu
 
-Rata-rata jeda antar panggilan nyata kalau datanya ada, jika belum ada memakai
-`default_duration_minutes`. Dibagi jumlah kapster aktif. Kalau tidak ada kapster aktif, tampilkan
-"belum bisa dihitung", jangan mengarang angka. Layar pelanggan membulatkan ke atas per 5 menit.
+Rata-rata durasi layanan nyata (dari event `started` sampai `completed`) kalau datanya ada, jika
+belum ada memakai `default_duration_minutes`. Dibagi jumlah kapster aktif. Kalau tidak ada kapster
+aktif, tampilkan "belum bisa dihitung", jangan mengarang angka. Layar pelanggan membulatkan ke atas
+per 5 menit.
 
 ## Penilaian
 
