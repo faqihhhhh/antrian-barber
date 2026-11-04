@@ -32,9 +32,9 @@ export default function PemilikSaaS() {
         <p className="mt-1 text-sm text-body-muted">Kinerja bisnis dan langganan platform.</p>
       </header>
       <PlatformBilling />
+      <PlanPricing />
       {stats.isPending ? <Spinner /> : stats.isError ? <Alert>{messageOf(stats.error)}</Alert> : (
         <>
-          <PlanPricing />
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="Pendapatan langganan">
             <Metric label="MRR" value={formatRupiah(stats.data.revenue.mrr_rupiah)} hint="Pendapatan langganan bulanan aktif" dark />
             <Metric label="ARR" value={formatRupiah(stats.data.revenue.arr_rupiah)} hint="Perkiraan MRR dikali 12" />
