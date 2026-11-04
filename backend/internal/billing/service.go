@@ -74,8 +74,10 @@ type PublicPlan struct {
 }
 
 type PaymentOptions struct {
-	ManualQRISConfigured bool `json:"manual_qris_configured"`
-	MidtransConfigured   bool `json:"midtrans_configured"`
+	ManualQRISConfigured     bool `json:"manual_qris_configured"`
+	ManualTransferConfigured bool `json:"manual_transfer_configured"`
+	MidtransConfigured       bool `json:"midtrans_configured"`
+	TransferDetails
 }
 
 type AdminInvoice struct {
@@ -92,8 +94,18 @@ type AdminInvoice struct {
 }
 
 type PlatformPaymentInfo struct {
-	ManualQRISConfigured bool `json:"manual_qris_configured"`
-	MidtransConfigured   bool `json:"midtrans_configured"`
+	ManualQRISConfigured     bool `json:"manual_qris_configured"`
+	ManualTransferConfigured bool `json:"manual_transfer_configured"`
+	MidtransConfigured       bool `json:"midtrans_configured"`
+	TransferDetails
+}
+
+type TransferDetails struct {
+	RecipientName string `json:"recipient_name"`
+	BankName      string `json:"bank_name"`
+	BankAccount   string `json:"bank_account"`
+	DanaNumber    string `json:"dana_number"`
+	GopayNumber   string `json:"gopay_number"`
 }
 
 // ListPlans publik (halaman harga), tidak lewat RLS karena tabel plans
@@ -166,7 +178,87 @@ func (s *Service) getPlatformPaymentInfo(ctx context.Context) (PlatformPaymentIn
 		return PlatformPaymentInfo{}, httpx.Internal(fmt.Errorf("ambil pengaturan pembayaran platform: %w", err))
 	}
 	info.ManualQRISConfigured = err == nil && len(row.ManualQrisImage) > 0 && row.ManualQrisContentType.Valid
+	if err == nil {
+		info.TransferDetails = TransferDetails{
+			RecipientName: nullableText(row.TransferRecipientName),
+			BankName:      nullableText(row.TransferBankName),
+			BankAccount:   nullableText(row.TransferBankAccount),
+			DanaNumber:    nullableText(row.TransferDanaNumber),
+			GopayNumber:   nullableText(row.TransferGopayNumber),
+		}
+		info.ManualTransferConfigured = hasTransferDetails(info.TransferDetails)
+	}
 	return info, nil
+}
+
+func nullableText(value pgtype.Text) string {
+	if !value.Valid {
+		return ""
+	}
+	return value.String
+}
+
+func hasTransferDetails(details TransferDetails) bool {
+	return details.BankAccount != "" || details.DanaNumber != "" || details.GopayNumber != ""
+}
+
+func normalizeTransferDetails(details TransferDetails) (TransferDetails, string) {
+	details.RecipientName = strings.TrimSpace(details.RecipientName)
+	details.BankName = strings.TrimSpace(details.BankName)
+	details.BankAccount = strings.TrimSpace(details.BankAccount)
+	details.DanaNumber = strings.TrimSpace(details.DanaNumber)
+	details.GopayNumber = strings.TrimSpace(details.GopayNumber)
+	if len(details.RecipientName) > 100 || len(details.BankName) > 80 || len(details.BankAccount) > 40 || len(details.DanaNumber) > 24 || len(details.GopayNumber) > 24 {
+		return TransferDetails{}, "data_transfer_tidak_valid"
+	}
+	if (details.BankName == "") != (details.BankAccount == "") {
+		return TransferDetails{}, "rekening_tidak_lengkap"
+	}
+	if hasTransferDetails(details) && details.RecipientName == "" {
+		return TransferDetails{}, "nama_penerima_wajib"
+	}
+	if !hasTransferDetails(details) {
+		return TransferDetails{}, ""
+	}
+	return details, ""
+}
+
+func (s *Service) SetPlatformTransferDetails(ctx context.Context, details TransferDetails) error {
+	if err := s.platformAdmin(ctx); err != nil {
+		return err
+	}
+	var validationMessage string
+	details, validationMessage = normalizeTransferDetails(details)
+	switch validationMessage {
+	case "data_transfer_tidak_valid":
+		return httpx.BadRequest(validationMessage, "Ada informasi transfer yang terlalu panjang", nil)
+	case "rekening_tidak_lengkap":
+		return httpx.BadRequest(validationMessage, "Isi nama bank dan nomor rekening, atau kosongkan keduanya", nil)
+	case "nama_penerima_wajib":
+		return httpx.BadRequest(validationMessage, "Isi nama pemilik rekening atau dompet digital", nil)
+	}
+	q := s.queries(ctx)
+	pending, err := q.CountPendingManualInvoices(ctx)
+	if err != nil {
+		return httpx.Internal(fmt.Errorf("cek tagihan manual tertunda: %w", err))
+	}
+	if pending > 0 {
+		return httpx.Conflict("tagihan_manual_masih_pending", "Informasi transfer tidak dapat diubah selama ada tagihan manual yang menunggu pembayaran", nil)
+	}
+	toText := func(value string) pgtype.Text {
+		if value == "" {
+			return pgtype.Text{}
+		}
+		return pgtype.Text{String: value, Valid: true}
+	}
+	if err := q.SetPlatformTransferDetails(ctx, db.SetPlatformTransferDetailsParams{
+		TransferRecipientName: toText(details.RecipientName), TransferBankName: toText(details.BankName),
+		TransferBankAccount: toText(details.BankAccount), TransferDanaNumber: toText(details.DanaNumber),
+		TransferGopayNumber: toText(details.GopayNumber),
+	}); err != nil {
+		return httpx.Internal(fmt.Errorf("simpan detail transfer platform: %w", err))
+	}
+	return nil
 }
 
 func (s *Service) SetPlatformManualQRIS(ctx context.Context, data []byte) error {
@@ -300,8 +392,8 @@ func (s *Service) Subscribe(ctx context.Context, tenantID uuid.UUID, planCode, p
 	if err != nil {
 		return OwnerInvoice{}, err
 	}
-	if paymentMethod == "manual" && !options.ManualQRISConfigured {
-		return OwnerInvoice{}, httpx.Conflict("qris_manual_belum_diatur", "QRIS manual platform belum dipasang. Pilih QRIS otomatis atau hubungi pemilik Trimwait.", nil)
+	if paymentMethod == "manual" && !options.ManualQRISConfigured && !options.ManualTransferConfigured {
+		return OwnerInvoice{}, httpx.Conflict("pembayaran_manual_belum_diatur", "Pembayaran manual platform belum disiapkan. Pilih QRIS otomatis atau hubungi pemilik Trimwait.", nil)
 	}
 	if paymentMethod == "midtrans" && !options.MidtransConfigured {
 		return OwnerInvoice{}, httpx.Conflict("midtrans_belum_diatur", "QRIS otomatis belum tersedia. Pilih QRIS manual atau hubungi pemilik Trimwait.", nil)

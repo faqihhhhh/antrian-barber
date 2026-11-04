@@ -140,6 +140,14 @@ function PlatformBilling() {
     },
     onSuccess: refreshBilling,
   })
+  const saveTransfer = useMutation({
+    mutationFn: async (details: { recipient_name: string; bank_name: string; bank_account: string; dana_number: string; gopay_number: string }) => {
+      const { data, error, response } = await api.PUT('/v1/admin/payment-settings/transfer', { body: details })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: refreshBilling,
+  })
   const confirm = useMutation({
     mutationFn: async (invoiceID: string) => {
       const { data, error, response } = await api.POST('/v1/admin/invoices/{invoiceID}/confirm', { params: { path: { invoiceID } } })
@@ -153,9 +161,9 @@ function PlatformBilling() {
   })
 
   return <section className="space-y-4 rounded-3xl border border-line bg-white p-5">
-    <div><h2 className="text-lg font-bold">Pembayaran langganan</h2><p className="mt-1 text-sm text-body-muted">Atur QRIS manual platform dan cocokkan pembayaran owner.</p></div>
+    <div><h2 className="text-lg font-bold">Pembayaran langganan</h2><p className="mt-1 text-sm text-body-muted">Atur QRIS dan tujuan transfer manual, lalu cocokkan pembayaran owner.</p></div>
     {settings.isPending ? <Spinner /> : settings.isError ? <Alert>{messageOf(settings.error)}</Alert> : <div className="space-y-3 rounded-2xl border border-line bg-paper p-4">
-      <div className="flex items-center justify-between gap-3"><div><h3 className="font-semibold">QRIS manual platform</h3><p className="text-sm text-body-muted">Status: {settings.data.manual_qris_configured ? 'Sudah dipasang' : 'Belum dipasang'} · Otomatis: {settings.data.midtrans_configured ? 'Tersedia' : 'Belum diatur'}</p></div></div>
+      <div className="flex items-center justify-between gap-3"><div><h3 className="font-semibold">QRIS manual platform</h3><p className="text-sm text-body-muted">Status: {settings.data.manual_qris_configured ? 'QRIS tersedia' : 'QRIS belum dipasang'} · Otomatis: {settings.data.midtrans_configured ? 'Tersedia' : 'Belum diatur'}</p></div></div>
       {settings.data.manual_qris_configured && <img src="/v1/admin/payment-settings/manual-qris/image" alt="QRIS manual platform" className="mx-auto size-48 rounded-xl border border-line bg-white object-contain" />}
       <div>
         <span className="mb-2 block text-sm font-medium">Gambar QRIS</span>
@@ -169,12 +177,35 @@ function PlatformBilling() {
       {upload.isError && <Alert>{messageOf(upload.error)}</Alert>}{upload.isSuccess && <Alert tone="success">QRIS manual platform tersimpan.</Alert>}{clear.isError && <Alert>{messageOf(clear.error)}</Alert>}
       <div className="flex flex-wrap gap-2"><button className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" disabled={!file || upload.isPending} onClick={() => upload.mutate()}>{upload.isPending ? 'Menyimpan…' : 'Simpan QRIS'}</button>{settings.data.manual_qris_configured && <button className="rounded-xl border border-line-strong px-4 py-2.5 text-sm font-semibold disabled:opacity-50" disabled={clear.isPending} onClick={() => clear.mutate()}>{clear.isPending ? 'Menghapus…' : 'Hapus QRIS'}</button>}</div>
     </div>}
+    {settings.data && <TransferSettings key={[settings.data.recipient_name, settings.data.bank_name, settings.data.bank_account, settings.data.dana_number, settings.data.gopay_number].join('|')} initial={settings.data} saving={saveTransfer.isPending} error={saveTransfer.isError ? messageOf(saveTransfer.error) : null} saved={saveTransfer.isSuccess} onSave={(details) => saveTransfer.mutate(details)} />}
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3"><h3 className="font-semibold">Tagihan owner</h3>{invoices.data && <span className="rounded-full bg-paper-raised px-3 py-1 text-sm">{invoices.data.filter((invoice) => invoice.status === 'pending').length} menunggu</span>}</div>
       {invoices.isPending ? <Spinner /> : invoices.isError ? <Alert>{messageOf(invoices.error)}</Alert> : invoices.data.length === 0 ? <Alert tone="info">Tidak ada tagihan tertunda.</Alert> : invoices.data.map((invoice) => <article key={invoice.id} className="space-y-2 rounded-2xl border border-line p-4"><div className="flex items-start justify-between gap-3"><div><strong>{invoice.tenant_name}</strong><p className="text-sm text-body-muted">{invoice.plan_name} · {invoice.payment_method === 'manual' ? 'QRIS manual' : 'QRIS otomatis'}</p></div><span className="text-right text-sm">{invoice.status === 'pending' ? 'Menunggu' : 'Kedaluwarsa'}</span></div><p className="text-lg font-bold tabular-nums">{formatRupiah(invoice.amount_rupiah)}</p>{invoice.unique_code > 0 && <p className="text-sm text-body-muted">Kode unik: {invoice.unique_code}</p>}<p className="text-xs text-muted">Dibuat {formatDateTime(invoice.created_at)} · ID {invoice.id}</p>{invoice.payment_method === 'manual' ? <button className="w-full rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white disabled:opacity-50" disabled={confirm.isPending} onClick={() => setConfirmInvoiceID(invoice.id)}>{confirm.isPending && confirm.variables === invoice.id ? 'Memproses…' : 'Konfirmasi pembayaran manual'}</button> : <p className="text-sm text-body-muted">Pembayaran QRIS otomatis dikonfirmasi oleh Midtrans.</p>}</article>)}
       {confirm.isError && <Alert>{messageOf(confirm.error)}</Alert>}
     </div>
-    <ConfirmDialog open={confirmInvoiceID !== null} onCancel={() => setConfirmInvoiceID(null)} onConfirm={() => { if (confirmInvoiceID) confirm.mutate(confirmInvoiceID) }} title="Konfirmasi pembayaran manual?" description="Pastikan transfer QRIS sudah masuk dan nominalnya cocok dengan tagihan. Setelah dikonfirmasi, langganan owner langsung aktif." confirmLabel="Ya, pembayaran diterima" loading={confirm.isPending} />
+    <ConfirmDialog open={confirmInvoiceID !== null} onCancel={() => setConfirmInvoiceID(null)} onConfirm={() => { if (confirmInvoiceID) confirm.mutate(confirmInvoiceID) }} title="Konfirmasi pembayaran manual?" description="Pastikan dana dari QRIS, rekening bank, atau e-wallet sudah masuk dan nominalnya cocok dengan tagihan. Setelah dikonfirmasi, langganan owner langsung aktif." confirmLabel="Ya, pembayaran diterima" loading={confirm.isPending} />
+  </section>
+}
+
+type TransferForm = { recipient_name: string; bank_name: string; bank_account: string; dana_number: string; gopay_number: string }
+
+function TransferSettings({ initial, saving, error, saved, onSave }: { initial: TransferForm; saving: boolean; error: string | null; saved: boolean; onSave: (details: TransferForm) => void }) {
+  const [form, setForm] = useState<TransferForm>(initial)
+  const update = (key: keyof TransferForm, value: string) => setForm((current) => ({ ...current, [key]: value }))
+  const same = (Object.keys(form) as (keyof TransferForm)[]).every((key) => form[key] === initial[key])
+  const inputClass = 'w-full rounded-xl border border-line-strong bg-white px-3 py-2.5 text-base'
+  return <section className="space-y-3 rounded-2xl border border-line bg-white p-4" aria-label="Pengaturan transfer manual">
+    <div><h3 className="font-semibold">Transfer bank dan e-wallet</h3><p className="mt-1 text-sm text-body-muted">Isi satu atau beberapa tujuan pembayaran. Owner akan melihat detail ini pada tagihan manual.</p></div>
+    <label className="block"><span className="mb-1 block text-sm font-medium">Nama pemilik rekening/dompet</span><input className={inputClass} maxLength={100} value={form.recipient_name} onChange={(event) => update('recipient_name', event.target.value)} placeholder="Contoh: PT Trimwait Indonesia" /></label>
+    <div className="grid gap-3 sm:grid-cols-2">
+      <label className="block"><span className="mb-1 block text-sm font-medium">Nama bank</span><input className={inputClass} maxLength={80} value={form.bank_name} onChange={(event) => update('bank_name', event.target.value)} placeholder="Contoh: BCA" /></label>
+      <label className="block"><span className="mb-1 block text-sm font-medium">Nomor rekening</span><input className={inputClass} maxLength={40} value={form.bank_account} onChange={(event) => update('bank_account', event.target.value)} placeholder="Nomor rekening" /></label>
+      <label className="block"><span className="mb-1 block text-sm font-medium">Nomor DANA</span><input className={inputClass} maxLength={24} value={form.dana_number} onChange={(event) => update('dana_number', event.target.value)} placeholder="08xxxxxxxxxx" inputMode="tel" /></label>
+      <label className="block"><span className="mb-1 block text-sm font-medium">Nomor GoPay</span><input className={inputClass} maxLength={24} value={form.gopay_number} onChange={(event) => update('gopay_number', event.target.value)} placeholder="08xxxxxxxxxx" inputMode="tel" /></label>
+    </div>
+    {error && <Alert>{error}</Alert>}{saved && same && <Alert tone="success">Informasi transfer tersimpan.</Alert>}
+    <button type="button" className="rounded-xl bg-ink px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50" disabled={saving || same} onClick={() => onSave(Object.fromEntries(Object.entries(form).map(([key, value]) => [key, value.trim()])) as TransferForm)}>{saving ? 'Menyimpan…' : 'Simpan informasi transfer'}</button>
+    <p className="text-xs text-muted">Detail tidak dapat diubah selama ada tagihan manual yang menunggu pembayaran.</p>
   </section>
 }
 

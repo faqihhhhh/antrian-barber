@@ -107,6 +107,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/payment-settings/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Atur rekening bank dan nomor dompet digital untuk transfer manual */
+        put: operations["setPlatformTransferDetails"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/payment-settings/manual-qris/image": {
         parameters: {
             query?: never;
@@ -1769,7 +1786,20 @@ export interface components {
         };
         PaymentOptions: {
             manual_qris_configured: boolean;
+            manual_transfer_configured: boolean;
             midtrans_configured: boolean;
+            recipient_name: string;
+            bank_name: string;
+            bank_account: string;
+            dana_number: string;
+            gopay_number: string;
+        };
+        PlatformTransferDetails: {
+            recipient_name: string;
+            bank_name: string;
+            bank_account: string;
+            dana_number: string;
+            gopay_number: string;
         };
         PlatformPaymentInfo: components["schemas"]["PaymentOptions"];
         AdminInvoice: {
@@ -1990,6 +2020,31 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description QRIS manual platform dihapus */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    setPlatformTransferDetails: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformTransferDetails"];
+            };
+        };
+        responses: {
+            /** @description Informasi transfer tersimpan */
             200: {
                 headers: {
                     [name: string]: unknown;

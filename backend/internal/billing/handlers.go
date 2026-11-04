@@ -111,6 +111,19 @@ func (h *Handlers) GetPlatformPaymentInfo(w http.ResponseWriter, r *http.Request
 	httpx.JSON(w, http.StatusOK, info)
 }
 
+func (h *Handlers) SetPlatformTransferDetails(w http.ResponseWriter, r *http.Request) {
+	var req TransferDetails
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
+		return
+	}
+	if err := h.svc.SetPlatformTransferDetails(r.Context(), req); err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Informasi transfer tersimpan"})
+}
+
 func (h *Handlers) SetPlatformManualQRIS(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxPlatformQRISBytes+1)
 	data, err := io.ReadAll(r.Body)

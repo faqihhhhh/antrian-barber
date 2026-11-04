@@ -152,6 +152,7 @@ type Querier interface {
 	SetManualQRIS(ctx context.Context, arg SetManualQRISParams) error
 	SetMembershipKapsterStatesIdle(ctx context.Context, membershipID uuid.UUID) error
 	SetPlatformManualQRIS(ctx context.Context, arg SetPlatformManualQRISParams) error
+	SetPlatformTransferDetails(ctx context.Context, arg SetPlatformTransferDetailsParams) error
 	SetReadyKapsterStatesIdleForMembership(ctx context.Context, membershipID uuid.UUID) error
 	SetReadyKapstersIdle(ctx context.Context, queueSessionID uuid.UUID) error
 	SetSubscriptionPlan(ctx context.Context, arg SetSubscriptionPlanParams) (int64, error)

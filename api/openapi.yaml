@@ -63,7 +63,7 @@ paths:
     post:
       operationId: confirmPlatformManualInvoice
       tags: [platform]
-      summary: Konfirmasi pembayaran QRIS manual
+      summary: Konfirmasi pembayaran manual langganan
       security:
         - cookieAuth: []
       parameters:
@@ -124,6 +124,26 @@ paths:
       responses:
         '200':
           description: QRIS manual platform dihapus
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/admin/payment-settings/transfer:
+    put:
+      operationId: setPlatformTransferDetails
+      tags: [platform]
+      summary: Atur rekening bank dan nomor dompet digital untuk transfer manual
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PlatformTransferDetails' }
+      responses:
+        '200':
+          description: Informasi transfer tersimpan
           content:
             application/json:
               schema: { $ref: '#/components/schemas/MessageResponse' }
@@ -2493,10 +2513,25 @@ components:
         created_at: { type: string, format: date-time }
     PaymentOptions:
       type: object
-      required: [manual_qris_configured, midtrans_configured]
+      required: [manual_qris_configured, manual_transfer_configured, midtrans_configured, recipient_name, bank_name, bank_account, dana_number, gopay_number]
       properties:
         manual_qris_configured: { type: boolean }
+        manual_transfer_configured: { type: boolean }
         midtrans_configured: { type: boolean }
+        recipient_name: { type: string }
+        bank_name: { type: string }
+        bank_account: { type: string }
+        dana_number: { type: string }
+        gopay_number: { type: string }
+    PlatformTransferDetails:
+      type: object
+      required: [recipient_name, bank_name, bank_account, dana_number, gopay_number]
+      properties:
+        recipient_name: { type: string, maxLength: 100 }
+        bank_name: { type: string, maxLength: 80 }
+        bank_account: { type: string, maxLength: 40 }
+        dana_number: { type: string, maxLength: 24 }
+        gopay_number: { type: string, maxLength: 24 }
     PlatformPaymentInfo:
       $ref: '#/components/schemas/PaymentOptions'
     AdminInvoice:

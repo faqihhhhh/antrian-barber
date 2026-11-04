@@ -106,6 +106,11 @@ type PlatformPaymentSetting struct {
 	ManualQrisContentType pgtype.Text        `json:"manual_qris_content_type"`
 	ManualQrisUpdatedAt   pgtype.Timestamptz `json:"manual_qris_updated_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	TransferRecipientName pgtype.Text        `json:"transfer_recipient_name"`
+	TransferBankName      pgtype.Text        `json:"transfer_bank_name"`
+	TransferBankAccount   pgtype.Text        `json:"transfer_bank_account"`
+	TransferDanaNumber    pgtype.Text        `json:"transfer_dana_number"`
+	TransferGopayNumber   pgtype.Text        `json:"transfer_gopay_number"`
 }
 
 type PushSubscription struct {

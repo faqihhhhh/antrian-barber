@@ -46,9 +46,11 @@ Owner juga dapat mengubah peran operasional dan outlet tugas staf dari halaman K
 Status: `belum_berlangganan`, `aktif`, `masa_tenggang`, `baca_saja`. Endpoint menulis milik tenant
 dijaga middleware `requireActive`. Pelanggan tidak dihukum oleh status langganan owner, kecuali
 pemesanan online baru ditutup (`accepting_bookings=false`, alasan `langganan_tidak_aktif`).
-Owner memilih QRIS manual atau Midtrans seperti pembayaran DP. QRIS manual adalah gambar statis
-milik platform; nominal invoice ditambah kode unik dan langganan aktif setelah pemilik SaaS
-mencocokkan pembayaran lalu mengonfirmasi invoice. QRIS Midtrans milik platform mengaktifkan
+Owner memilih pembayaran manual (QRIS, transfer bank, DANA, atau GoPay) atau Midtrans. Informasi
+rekening dan nomor tujuan dikelola pemilik SaaS; hanya owner tenant yang berhak melihatnya. Nominal
+invoice manual ditambah kode unik dan langganan aktif setelah pemilik SaaS mencocokkan pembayaran
+lalu mengonfirmasi invoice. Informasi tujuan transfer tidak dapat diubah selama ada invoice manual
+tertunda agar instruksi pembayaran tetap konsisten. QRIS Midtrans milik platform mengaktifkan
 langganan otomatis setelah webhook tervalidasi. Kredensialnya memakai
 `PLATFORM_MIDTRANS_SERVER_KEY` dan `PLATFORM_MIDTRANS_IS_PRODUCTION`, terpisah dari kunci Midtrans
 milik tenant untuk DP pelanggan. Harga paket bulanan dan tahunan dapat diubah pemilik SaaS, dan

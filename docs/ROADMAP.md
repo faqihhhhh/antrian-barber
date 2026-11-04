@@ -67,6 +67,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 17-4 | Owner dapat mengubah peran dan outlet staf atau mengeluarkannya dari bisnis; riwayat dipertahankan dan tiket aktif menghalangi perubahan |
 | 17-5 | Daftar ulasan/komentar, riwayat link undangan, pengajuan, dan staf menampilkan tiga item awal dengan kontrol untuk membuka sisanya |
 | 17-6 | Tombol simpan aktif hanya jika ada perubahan valid; owner dapat menambah outlet setelah outlet pertama |
+| 18-2 | Pembayaran langganan manual mendukung rekening bank, DANA, dan GoPay dengan instruksi khusus di layar tagihan owner |
 
 ## Berikutnya (urutan wajib)
 

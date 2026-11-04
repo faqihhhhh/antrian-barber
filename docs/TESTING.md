@@ -258,10 +258,13 @@ Skrip memakai sesi cookie owner dan pelanggan yang sudah ada, membuka sesi berta
 DP manual, mengonfirmasi pembayaran sebagai simulasi lokal, memastikan tiket berstatus `waiting` pada akun
 pelanggan, lalu menghapus sesi uji beserta tiket terkait. Tidak ada transfer uang.
 
-Untuk alur tagihan owner: di `/pemilik-saas`, unggah QRIS statis platform. Buka **Langganan**, pilih
-paket dan QRIS manual, lalu buat tagihan saat bisnis belum aktif atau periode aktif tinggal 7 hari.
-Pastikan nominal memuat kode unik, QR platform tampil, invoice muncul dalam daftar tagihan SaaS,
-konfirmasi manual mengaktifkan periode, dan invoice pending kedua ditolak. Ulangi dengan Midtrans:
+Untuk alur tagihan owner: di `/pemilik-saas`, unggah QRIS statis platform dan simpan satu atau lebih
+tujuan transfer (bank, DANA, GoPay) dengan nama penerima. Buka **Langganan**, pilih paket dan
+QRIS/transfer manual, lalu buat tagihan saat bisnis belum aktif atau periode aktif tinggal 7 hari.
+Pastikan nominal memuat kode unik, setiap tujuan yang diatur tampil di instruksi invoice owner, QR
+platform tampil jika diatur, perubahan tujuan ditolak selama ada tagihan manual tertunda, dan invoice
+muncul dalam daftar tagihan SaaS. Konfirmasi manual mengaktifkan periode dan invoice pending kedua
+ditolak. Ulangi dengan Midtrans:
 QR dinamis tampil, nominal sama dengan harga paket, masa berlaku 30 menit terlihat, dan webhook
 mengaktifkan periode otomatis. Di panel SaaS, pastikan jumlah pending tampil dan ubah harga paket
 bulanan/tahunan; pilihan owner harus memakai harga baru sementara invoice lama tetap memakai nominal awal.

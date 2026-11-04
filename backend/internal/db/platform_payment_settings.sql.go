@@ -24,7 +24,9 @@ func (q *Queries) ClearPlatformManualQRIS(ctx context.Context) error {
 }
 
 const getPlatformPaymentSettings = `-- name: GetPlatformPaymentSettings :one
-SELECT manual_qris_image, manual_qris_content_type, manual_qris_updated_at
+SELECT manual_qris_image, manual_qris_content_type, manual_qris_updated_at,
+       transfer_recipient_name, transfer_bank_name, transfer_bank_account,
+       transfer_dana_number, transfer_gopay_number
 FROM platform_payment_settings WHERE id = true
 `
 
@@ -32,12 +34,26 @@ type GetPlatformPaymentSettingsRow struct {
 	ManualQrisImage       []byte             `json:"manual_qris_image"`
 	ManualQrisContentType pgtype.Text        `json:"manual_qris_content_type"`
 	ManualQrisUpdatedAt   pgtype.Timestamptz `json:"manual_qris_updated_at"`
+	TransferRecipientName pgtype.Text        `json:"transfer_recipient_name"`
+	TransferBankName      pgtype.Text        `json:"transfer_bank_name"`
+	TransferBankAccount   pgtype.Text        `json:"transfer_bank_account"`
+	TransferDanaNumber    pgtype.Text        `json:"transfer_dana_number"`
+	TransferGopayNumber   pgtype.Text        `json:"transfer_gopay_number"`
 }
 
 func (q *Queries) GetPlatformPaymentSettings(ctx context.Context) (GetPlatformPaymentSettingsRow, error) {
 	row := q.db.QueryRow(ctx, getPlatformPaymentSettings)
 	var i GetPlatformPaymentSettingsRow
-	err := row.Scan(&i.ManualQrisImage, &i.ManualQrisContentType, &i.ManualQrisUpdatedAt)
+	err := row.Scan(
+		&i.ManualQrisImage,
+		&i.ManualQrisContentType,
+		&i.ManualQrisUpdatedAt,
+		&i.TransferRecipientName,
+		&i.TransferBankName,
+		&i.TransferBankAccount,
+		&i.TransferDanaNumber,
+		&i.TransferGopayNumber,
+	)
 	return i, err
 }
 
@@ -59,5 +75,38 @@ type SetPlatformManualQRISParams struct {
 
 func (q *Queries) SetPlatformManualQRIS(ctx context.Context, arg SetPlatformManualQRISParams) error {
 	_, err := q.db.Exec(ctx, setPlatformManualQRIS, arg.ManualQrisImage, arg.ManualQrisContentType)
+	return err
+}
+
+const setPlatformTransferDetails = `-- name: SetPlatformTransferDetails :exec
+INSERT INTO platform_payment_settings (
+    id, transfer_recipient_name, transfer_bank_name, transfer_bank_account,
+    transfer_dana_number, transfer_gopay_number, updated_at
+) VALUES (true, $1, $2, $3, $4, $5, now())
+ON CONFLICT (id) DO UPDATE SET
+    transfer_recipient_name = EXCLUDED.transfer_recipient_name,
+    transfer_bank_name = EXCLUDED.transfer_bank_name,
+    transfer_bank_account = EXCLUDED.transfer_bank_account,
+    transfer_dana_number = EXCLUDED.transfer_dana_number,
+    transfer_gopay_number = EXCLUDED.transfer_gopay_number,
+    updated_at = now()
+`
+
+type SetPlatformTransferDetailsParams struct {
+	TransferRecipientName pgtype.Text `json:"transfer_recipient_name"`
+	TransferBankName      pgtype.Text `json:"transfer_bank_name"`
+	TransferBankAccount   pgtype.Text `json:"transfer_bank_account"`
+	TransferDanaNumber    pgtype.Text `json:"transfer_dana_number"`
+	TransferGopayNumber   pgtype.Text `json:"transfer_gopay_number"`
+}
+
+func (q *Queries) SetPlatformTransferDetails(ctx context.Context, arg SetPlatformTransferDetailsParams) error {
+	_, err := q.db.Exec(ctx, setPlatformTransferDetails,
+		arg.TransferRecipientName,
+		arg.TransferBankName,
+		arg.TransferBankAccount,
+		arg.TransferDanaNumber,
+		arg.TransferGopayNumber,
+	)
 	return err
 }

@@ -24,6 +24,7 @@ func RegisterAdminRoutes(r chi.Router, svc *Service, log *slog.Logger) {
 	h := NewHandlers(svc, log)
 	r.Put("/plans/{planCode}", h.UpdatePlanPrice)
 	r.Get("/payment-settings", h.GetPlatformPaymentInfo)
+	r.Put("/payment-settings/transfer", h.SetPlatformTransferDetails)
 	r.Get("/payment-settings/manual-qris/image", h.GetPlatformManualQRIS)
 	r.Put("/payment-settings/manual-qris", h.SetPlatformManualQRIS)
 	r.Delete("/payment-settings/manual-qris", h.DeletePlatformManualQRIS)
