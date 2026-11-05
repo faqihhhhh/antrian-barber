@@ -29,10 +29,12 @@ aplikasi lokal di `http://localhost:5173`. Untuk alamat lain, set `PUBLIC_APP_UR
 Build situs statis:
 
 ```bash
-PUBLIC_APP_URL=https://app.example.com npm run build
+PUBLIC_APP_URL=https://app.example.com PUBLIC_SITE_URL=https://www.example.com npm run build
 npm run preview
 ```
 
-Ganti `app.example.com` dengan domain yang dipakai pada `APP_DOMAIN` di `.env.production`.
+Ganti domain dengan domain aplikasi dan website yang dipakai. `PUBLIC_SITE_URL` membuat alamat
+pratinjau berbagi (Open Graph) selalu menunjuk ke website publik; di Render nilainya dapat mengikuti
+URL `onrender.com` bawaan jika variabel ini tidak diatur.
 Hasil build ada di `website/dist/`. Halaman `/syarat` dan `/privasi` saat ini adalah draf; lengkapi
 identitas operator, kontak, penyedia produksi, lokasi data, dan jadwal retensi sebelum dipublikasikan.

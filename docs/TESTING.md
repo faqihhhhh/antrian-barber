@@ -138,8 +138,9 @@ yang tidak punya hak superuser atau `BYPASSRLS`, lalu membersihkan container dan
 
 Caddyfile memakai `APP_DOMAIN` untuk frontend/API dan `WEBSITE_DOMAIN` untuk website statis.
 Frontend/website harus sudah dibangun ke `frontend/dist` dan `website/dist`. Bangun website dengan
-`PUBLIC_APP_URL=https://app.example.com npm run build` dari `~/kapsflow/website` (sesuaikan domain),
-lalu pastikan hasil `website/dist/index.html` tidak memuat `localhost:5173`. Saat domain DNS sudah
+`PUBLIC_APP_URL=https://app.example.com PUBLIC_SITE_URL=https://www.example.com npm run build` dari
+`~/kapsflow/website` (sesuaikan domain), lalu pastikan metadata `og:image` memakai URL publik dan
+hasil `website/dist/index.html` tidak memuat localhost. Saat domain DNS sudah
 mengarah ke VPS dan port 80/443 terbuka, Caddy akan mengurus sertifikat HTTPS otomatis.
 
 ## Checklist browser (backend asli)
