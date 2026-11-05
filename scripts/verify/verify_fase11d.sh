@@ -42,6 +42,16 @@ free_session_date() {
 
 OWNER_EMAIL="$(curl -fsS -b cookiesB.txt "$API_BASE/v1/me" | jq -er '.user.email')"
 FOREIGN_OUTLET="$(curl -fsS -b cookies.txt "$API_BASE/v1/tenants/$TENANT_A/outlets" | jq -er '.[0].id')"
+FOREIGN_SETTINGS="$(curl -fsS -b cookies.txt "$API_BASE/v1/tenants/$TENANT_A/outlets" | jq -cer --arg id "$FOREIGN_OUTLET" '[.[] | select(.id == $id)][0] | {dp_price_rupiah, default_duration_minutes}')"
+
+FOREIGN_READ_STATUS="$(curl -sS -b cookiesB.txt "$API_BASE/v1/tenants/$TENANT_A/outlets" -o "$TMP" -w '%{http_code}')"
+check_code "owner tenant B ditolak saat membaca outlet tenant A" "bukan_owner" "$(jq -r '.error.code // "OK"' "$TMP")"
+check_code "respons baca lintas tenant memakai status 403" "403" "$FOREIGN_READ_STATUS"
+
+FOREIGN_WRITE_STATUS="$(curl -sS -b cookiesB.txt -X PATCH "$API_BASE/v1/tenants/$TENANT_A/outlets/$FOREIGN_OUTLET/settings" \
+  -H 'Content-Type: application/json' -d "$FOREIGN_SETTINGS" -o "$TMP" -w '%{http_code}')"
+check_code "owner tenant B ditolak saat mengubah outlet tenant A" "bukan_owner" "$(jq -r '.error.code // "OK"' "$TMP")"
+check_code "respons perubahan lintas tenant memakai status 403" "403" "$FOREIGN_WRITE_STATUS"
 
 invite_probe() {
   local cookie="$1"

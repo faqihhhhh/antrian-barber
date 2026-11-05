@@ -8,7 +8,7 @@ import (
 
 func TestSecurityHeaders(t *testing.T) {
 	called := false
-	handler := securityHeaders(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	handler := securityHeaders(false)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		called = true
 		w.WriteHeader(http.StatusNoContent)
 	}))
@@ -31,5 +31,16 @@ func TestSecurityHeaders(t *testing.T) {
 		if got := response.Header().Get(name); got != want {
 			t.Errorf("%s = %q, ingin %q", name, got, want)
 		}
+	}
+}
+
+func TestSecurityHeadersEnableHSTSInProduction(t *testing.T) {
+	handler := securityHeaders(true)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
+	if got := response.Header().Get("Strict-Transport-Security"); got != "max-age=31536000" {
+		t.Fatalf("Strict-Transport-Security = %q, ingin max-age=31536000", got)
 	}
 }

@@ -35,7 +35,8 @@ Skrip integrasi yang sudah disimpan di `scripts/verify/` mencakup `verify_fase11
 `verify_fase12c1_owner_outlet_settings.sh`, `verify_fase12c2_owner_staff_access.sh`, dan
 `verify_fase12c3_owner_payment_profile.sh`, `verify_fase12c7_owner_subscription.sh`, dan
 `verify_fase12c8_subscription_period.sh`. Skrip 11d
-memeriksa matriks owner, admin, kapster, pelanggan, dan orang luar; 11c1 menguji pembayaran lewat
+memeriksa matriks owner, admin, kapster, pelanggan, dan orang luar, termasuk owner tenant B yang
+mencoba membaca serta mengubah outlet tenant A; 11c1 menguji pembayaran lewat
 Midtrans tiruan; 12b menguji penutupan sesi lewat tanggal; 12c1 memeriksa respons outlet; 12c2
 memastikan daftar staf hanya bisa dibaca owner; 12c3 memeriksa status pembayaran dan izin QRIS owner.
 Skrip 12c7 memastikan hanya owner yang membaca status dan riwayat tagihan serta kolom internal tidak
@@ -117,9 +118,40 @@ Build harus sukses. Dockerfile menghasilkan binary statis dan menjalankannya seb
 berkas `.env` backend tidak dikirim sebagai build context.
 
 Workflow `.github/workflows/ci.yml` menjalankan tes/build Go, build/lint frontend, build website,
-validasi Compose/Caddy, build image API, dan uji migrasi penuh pada PostgreSQL sementara setiap push
-ke `main` dan pull request.
+govulncheck untuk kode Go, `npm audit` untuk frontend dan website, validasi Compose/Caddy, build image
+API, dan uji migrasi penuh pada PostgreSQL sementara setiap push ke `main` dan pull request.
 Workflow hanya memeriksa; tidak melakukan deploy.
+
+## Pemeriksaan keamanan saat deploy ke Render
+
+Pada Web Service API, set `APP_ENV=production` dan `DEV_AUTO_VERIFY=false`; pastikan
+`MIDTRANS_BASE_URL_OVERRIDE` kosong. Mode production mengaktifkan flag `Secure` pada cookie sesi dan
+header HSTS dari API. Setelah deploy, periksa respons login dan pastikan `Set-Cookie` memuat
+`Secure; HttpOnly; SameSite=Lax`, serta respons API memuat `Strict-Transport-Security`.
+
+Untuk setiap Render Static Site (aplikasi dan website profil), atur header `/*` pada **Settings →
+Headers** karena header dari API tidak berlaku pada dokumen HTML yang disajikan CDN statis:
+
+| Nama | Nilai |
+|---|---|
+| `Strict-Transport-Security` | `max-age=31536000` |
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `DENY` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
+| `Content-Security-Policy` | `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; worker-src 'self' blob:` |
+
+Untuk database produksi, buka halaman **Recovery** Render Postgres. Database berbayar mendapat
+point-in-time recovery (PITR), dengan jendela pemulihan mengikuti paket workspace. Buat **Create
+export** berkala dan unduh hasilnya ke penyimpanan lain yang terenkripsi serta aksesnya dibatasi;
+export Render disimpan tujuh hari. Uji pemulihan export ke database staging kosong, lalu periksa
+migrasi dan data penting sebelum menjadikannya pengganti database produksi. Render tidak membuat
+backup untuk database paket Free; gunakan `pg_dump` dari mesin tepercaya jika tetap memakai paket itu.
+Lihat [panduan backup dan pemulihan Render](https://render.com/docs/postgresql-backups).
+
+Backup lokal dari `make backup-verify` hanya membuktikan dump lokal dapat dipulihkan; itu tidak
+menggantikan backup produksi. Jika API dijalankan lebih dari satu instance, rate limiter dalam
+memori tidak berbagi hitungan antar-instance.
 
 ## Compose produksi
 

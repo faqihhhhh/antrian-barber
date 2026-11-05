@@ -39,10 +39,11 @@ func New(
 	analyticsSvc *analytics.Service,
 	accountSvc *account.Service,
 	publicSvc *publicpage.Service,
+	production bool,
 ) http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(securityHeaders)
+	r.Use(securityHeaders(production))
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(httpx.Recoverer(log))
@@ -56,7 +57,7 @@ func New(
 	})
 
 	r.Get("/healthz", healthHandler(log, pool))
-	r.Mount("/v1/auth", identity.Routes(identitySvc, log))
+	r.Mount("/v1/auth", identity.Routes(identitySvc, log, production))
 	r.Route("/v1/webhooks", func(wr chi.Router) {
 		queue.RegisterWebhookRoutes(wr, queueSvc, billingSvc, log, pool)
 	})

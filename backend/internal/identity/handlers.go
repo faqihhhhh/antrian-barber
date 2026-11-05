@@ -3,6 +3,7 @@ package identity
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"time"
@@ -11,13 +12,22 @@ import (
 )
 
 type Handlers struct {
-	svc *Service
-	log *slog.Logger
+	svc           *Service
+	log           *slog.Logger
+	secureCookies bool
 }
 
-func NewHandlers(svc *Service, log *slog.Logger) *Handlers {
-	return &Handlers{svc: svc, log: log}
+func NewHandlers(svc *Service, log *slog.Logger, secureCookies bool) *Handlers {
+	return &Handlers{svc: svc, log: log, secureCookies: secureCookies}
 }
+
+var resetPasswordPage = template.Must(template.New("reset-password").Parse(`<!doctype html><html><body style="font-family:sans-serif;max-width:400px;margin:40px auto">
+		<h2>Atur ulang password</h2>
+		<form method="POST" action="/v1/auth/reset-password">
+			<input type="hidden" name="token" value="{{.}}">
+			<input type="password" name="password" placeholder="Password baru" minlength="8" required style="width:100%;padding:8px;margin:8px 0">
+			<button type="submit" style="width:100%;padding:10px;background:#111827;color:#fff;border:none;border-radius:6px">Simpan Password</button>
+		</form></body></html>`))
 
 type registerRequest struct {
 	Email       string `json:"email"`
@@ -70,23 +80,35 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, r, h.log, err)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{
+	http.SetCookie(w, sessionCookie(rawToken, h.secureCookies || r.TLS != nil))
+	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Berhasil masuk"})
+}
+
+func sessionCookie(rawToken string, secure bool) *http.Cookie {
+	return &http.Cookie{
 		Name:     SessionCookieName,
 		Value:    rawToken,
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   r.TLS != nil, // otomatis true di produksi (HTTPS)
+		Secure:   secure,
 		Expires:  time.Now().Add(sessionTTL),
-	})
-	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Berhasil masuk"})
+	}
 }
 
 func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 	if cookie, err := r.Cookie(SessionCookieName); err == nil {
 		_ = h.svc.Logout(r.Context(), cookie.Value)
 	}
-	http.SetCookie(w, &http.Cookie{Name: SessionCookieName, Value: "", Path: "/", HttpOnly: true, MaxAge: -1})
+	http.SetCookie(w, &http.Cookie{
+		Name:     SessionCookieName,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   h.secureCookies || r.TLS != nil,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+	})
 	httpx.JSON(w, http.StatusOK, map[string]string{"message": "Berhasil keluar"})
 }
 
@@ -127,13 +149,12 @@ func (h *Handlers) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) ResetPasswordPage(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, `<!doctype html><html><body style="font-family:sans-serif;max-width:400px;margin:40px auto">
-		<h2>Atur ulang password</h2>
-		<form method="POST" action="/v1/auth/reset-password">
-			<input type="hidden" name="token" value="%s">
-			<input type="password" name="password" placeholder="Password baru" minlength="8" required style="width:100%%;padding:8px;margin:8px 0">
-			<button type="submit" style="width:100%%;padding:10px;background:#111827;color:#fff;border:none;border-radius:6px">Simpan Password</button>
-		</form></body></html>`, token)
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Referrer-Policy", "no-referrer")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'")
+	if err := resetPasswordPage.Execute(w, token); err != nil {
+		h.log.Error("gagal membuat halaman reset password", "err", err)
+	}
 }
 
 // ResetPasswordSubmit menerima form HTML (interim) maupun JSON (dipakai

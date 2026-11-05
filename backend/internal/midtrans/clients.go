@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha512"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -89,7 +90,7 @@ func (c *Client) ChargeQRIS(ctx context.Context, serverKey string, isProduction 
 		} `json:"actions"`
 	}
 	if err := json.Unmarshal(raw, &parsed); err != nil {
-		return nil, fmt.Errorf("membaca respons midtrans: %w (raw: %s)", err, string(raw))
+		return nil, fmt.Errorf("membaca respons midtrans: %w", err)
 	}
 	if resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("midtrans menolak charge: %s", parsed.StatusMessage)
@@ -147,7 +148,8 @@ func (c *Client) CheckStatus(ctx context.Context, serverKey string, isProduction
 // SHA512(order_id + status_code + gross_amount + ServerKey).
 func VerifySignature(orderID, statusCode, grossAmount, serverKey, signature string) bool {
 	sum := sha512.Sum512([]byte(orderID + statusCode + grossAmount + serverKey))
-	return hex.EncodeToString(sum[:]) == signature
+	expected := hex.EncodeToString(sum[:])
+	return subtle.ConstantTimeCompare([]byte(expected), []byte(signature)) == 1
 }
 
 func IsPaid(transactionStatus, fraudStatus string) bool {

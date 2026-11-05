@@ -2,12 +2,30 @@ package midtrans
 
 import (
 	"context"
+	"crypto/sha512"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 )
+
+func TestVerifySignature(t *testing.T) {
+	orderID, statusCode, grossAmount, serverKey := "order-123", "200", "10000.00", "server-secret"
+	sum := sha512.Sum512([]byte(orderID + statusCode + grossAmount + serverKey))
+	validSignature := hex.EncodeToString(sum[:])
+
+	if !VerifySignature(orderID, statusCode, grossAmount, serverKey, validSignature) {
+		t.Fatal("VerifySignature menolak tanda tangan yang valid")
+	}
+	if VerifySignature(orderID, statusCode, grossAmount, serverKey, validSignature[:len(validSignature)-1]+"0") {
+		t.Fatal("VerifySignature menerima tanda tangan yang salah")
+	}
+	if VerifySignature(orderID, statusCode, grossAmount, serverKey, "") {
+		t.Fatal("VerifySignature menerima tanda tangan kosong")
+	}
+}
 
 func TestChargeQRISUsesFiveMinuteExpiry(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

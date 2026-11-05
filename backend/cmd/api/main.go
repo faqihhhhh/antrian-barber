@@ -115,7 +115,7 @@ func run(log *slog.Logger) error {
 
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc, queueSvc, notifySvc, reviewSvc, analyticsSvc, accountSvc, publicSvc),
+		Handler:           api.New(log, pool, identitySvc, tenantSvc, billingSvc, profileSvc, staffSvc, queueSvc, notifySvc, reviewSvc, analyticsSvc, accountSvc, publicSvc, cfg.AppEnv == "production"),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

@@ -1,4 +1,4 @@
-FROM golang:1.27.1-alpine AS build
+FROM golang:1.27.3-alpine AS build
 
 WORKDIR /src
 COPY go.mod go.sum ./
@@ -6,7 +6,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/kapsflow ./cmd/api
 
-FROM golang:1.27.1-alpine AS goose-build
+FROM golang:1.27.3-alpine AS goose-build
 
 RUN CGO_ENABLED=0 go install -tags='no_mysql no_sqlite3 no_ydb no_clickhouse no_mssql no_vertica no_libsql no_azuresql' github.com/pressly/goose/v3/cmd/goose@v3.28.0
 

@@ -11,7 +11,7 @@ import (
 
 func TestLoginRouteRateLimit(t *testing.T) {
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
-	handler := Routes(nil, log)
+	handler := Routes(nil, log, false)
 	for attempt := 1; attempt <= 11; attempt++ {
 		request := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader("{"))
 		request.RemoteAddr = "192.0.2.10:12345"
