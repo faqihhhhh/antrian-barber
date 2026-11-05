@@ -74,6 +74,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 19-3 | Dashboard owner menampilkan performa kapster dengan endpoint owner-only yang didokumentasikan di OpenAPI |
 | 19-4 | Filter statistik owner menambahkan periode bulan berjalan dan rentang tanggal khusus dengan batas 93 hari |
 | 19-5 | Grafik tren harian menampilkan pendapatan dan tiket selesai, termasuk hari tanpa sesi sebagai nol |
+| 20-1 | Pemilih peran Owner/Admin/Kapster dipindah ke Pengaturan; pemilih header dan badge peran di samping nama bisnis dihapus |
 
 ## Berikutnya (urutan wajib)
 

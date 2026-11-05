@@ -37,7 +37,7 @@ export default function Pemilik() {
         <nav aria-label="Menu pengelolaan bisnis" className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <ManagementLink to="/pemilik/pembayaran" title="Pembayaran DP" currentPath={location.pathname} />
           <ManagementLink to="/pemilik/staf" title="Kelola staf" currentPath={location.pathname} />
-          <ManagementLink to="/pemilik/peran" title="Peran operasional" currentPath={location.pathname} />
+          <ManagementLink to="/pemilik/peran" title="Akses operasional" currentPath={location.pathname} />
           <ManagementLink to="/pemilik/statistik" title="Statistik" currentPath={location.pathname} />
           <ManagementLink to="/pemilik/ulasan" title="Ulasan pelanggan" currentPath={location.pathname} />
           <ManagementLink to="/pemilik/langganan" title="Langganan" currentPath={location.pathname} />
@@ -114,7 +114,7 @@ function OutletList({ membership }: { membership: Membership }) {
         <p className="text-sm leading-6 text-body-muted">Atur harga DP di outlet dan pasang QRIS. Aktifkan ruang Admin jika Anda ingin mengelola sesi antrean sendiri.</p>
         <div className="flex flex-wrap gap-2">
           <Link to="/pemilik/pembayaran" className="inline-flex rounded-xl border border-line-strong px-4 py-3 text-sm font-semibold text-ink">Atur pembayaran DP</Link>
-          <Link to="/pemilik/peran" className="inline-flex rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white">Atur peran operasional</Link>
+          <Link to="/pemilik/peran" className="inline-flex rounded-xl bg-ink px-4 py-3 text-sm font-semibold text-white">Atur akses operasional</Link>
         </div>
       </article>
       {outlets.data.map((outlet) => (

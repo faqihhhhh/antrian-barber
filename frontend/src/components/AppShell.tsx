@@ -10,9 +10,7 @@ type NavigationItem = { to: string; label: string; end?: boolean }
 type Workspace = { to: string; label: string }
 
 export default function AppShell() {
-  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false)
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false)
-  const workspaceTriggerRef = useRef<HTMLButtonElement>(null)
   const settingsMenuRef = useRef<HTMLDivElement>(null)
   const settingsTriggerRef = useRef<HTMLButtonElement>(null)
   const me = useMe()
@@ -47,6 +45,8 @@ export default function AppShell() {
     : isPlatformPage
       ? [{ to: '/pemilik-saas', label: 'Platform' }]
       : businessWorkspaces
+  const adminPath = location.pathname.match(/^\/kelola\/([^/]+)\/([^/]+)/)
+  const activeAdminPath = adminPath ? `/kelola/${adminPath[1]}/${adminPath[2]}` : workspaces.find((workspace) => workspace.label === 'Admin')?.to
   const activeWorkspace = isCustomerPage
     ? 'Pelanggan'
     : isOwnerPage
@@ -60,22 +60,12 @@ export default function AppShell() {
             : (isHomePage || isAccountPage) && workspaces.length === 1
               ? workspaces[0].label
               : undefined
+  const activeWorkspacePath = activeWorkspace === 'Admin'
+    ? activeAdminPath
+    : workspaces.find((workspace) => workspace.label === activeWorkspace)?.to
   const items = activeWorkspace
-    ? navigationFor(activeWorkspace, workspaces.find((workspace) => workspace.label === activeWorkspace)?.to)
+    ? navigationFor(activeWorkspace, activeWorkspacePath)
     : [{ to: '/', label: 'Beranda', end: true }]
-  const hasWorkspaceSwitcher = workspaces.length > 1
-
-  useEffect(() => {
-    if (!workspaceMenuOpen) return
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      setWorkspaceMenuOpen(false)
-      workspaceTriggerRef.current?.focus()
-    }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [workspaceMenuOpen])
-
   useEffect(() => {
     if (!settingsMenuOpen) return
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -116,36 +106,6 @@ export default function AppShell() {
           <Link to={customerContext ? '/pelanggan' : '/'} aria-label="Trimwait, beranda" className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-brand-ink">
             <Logo />
           </Link>
-          {hasWorkspaceSwitcher && <nav aria-label="Pindah ruang" className="hidden min-w-0 flex-1 justify-center gap-1 overflow-x-auto md:flex">
-            {workspaces.map((workspace) => <NavLink key={workspace.label} to={workspace.to} className={({ isActive }) => `inline-flex min-h-11 shrink-0 items-center rounded-xl px-3 text-sm font-semibold ${isActive ? 'bg-paper-raised text-ink' : 'text-body hover:bg-paper-raised'}`}>{workspace.label}</NavLink>)}
-          </nav>}
-          {hasWorkspaceSwitcher && <div className="relative md:hidden">
-            <button
-              ref={workspaceTriggerRef}
-              type="button"
-              aria-label="Pindah ruang"
-              aria-expanded={workspaceMenuOpen}
-              aria-controls="mobile-workspace-menu"
-              aria-haspopup="true"
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-line bg-white px-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-brand-ink"
-              onClick={() => setWorkspaceMenuOpen((open) => !open)}
-            >
-              {activeWorkspace ?? 'Pilih ruang'}
-              <span aria-hidden="true" className="text-xs">{workspaceMenuOpen ? '▲' : '▼'}</span>
-            </button>
-            {workspaceMenuOpen && <div id="mobile-workspace-menu" className="absolute left-0 top-full z-50 mt-2 min-w-40 rounded-xl border border-line bg-white p-1 shadow-lg">
-              {workspaces.map((workspace) => (
-                <NavLink
-                  key={workspace.label}
-                  to={workspace.to}
-                  className={({ isActive }) => `flex min-h-10 items-center rounded-lg px-3 text-sm font-semibold ${isActive ? 'bg-paper-raised text-ink' : 'text-body hover:bg-paper-raised'}`}
-                  onClick={() => setWorkspaceMenuOpen(false)}
-                >
-                  {workspace.label}
-                </NavLink>
-              ))}
-            </div>}
-          </div>}
           <nav aria-label="Menu ruang" className="hidden min-w-0 flex-1 justify-center gap-1 overflow-x-auto md:flex">
             {items.map((item) => <NavigationLink key={item.to} item={item} />)}
           </nav>
@@ -171,12 +131,19 @@ export default function AppShell() {
                 </svg>
               </button>
               {settingsMenuOpen && <div id="account-settings-menu" className="absolute right-0 top-full z-50 mt-2 min-w-44 rounded-xl border border-line bg-white p-1 shadow-lg">
+                {businessWorkspaces.length > 0 && <Link
+                  to="/peran"
+                  className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
+                  onClick={() => setSettingsMenuOpen(false)}
+                >
+                  Peran
+                </Link>}
                 {isOwner && <Link
                   to="/pemilik/peran"
                   className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
                   onClick={() => setSettingsMenuOpen(false)}
                 >
-                  Peran
+                  Akses operasional
                 </Link>}
                 <Link
                   to={customerContext ? '/pelanggan/akun' : '/akun'}

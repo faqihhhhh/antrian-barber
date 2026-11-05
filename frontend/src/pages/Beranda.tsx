@@ -7,12 +7,6 @@ import { Alert, Badge, Button, Field } from '../components/ui'
 import { displayTimezone } from '../lib/timezone'
 import { lastOutlet } from '../lib/storage'
 
-const ROLE_LABEL: Record<string, string> = {
-  owner: 'Pemilik bisnis',
-  admin: 'Admin',
-  kapster: 'Kapster',
-}
-
 const STATUS: Record<string, { label: string; tone: 'success' | 'warning' | 'danger' | 'neutral'; explanation?: string; action?: string }> = {
   aktif: { label: 'Aktif', tone: 'success' },
   masa_tenggang: {
@@ -124,9 +118,6 @@ export default function Beranda() {
           <article key={m.membership_id} className="flex flex-col rounded-2xl border border-line bg-white p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <h2 className="text-lg font-bold">{m.tenant_name}</h2>
-              <div className="flex flex-wrap gap-1.5">
-                {m.roles.map((role) => <Badge key={role} tone="neutral">{ROLE_LABEL[role] ?? role}</Badge>)}
-              </div>
             </div>
 
             <div className="mt-4 rounded-xl bg-paper px-4 py-3">

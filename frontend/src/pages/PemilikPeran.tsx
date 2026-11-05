@@ -17,9 +17,9 @@ export default function PemilikPeran() {
   return (
     <main className="mx-auto min-h-dvh max-w-md space-y-5 bg-paper px-5 py-6">
       <header>
-        <h1 className="text-2xl font-bold">Peran operasional</h1>
+          <h1 className="text-2xl font-bold">Akses operasional</h1>
         <p className="mt-2 text-sm leading-6 text-body-muted">
-          Aktifkan ruang Admin atau Kapster untuk diri sendiri. Pengaturan bisnis tetap berada di ruang Owner.
+          Atur apakah akun owner juga mendapat akses Admin atau Kapster. Untuk berpindah ruang kerja, buka Pengaturan lalu pilih Peran.
         </p>
       </header>
       {memberships.length === 0 ? (
@@ -56,7 +56,7 @@ function WorkRoles({ membership }: { membership: Membership }) {
     <section className="space-y-3 rounded-3xl border border-line bg-white p-5">
       <div>
         <h2 className="font-bold">{membership.tenant_name}</h2>
-        <p className="mt-1 text-sm text-body-muted">Owner selalu aktif. Peran ini menambah ruang kerja terpisah.</p>
+        <p className="mt-1 text-sm text-body-muted">Owner selalu aktif. Akses ini menambahkan ruang kerja Admin atau Kapster.</p>
       </div>
       <label className="flex min-h-12 items-center gap-3 rounded-xl border border-line px-4 py-3">
         <input type="checkbox" checked={enabled.admin} disabled={update.isPending} onChange={() => toggle('admin')} className="size-5 accent-brand" />
@@ -68,7 +68,7 @@ function WorkRoles({ membership }: { membership: Membership }) {
       </label>
       {enabled.kapster && <p className="text-sm text-body-muted">Ruang Kapster memakai outlet bisnis ini. Selesaikan layanan yang sedang berjalan sebelum menonaktifkan peran ini.</p>}
       {update.isError && <Alert>{messageOf(update.error)}</Alert>}
-      {update.isSuccess && <Alert tone="success">Peran operasional berhasil diperbarui.</Alert>}
+      {update.isSuccess && <Alert tone="success">Akses operasional berhasil diperbarui.</Alert>}
     </section>
   )
 }
