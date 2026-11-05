@@ -1344,23 +1344,60 @@ type MyTicketPayment struct {
 }
 
 type MyTicket struct {
-	TicketID       uuid.UUID        `json:"ticket_id"`
-	TenantID       uuid.UUID        `json:"tenant_id"`
-	OutletID       uuid.UUID        `json:"outlet_id"`
-	OutletName     string           `json:"outlet_name"`
-	OutletSlug     string           `json:"outlet_slug"`
-	OutletTimezone string           `json:"outlet_timezone"`
-	SessionID      uuid.UUID        `json:"session_id"`
-	SessionDate    string           `json:"session_date"`
-	TicketNumber   int32            `json:"ticket_number"`
-	Status         string           `json:"status"`
-	MatchCode      *string          `json:"match_code"`
-	CustomerName   *string          `json:"customer_name"`
-	Payment        *MyTicketPayment `json:"payment"`
-	Estimate       *EstimateResult  `json:"estimate"`
-	Reviewed       bool             `json:"reviewed"`
-	HasBeenCalled  bool             `json:"has_been_called"`
-	KapsterName    *string          `json:"kapster_name"`
+	TicketID        uuid.UUID        `json:"ticket_id"`
+	TenantID        uuid.UUID        `json:"tenant_id"`
+	OutletID        uuid.UUID        `json:"outlet_id"`
+	OutletName      string           `json:"outlet_name"`
+	OutletSlug      string           `json:"outlet_slug"`
+	OutletTimezone  string           `json:"outlet_timezone"`
+	SessionID       uuid.UUID        `json:"session_id"`
+	SessionDate     string           `json:"session_date"`
+	TicketNumber    int32            `json:"ticket_number"`
+	Status          string           `json:"status"`
+	MatchCode       *string          `json:"match_code"`
+	CustomerName    *string          `json:"customer_name"`
+	Payment         *MyTicketPayment `json:"payment"`
+	Estimate        *EstimateResult  `json:"estimate"`
+	Reviewed        bool             `json:"reviewed"`
+	HasBeenCalled   bool             `json:"has_been_called"`
+	KapsterName     *string          `json:"kapster_name"`
+	CanReport       bool             `json:"can_report"`
+	HasReport       bool             `json:"has_report"`
+	ReportComment   *string          `json:"report_comment"`
+	ReportCreatedAt *time.Time       `json:"report_created_at"`
+	RefundSentAt    *time.Time       `json:"refund_sent_at"`
+}
+
+type TicketReportResponse struct {
+	ID                  uuid.UUID  `json:"id"`
+	TicketID            uuid.UUID  `json:"ticket_id"`
+	TicketNumber        int32      `json:"ticket_number"`
+	QueuePosition       int32      `json:"queue_position"`
+	CustomerName        *string    `json:"customer_name"`
+	CustomerDisplayName *string    `json:"customer_display_name"`
+	CustomerEmail       string     `json:"customer_email"`
+	OutletName          string     `json:"outlet_name"`
+	OutletAddress       *string    `json:"outlet_address"`
+	SessionDate         string     `json:"session_date"`
+	TicketStatus        string     `json:"ticket_status"`
+	TicketCreatedAt     time.Time  `json:"ticket_created_at"`
+	CallCount           int32      `json:"call_count"`
+	FirstCalledAt       *time.Time `json:"first_called_at"`
+	LastCalledAt        *time.Time `json:"last_called_at"`
+	PaymentMethod       string     `json:"payment_method"`
+	AmountRupiah        int64      `json:"amount_rupiah"`
+	PaidAt              *time.Time `json:"paid_at"`
+	Comment             string     `json:"comment"`
+	ReportedAt          time.Time  `json:"reported_at"`
+	RefundSentAt        *time.Time `json:"refund_sent_at"`
+}
+
+type TicketReportSubmission struct {
+	ID           uuid.UUID  `json:"id"`
+	TicketID     uuid.UUID  `json:"ticket_id"`
+	Comment      string     `json:"comment"`
+	CreatedAt    time.Time  `json:"created_at"`
+	RefundSentAt *time.Time `json:"refund_sent_at"`
 }
 
 // MyTickets: tiket aktif dan yang selesai 7 hari terakhir milik pelanggan ini.
@@ -1410,6 +1447,19 @@ func (s *Service) MyTickets(ctx context.Context, userID uuid.UUID) ([]MyTicket, 
 			OutletName: r.OutletName, OutletSlug: r.OutletSlug, OutletTimezone: r.OutletTimezone,
 			SessionID: r.SessionID, SessionDate: r.SessionDate.Time.Format("2006-01-02"),
 			TicketNumber: r.TicketNumber, Status: r.Status, Reviewed: r.Reviewed,
+			CanReport: r.CanReport, HasReport: r.HasReport,
+		}
+		if r.ReportComment.Valid {
+			v := r.ReportComment.String
+			item.ReportComment = &v
+		}
+		if r.ReportCreatedAt.Valid {
+			v := r.ReportCreatedAt.Time
+			item.ReportCreatedAt = &v
+		}
+		if r.RefundSentAt.Valid {
+			v := r.RefundSentAt.Time
+			item.RefundSentAt = &v
 		}
 		_, item.HasBeenCalled = called[r.TicketID]
 		if name, ok := kapsterNames[r.TicketID]; ok {
@@ -1469,4 +1519,116 @@ func (s *Service) ManualQRISImage(ctx context.Context, ticketID uuid.UUID) (stri
 		return "", nil, httpx.NotFound("qris_tidak_tersedia", "QRIS tidak tersedia", nil)
 	}
 	return contentType, data, nil
+}
+
+func (s *Service) SubmitTicketReport(ctx context.Context, ticketID, userID uuid.UUID, comment string) (TicketReportSubmission, error) {
+	comment = strings.TrimSpace(comment)
+	if comment == "" || utf8.RuneCountInString(comment) > 2000 {
+		return TicketReportSubmission{}, httpx.BadRequest("komentar_tidak_valid", "Komentar laporan wajib diisi dan maksimal 2.000 karakter", nil)
+	}
+	q := s.queries(ctx)
+	eligible, err := q.IsTicketEligibleForReport(ctx, db.IsTicketEligibleForReportParams{ID: ticketID, CustomerUserID: dbx.UUID(userID)})
+	if err != nil {
+		return TicketReportSubmission{}, httpx.Internal(fmt.Errorf("memeriksa kelayakan laporan: %w", err))
+	}
+	if !eligible {
+		return TicketReportSubmission{}, httpx.Conflict("tiket_belum_memenuhi_syarat_laporan", "Laporan hanya tersedia untuk tiket ber-DP yang belum diproses setelah hari sesi berakhir", nil)
+	}
+	ticket, err := q.GetTicketByID(ctx, ticketID)
+	if err != nil {
+		return TicketReportSubmission{}, httpx.NotFound("tiket_tidak_ditemukan", "Tiket tidak ditemukan", nil)
+	}
+	row, err := q.CreateTicketReport(ctx, db.CreateTicketReportParams{TenantID: ticket.TenantID, TicketID: ticketID, CustomerUserID: userID, Comment: comment})
+	if err != nil {
+		if pgerr.IsUniqueViolationOn(err, "ticket_reports_ticket_id_key") {
+			return TicketReportSubmission{}, httpx.Conflict("laporan_sudah_dikirim", "Laporan untuk tiket ini sudah dikirim", nil)
+		}
+		return TicketReportSubmission{}, httpx.Internal(fmt.Errorf("menyimpan laporan tiket: %w", err))
+	}
+	return TicketReportSubmission{ID: row.ID, TicketID: row.TicketID, Comment: row.Comment, CreatedAt: row.CreatedAt.Time}, nil
+}
+
+func (s *Service) ListTicketReports(ctx context.Context, tenantID, userID uuid.UUID) ([]TicketReportResponse, error) {
+	q := s.queries(ctx)
+	membership, err := q.GetMembershipForUserAndTenant(ctx, db.GetMembershipForUserAndTenantParams{TenantID: tenantID, UserID: userID})
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && !slices.Contains(membership.Roles, "owner")) {
+		return nil, httpx.Forbidden("bukan_owner", "Hanya owner yang bisa melihat laporan refund", nil)
+	}
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("memeriksa owner laporan refund: %w", err))
+	}
+	rows, err := q.ListTicketReportsByTenant(ctx, tenantID)
+	if err != nil {
+		return nil, httpx.Internal(fmt.Errorf("mengambil laporan refund: %w", err))
+	}
+	result := make([]TicketReportResponse, 0, len(rows))
+	for _, row := range rows {
+		item := TicketReportResponse{ID: row.ID, TicketID: row.TicketID, TicketNumber: row.TicketNumber, QueuePosition: row.QueuePosition, CustomerEmail: row.CustomerEmail,
+			OutletName: row.OutletName, TicketStatus: row.TicketStatus, TicketCreatedAt: row.TicketCreatedAt.Time, CallCount: row.CallCount,
+			PaymentMethod: row.PaymentMethod, AmountRupiah: row.AmountRupiah, Comment: row.Comment, ReportedAt: row.ReportCreatedAt.Time}
+		if row.CustomerName.Valid {
+			v := row.CustomerName.String
+			item.CustomerName = &v
+		}
+		if row.CustomerDisplayName.Valid {
+			v := row.CustomerDisplayName.String
+			item.CustomerDisplayName = &v
+		}
+		if row.OutletAddress.Valid {
+			v := row.OutletAddress.String
+			item.OutletAddress = &v
+		}
+		if row.FirstCalledAt.Valid {
+			v := row.FirstCalledAt.Time
+			item.FirstCalledAt = &v
+		}
+		if row.LastCalledAt.Valid {
+			v := row.LastCalledAt.Time
+			item.LastCalledAt = &v
+		}
+		if row.SessionDate.Valid {
+			item.SessionDate = row.SessionDate.Time.Format("2006-01-02")
+		}
+		if row.PaidAt.Valid {
+			v := row.PaidAt.Time
+			item.PaidAt = &v
+		}
+		if row.RefundSentAt.Valid {
+			v := row.RefundSentAt.Time
+			item.RefundSentAt = &v
+		}
+		result = append(result, item)
+	}
+	return result, nil
+}
+
+func (s *Service) MarkTicketReportRefundSent(ctx context.Context, tenantID, reportID, userID uuid.UUID) (TicketReportResponse, error) {
+	q := s.queries(ctx)
+	membership, err := q.GetMembershipForUserAndTenant(ctx, db.GetMembershipForUserAndTenantParams{TenantID: tenantID, UserID: userID})
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && !slices.Contains(membership.Roles, "owner")) {
+		return TicketReportResponse{}, httpx.Forbidden("bukan_owner", "Hanya owner yang bisa mengonfirmasi pengembalian", nil)
+	}
+	if err != nil {
+		return TicketReportResponse{}, httpx.Internal(fmt.Errorf("memeriksa owner refund: %w", err))
+	}
+	updated, err := q.MarkTicketReportRefundSent(ctx, db.MarkTicketReportRefundSentParams{ID: reportID, RefundConfirmedBy: dbx.UUID(userID)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return TicketReportResponse{}, httpx.NotFound("laporan_tidak_ditemukan", "Laporan tidak ditemukan", nil)
+	}
+	if err != nil {
+		return TicketReportResponse{}, httpx.Internal(fmt.Errorf("mencatat refund terkirim: %w", err))
+	}
+	if updated.TenantID != tenantID {
+		return TicketReportResponse{}, httpx.NotFound("laporan_tidak_ditemukan", "Laporan tidak ditemukan", nil)
+	}
+	items, err := s.ListTicketReports(ctx, tenantID, userID)
+	if err != nil {
+		return TicketReportResponse{}, err
+	}
+	for _, item := range items {
+		if item.ID == reportID {
+			return item, nil
+		}
+	}
+	return TicketReportResponse{}, httpx.NotFound("laporan_tidak_ditemukan", "Laporan tidak ditemukan", nil)
 }

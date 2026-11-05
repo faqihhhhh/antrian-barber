@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { useQueryClient } from '@tanstack/react-query'
-import { messageOf } from '../api/client'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { api, ApiError, messageOf } from '../api/client'
 import PaymentPanel from '../components/PaymentPanel'
 import ReviewForm from '../components/ReviewForm'
 import TicketStub from '../components/TicketStub'
@@ -19,6 +19,18 @@ export default function Tiket() {
   // Lebih sering diperiksa saat menunggu pembayaran (status berubah begitu admin/Midtrans mengonfirmasi).
   const tickets = useMyTickets(false)
   const ticket = tickets.data?.find((t) => t.ticket_id === ticketId)
+  const [reportComment, setReportComment] = useState('')
+  const submitReport = useMutation({
+    mutationFn: async () => {
+      if (!ticketId) throw new Error('Tiket tidak ditemukan')
+      const { data, error, response } = await api.POST('/v1/me/tickets/{ticketID}/report', {
+        params: { path: { ticketID: ticketId } }, body: { comment: reportComment },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data
+    },
+    onSuccess: () => { setReportComment(''); void queryClient.invalidateQueries({ queryKey: MY_TICKETS_KEY }) },
+  })
   const live = ticket && isActiveStatus(ticket.status)
   const activeTicketID = ticket?.ticket_id
   const activeTicketStatus = ticket?.status
@@ -98,6 +110,20 @@ export default function Tiket() {
       )}
       {(ticket.status === 'waiting' || ticket.status === 'called') && <StatusBody ticket={ticket} />}
       <StatusStepper status={ticket.status} />
+      {ticket.has_report ? (
+        <section className="space-y-2 rounded-2xl border border-line bg-white p-4" aria-label="Laporan refund">
+          <h2 className="font-bold">Laporan terkirim</h2>
+          <p className="whitespace-pre-wrap text-sm text-body">{ticket.report_comment}</p>
+          {ticket.refund_sent_at ? <Alert tone="success">Owner menandai pengembalian DP sudah dikirim.</Alert> : <p className="text-sm text-body-muted">Owner outlet akan meninjau laporan ini.</p>}
+        </section>
+      ) : ticket.can_report && (
+        <form className="space-y-3 rounded-2xl border border-line bg-white p-4" onSubmit={(event) => { event.preventDefault(); submitReport.mutate() }}>
+          <div><h2 className="font-bold">Laporkan tiket belum diproses</h2><p className="mt-1 text-sm text-body-muted">Sesi outlet sudah berakhir dan tiket Anda belum mulai dilayani. Tulis komentar untuk owner terkait pengembalian DP.</p></div>
+          <label className="block"><span className="mb-1 block text-sm font-medium text-body">Komentar untuk owner</span><textarea className="w-full rounded-xl border border-line-strong bg-white px-4 py-3 text-base text-ink outline-none focus-visible:border-brand-ink focus-visible:ring-2 focus-visible:ring-brand-ink" value={reportComment} onChange={(event) => setReportComment(event.target.value)} maxLength={2000} required rows={4} /></label>
+          {submitReport.isError && <Alert>{messageOf(submitReport.error)}</Alert>}
+          <Button type="submit" loading={submitReport.isPending} disabled={!reportComment.trim()}>Kirim laporan</Button>
+        </form>
+      )}
       {ticket.status === 'waiting' && <PushPrompt />}
       {ticket.status !== 'waiting' && ticket.status !== 'called' && <StatusBody ticket={ticket} />}
     </main>

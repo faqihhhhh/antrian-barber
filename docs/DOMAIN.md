@@ -38,7 +38,7 @@ Owner juga dapat mengubah peran operasional dan outlet tugas staf dari halaman K
   `customer_user_id` (kosong untuk tiket offline), `turn_notified_at`.
 - `ticket_payments`: `method` (`midtrans` atau `manual`), `status` (`pending`, `paid`, `failed`),
   `amount_rupiah`, `unique_code`, `midtrans_order_id`, `qr_code_url`, `expires_at`, `confirmed_by`.
-- `ticket_events` (jejak kejadian tiket), kapster state (siap atau sibuk), `reviews`,
+- `ticket_events` (jejak kejadian tiket), kapster state (siap atau sibuk), `reviews`, `ticket_reports` (komentar pelanggan untuk tiket DP yang belum diproses dan status refund manual),
   `push_subscriptions`, `sessions` (sesi login), `tokens` (verifikasi email, reset sandi).
 
 ## Langganan tenant
@@ -130,6 +130,18 @@ per 5 menit.
 Hanya pemilik tiket, hanya tiket `completed`, satu kali per tiket, rating 1..5, komentar maksimal
 1000 karakter. Kode error: `rating_tidak_valid`, `komentar_terlalu_panjang`, `tiket_belum_selesai`,
 `sudah_memberi_ulasan`, `bukan_pemilik_tiket`.
+
+## Laporan refund DP
+
+Pelanggan dapat mengirim satu komentar laporan untuk tiket online yang DP-nya sudah `paid`, statusnya
+masih `waiting` atau `called`, dan tanggal sesi lokal outlet sudah terlewati. Tiket `in_progress`
+dianggap sudah diproses dan tidak memenuhi syarat. Pengiriman diperiksa ulang di service dan database.
+Owner melihat komentar bersama identitas pelanggan, outlet, tanggal serta waktu tiket, metode dan
+nominal DP, waktu pembayaran, status/posisi antrean terkini, serta jumlah dan waktu panggilan yang
+tercatat. Posisi antrean saat panggilan tidak disimpan oleh sistem. Owner menandai refund sudah dikirim secara manual;
+Trimwait tidak mengirim uang atau memanggil API refund Midtrans. Waktu konfirmasi dan owner yang
+mencatatnya disimpan. Pelanggan hanya membaca laporan tiketnya sendiri, sementara daftar dan perubahan
+status hanya tersedia untuk owner tenant.
 
 ## Notifikasi
 

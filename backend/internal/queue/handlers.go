@@ -553,6 +553,65 @@ func (h *Handlers) MyTickets(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, items)
 }
 
+type submitTicketReportRequest struct {
+	Comment string `json:"comment"`
+}
+
+func (h *Handlers) SubmitTicketReport(w http.ResponseWriter, r *http.Request) {
+	ticketID, err := param(r, "ticketID")
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("ticket_id_tidak_valid", "ID tiket tidak valid", err))
+		return
+	}
+	var req submitTicketReportRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("body_tidak_valid", "Format request tidak valid", err))
+		return
+	}
+	user, _ := identity.UserFromContext(r.Context())
+	result, err := h.svc.SubmitTicketReport(r.Context(), ticketID, user.ID, req.Comment)
+	if err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusCreated, result)
+}
+
+func (h *Handlers) ListTicketReports(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := param(r, "tenantID")
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("tenant_id_tidak_valid", "ID tenant tidak valid", err))
+		return
+	}
+	user, _ := identity.UserFromContext(r.Context())
+	result, err := h.svc.ListTicketReports(r.Context(), tenantID, user.ID)
+	if err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, result)
+}
+
+func (h *Handlers) MarkTicketReportRefundSent(w http.ResponseWriter, r *http.Request) {
+	tenantID, err := param(r, "tenantID")
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("tenant_id_tidak_valid", "ID tenant tidak valid", err))
+		return
+	}
+	reportID, err := param(r, "reportID")
+	if err != nil {
+		httpx.Error(w, r, h.log, httpx.BadRequest("report_id_tidak_valid", "ID laporan tidak valid", err))
+		return
+	}
+	user, _ := identity.UserFromContext(r.Context())
+	result, err := h.svc.MarkTicketReportRefundSent(r.Context(), tenantID, reportID, user.ID)
+	if err != nil {
+		httpx.Error(w, r, h.log, err)
+		return
+	}
+	httpx.JSON(w, http.StatusOK, result)
+}
+
 func (h *Handlers) MyQRISImage(w http.ResponseWriter, r *http.Request) {
 	ticketID, err := param(r, "ticketID")
 	if err != nil {

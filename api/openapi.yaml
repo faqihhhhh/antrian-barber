@@ -1282,8 +1282,47 @@ paths:
           description: Tiket berhasil ditambahkan
           content:
             application/json:
+              schema: { $ref: '#/components/schemas/QueueTicket' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/refund-reports:
+    get:
+      operationId: listTicketRefundReports
+      tags: [owner]
+      summary: Laporan pelanggan untuk refund DP yang belum diproses
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+      responses:
+        '200':
+          description: Laporan pelanggan dan informasi tiket serta DP
+          content:
+            application/json:
               schema:
-                $ref: '#/components/schemas/QueueTicket'
+                type: array
+                items: { $ref: '#/components/schemas/TicketRefundReport' }
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/refund-reports/{reportID}/mark-sent:
+    post:
+      operationId: markTicketRefundSent
+      tags: [owner]
+      summary: Catat bahwa owner sudah mengirim refund secara manual
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - name: reportID
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Status pengembalian diperbarui
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TicketRefundReport' }
         default:
           $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/queue-sessions/{sessionID}/pending-manual-payments:
@@ -1719,6 +1758,32 @@ paths:
               schema:
                 type: string
                 format: binary
+        default:
+          $ref: '#/components/responses/Error'
+  /v1/me/tickets/{ticketID}/report:
+    post:
+      operationId: submitTicketRefundReport
+      tags: [pelanggan]
+      summary: Kirim komentar laporan untuk tiket DP yang tidak diproses
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TicketID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [comment]
+              properties:
+                comment: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '201':
+          description: Laporan terkirim ke owner outlet
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TicketReportSubmission' }
         default:
           $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/tickets/{ticketID}/review:
@@ -2231,6 +2296,45 @@ components:
           type: string
           nullable: true
           description: Nama panggilan kapster yang sedang atau telah melayani tiket.
+        can_report: { type: boolean }
+        has_report: { type: boolean }
+        report_comment: { type: string, nullable: true }
+        report_created_at: { type: string, format: date-time, nullable: true }
+        refund_sent_at: { type: string, format: date-time, nullable: true }
+    TicketReportSubmission:
+      type: object
+      required: [id, ticket_id, comment, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        ticket_id: { type: string, format: uuid }
+        comment: { type: string }
+        created_at: { type: string, format: date-time }
+        refund_sent_at: { type: string, format: date-time, nullable: true }
+    TicketRefundReport:
+      type: object
+      required: [id, ticket_id, ticket_number, customer_email, outlet_name, session_date, ticket_status, ticket_created_at, payment_method, amount_rupiah, comment, reported_at]
+      properties:
+        id: { type: string, format: uuid }
+        ticket_id: { type: string, format: uuid }
+        ticket_number: { type: integer }
+        queue_position: { type: integer }
+        customer_name: { type: string, nullable: true }
+        customer_display_name: { type: string, nullable: true }
+        customer_email: { type: string, format: email }
+        outlet_name: { type: string }
+        outlet_address: { type: string, nullable: true }
+        session_date: { type: string, format: date }
+        ticket_status: { type: string }
+        ticket_created_at: { type: string, format: date-time }
+        call_count: { type: integer }
+        first_called_at: { type: string, format: date-time, nullable: true }
+        last_called_at: { type: string, format: date-time, nullable: true }
+        payment_method: { type: string, enum: [manual, midtrans] }
+        amount_rupiah: { type: integer, format: int64 }
+        paid_at: { type: string, format: date-time, nullable: true }
+        comment: { type: string }
+        reported_at: { type: string, format: date-time }
+        refund_sent_at: { type: string, format: date-time, nullable: true }
     MessageResponse:
       type: object
       required: [message]

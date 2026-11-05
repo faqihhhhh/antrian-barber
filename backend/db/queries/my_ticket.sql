@@ -18,12 +18,19 @@ SELECT
     p.amount_rupiah,
     p.expires_at AS payment_expires_at,
     p.qr_code_url,
-    (r.id IS NOT NULL)::boolean AS reviewed
+    (r.id IS NOT NULL)::boolean AS reviewed,
+    (tr.id IS NOT NULL)::boolean AS has_report,
+    tr.comment AS report_comment,
+    tr.created_at AS report_created_at,
+    tr.refund_sent_at,
+    COALESCE(t.channel = 'online' AND t.status IN ('waiting', 'called') AND p.status = 'paid'
+      AND qs.session_date < (now() AT TIME ZONE o.timezone)::date, false)::boolean AS can_report
 FROM tickets t
 JOIN queue_sessions qs ON qs.id = t.queue_session_id
 JOIN outlets o ON o.id = qs.outlet_id
 LEFT JOIN ticket_payments p ON p.ticket_id = t.id
 LEFT JOIN reviews r ON r.ticket_id = t.id
+LEFT JOIN ticket_reports tr ON tr.ticket_id = t.id AND tr.customer_user_id = t.customer_user_id
 WHERE t.customer_user_id = sqlc.arg(user_id)::uuid
   AND (
     t.status IN ('pending_payment', 'waiting', 'called', 'in_progress')

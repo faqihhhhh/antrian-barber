@@ -951,6 +951,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/{tenantID}/refund-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Laporan pelanggan untuk refund DP yang belum diproses */
+        get: operations["listTicketRefundReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/refund-reports/{reportID}/mark-sent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Catat bahwa owner sudah mengirim refund secara manual */
+        post: operations["markTicketRefundSent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/queue-sessions/{sessionID}/pending-manual-payments": {
         parameters: {
             query?: never;
@@ -1274,6 +1308,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/tickets/{ticketID}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Kirim komentar laporan untuk tiket DP yang tidak diproses */
+        post: operations["submitTicketRefundReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/{tenantID}/tickets/{ticketID}/review": {
         parameters: {
             query?: never;
@@ -1575,6 +1626,59 @@ export interface components {
             has_been_called: boolean;
             /** @description Nama panggilan kapster yang sedang atau telah melayani tiket. */
             kapster_name: string | null;
+            can_report?: boolean;
+            has_report?: boolean;
+            report_comment?: string | null;
+            /** Format: date-time */
+            report_created_at?: string | null;
+            /** Format: date-time */
+            refund_sent_at?: string | null;
+        };
+        TicketReportSubmission: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            ticket_id: string;
+            comment: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            refund_sent_at?: string | null;
+        };
+        TicketRefundReport: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            ticket_id: string;
+            ticket_number: number;
+            queue_position?: number;
+            customer_name?: string | null;
+            customer_display_name?: string | null;
+            /** Format: email */
+            customer_email: string;
+            outlet_name: string;
+            outlet_address?: string | null;
+            /** Format: date */
+            session_date: string;
+            ticket_status: string;
+            /** Format: date-time */
+            ticket_created_at: string;
+            call_count?: number;
+            /** Format: date-time */
+            first_called_at?: string | null;
+            /** Format: date-time */
+            last_called_at?: string | null;
+            /** @enum {string} */
+            payment_method: "manual" | "midtrans";
+            /** Format: int64 */
+            amount_rupiah: number;
+            /** Format: date-time */
+            paid_at?: string | null;
+            comment: string;
+            /** Format: date-time */
+            reported_at: string;
+            /** Format: date-time */
+            refund_sent_at?: string | null;
         };
         MessageResponse: {
             message: string;
@@ -3431,6 +3535,53 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
+    listTicketRefundReports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Laporan pelanggan dan informasi tiket serta DP */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketRefundReport"][];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    markTicketRefundSent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+                reportID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status pengembalian diperbarui */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketRefundReport"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
     listPendingManualPayments: {
         parameters: {
             query?: never;
@@ -3878,6 +4029,35 @@ export interface operations {
                     "image/png": string;
                     "image/jpeg": string;
                     "image/webp": string;
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    submitTicketRefundReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketID: components["parameters"]["TicketID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    comment: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Laporan terkirim ke owner outlet */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketReportSubmission"];
                 };
             };
             default: components["responses"]["Error"];

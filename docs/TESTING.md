@@ -158,6 +158,17 @@ perubahan dan aktif kembali setelah nilai diubah; kembalikan ke nilai awal dan p
 lagi. Tekan **Tambah outlet**, isi nama/zona waktu/alamat, lalu pastikan outlet baru muncul setelah
 disimpan. Buka tautan outlet dan pastikan halaman publiknya masih bisa dibuka.
 
+Untuk laporan refund DP, siapkan tiket online milik pelanggan yang DP-nya sudah `paid` dan statusnya
+`waiting` atau `called` pada sesi bertanggal lampau menurut zona waktu outlet. Pastikan detail tiket
+menampilkan form **Laporkan tiket belum diproses** dan pengiriman komentar membuat laporan muncul di
+**Owner → Laporan refund** bersama nomor tiket, tanggal sesi, outlet, nama/email pelanggan, waktu ambil
+tiket, metode/nominal/waktu pembayaran, status tiket, dan komentar. Kirim ulang laporan untuk tiket
+yang sama dan pastikan ditolak. Pastikan tiket `pending_payment`, `in_progress`, `completed`, tiket
+belum lewat tanggalnya, dan tiket yang bukan milik pelanggan tidak bisa membuat laporan. Login sebagai
+admin atau owner tenant lain dan pastikan daftar serta aksi refund ditolak. Sebagai owner yang benar,
+tandai refund sudah dikirim, muat ulang halaman owner dan tiket pelanggan, lalu pastikan status serta
+waktu konfirmasi tetap tampil.
+
 Untuk memastikan tiket no-show tidak membuat antrean berputar, siapkan cookie jar baru untuk akun
 admin dan kapster yang ditugaskan ke outlet tenant aktif. Jangan gunakan cookie jar lama yang pernah
 terunggah ke repo. Jalankan:

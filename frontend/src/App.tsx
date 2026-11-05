@@ -22,6 +22,7 @@ const PemilikPeran = lazy(() => import('./pages/PemilikPeran'))
 const PemilikPembayaran = lazy(() => import('./pages/PemilikPembayaran'))
 const PemilikStatistik = lazy(() => import('./pages/PemilikStatistik'))
 const PemilikUlasan = lazy(() => import('./pages/PemilikUlasan'))
+const PemilikRefund = lazy(() => import('./pages/PemilikRefund'))
 const PemilikLangganan = lazy(() => import('./pages/PemilikLangganan'))
 const PemilikSaaS = lazy(() => import('./pages/PemilikSaaS'))
 const PemilikMulai = lazy(() => import('./pages/PemilikMulai'))
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="pemilik/pembayaran" element={<PemilikPembayaran />} />
           <Route path="pemilik/statistik" element={<PemilikStatistik />} />
           <Route path="pemilik/ulasan" element={<PemilikUlasan />} />
+          <Route path="pemilik/refund" element={<PemilikRefund />} />
           <Route path="pemilik/langganan" element={<PemilikLangganan />} />
           <Route path="pemilik-saas" element={<PemilikSaaS />} />
           <Route path="mulai-bisnis" element={<PemilikMulai />} />

@@ -228,7 +228,7 @@ function navigationFor(workspace: string, workspacePath?: string): NavigationIte
 
   switch (workspace) {
     case 'Owner':
-      return [home, { to: '/pemilik', label: 'Bisnis', end: true }]
+      return [home, { to: '/pemilik', label: 'Bisnis', end: true }, { to: '/pemilik/refund', label: 'Laporan refund' }]
     case 'Admin':
       return [home, { to: workspacePath ?? '/admin', label: 'Kelola antrean' }]
     case 'Kapster':

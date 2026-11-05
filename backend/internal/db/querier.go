@@ -51,6 +51,7 @@ type Querier interface {
 	CreateTicket(ctx context.Context, arg CreateTicketParams) (Ticket, error)
 	CreateTicketEvent(ctx context.Context, arg CreateTicketEventParams) error
 	CreateTicketPayment(ctx context.Context, arg CreateTicketPaymentParams) (TicketPayment, error)
+	CreateTicketReport(ctx context.Context, arg CreateTicketReportParams) (CreateTicketReportRow, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteMembershipOutlets(ctx context.Context, membershipID uuid.UUID) error
 	DeletePushSubscription(ctx context.Context, arg DeletePushSubscriptionParams) error
@@ -94,6 +95,7 @@ type Querier interface {
 	HasActiveTicketForMembership(ctx context.Context, assignedMembershipID pgtype.UUID) (bool, error)
 	IncreaseQueueQuota(ctx context.Context, arg IncreaseQueueQuotaParams) (QueueSession, error)
 	IsPlatformAdmin(ctx context.Context, userID uuid.UUID) (bool, error)
+	IsTicketEligibleForReport(ctx context.Context, arg IsTicketEligibleForReportParams) (bool, error)
 	ListActivePlans(ctx context.Context) ([]Plan, error)
 	ListCalledTicketIDsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]uuid.UUID, error)
 	ListCalledTicketIDsForTickets(ctx context.Context, ticketIds []uuid.UUID) ([]uuid.UUID, error)
@@ -121,6 +123,7 @@ type Querier interface {
 	ListStaffInvitationLinks(ctx context.Context, tenantID uuid.UUID) ([]ListStaffInvitationLinksRow, error)
 	ListSubscriptionsEndingSoon(ctx context.Context) ([]ListSubscriptionsEndingSoonRow, error)
 	ListTenants(ctx context.Context) ([]Tenant, error)
+	ListTicketReportsByTenant(ctx context.Context, tenantID uuid.UUID) ([]ListTicketReportsByTenantRow, error)
 	ListTicketsAwaitingSettlement(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	ListTicketsBySession(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
 	ListUpcomingWaitingTickets(ctx context.Context, queueSessionID uuid.UUID) ([]Ticket, error)
@@ -135,6 +138,7 @@ type Querier interface {
 	MarkTicketInProgress(ctx context.Context, id uuid.UUID) error
 	MarkTicketPaymentFailed(ctx context.Context, id uuid.UUID) (int64, error)
 	MarkTicketPaymentPaid(ctx context.Context, arg MarkTicketPaymentPaidParams) (int64, error)
+	MarkTicketReportRefundSent(ctx context.Context, arg MarkTicketReportRefundSentParams) (MarkTicketReportRefundSentRow, error)
 	MarkTicketWaiting(ctx context.Context, id uuid.UUID) error
 	MarkUserEmailVerified(ctx context.Context, id uuid.UUID) error
 	NextQueuePosition(ctx context.Context, queueSessionID uuid.UUID) (int32, error)

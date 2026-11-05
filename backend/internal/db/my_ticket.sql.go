@@ -32,12 +32,19 @@ SELECT
     p.amount_rupiah,
     p.expires_at AS payment_expires_at,
     p.qr_code_url,
-    (r.id IS NOT NULL)::boolean AS reviewed
+    (r.id IS NOT NULL)::boolean AS reviewed,
+    (tr.id IS NOT NULL)::boolean AS has_report,
+    tr.comment AS report_comment,
+    tr.created_at AS report_created_at,
+    tr.refund_sent_at,
+    COALESCE(t.channel = 'online' AND t.status IN ('waiting', 'called') AND p.status = 'paid'
+      AND qs.session_date < (now() AT TIME ZONE o.timezone)::date, false)::boolean AS can_report
 FROM tickets t
 JOIN queue_sessions qs ON qs.id = t.queue_session_id
 JOIN outlets o ON o.id = qs.outlet_id
 LEFT JOIN ticket_payments p ON p.ticket_id = t.id
 LEFT JOIN reviews r ON r.ticket_id = t.id
+LEFT JOIN ticket_reports tr ON tr.ticket_id = t.id AND tr.customer_user_id = t.customer_user_id
 WHERE t.customer_user_id = $1::uuid
   AND (
     t.status IN ('pending_payment', 'waiting', 'called', 'in_progress')
@@ -67,6 +74,11 @@ type ListMyTicketsRow struct {
 	PaymentExpiresAt pgtype.Timestamptz `json:"payment_expires_at"`
 	QrCodeUrl        pgtype.Text        `json:"qr_code_url"`
 	Reviewed         bool               `json:"reviewed"`
+	HasReport        bool               `json:"has_report"`
+	ReportComment    pgtype.Text        `json:"report_comment"`
+	ReportCreatedAt  pgtype.Timestamptz `json:"report_created_at"`
+	RefundSentAt     pgtype.Timestamptz `json:"refund_sent_at"`
+	CanReport        bool               `json:"can_report"`
 }
 
 func (q *Queries) ListMyTickets(ctx context.Context, userID uuid.UUID) ([]ListMyTicketsRow, error) {
@@ -98,6 +110,11 @@ func (q *Queries) ListMyTickets(ctx context.Context, userID uuid.UUID) ([]ListMy
 			&i.PaymentExpiresAt,
 			&i.QrCodeUrl,
 			&i.Reviewed,
+			&i.HasReport,
+			&i.ReportComment,
+			&i.ReportCreatedAt,
+			&i.RefundSentAt,
+			&i.CanReport,
 		); err != nil {
 			return nil, err
 		}

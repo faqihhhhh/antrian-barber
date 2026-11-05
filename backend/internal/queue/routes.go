@@ -27,6 +27,8 @@ func RegisterRoutes(r chi.Router, svc *Service, log *slog.Logger, pool *pgxpool.
 	r.Get("/{tenantID}/queue-sessions/{sessionID}/pending-manual-payments", h.ListPendingManualPayments)
 	r.Get("/{tenantID}/queue-sessions/{sessionID}/kapster-states", h.ListKapsterStates)
 	r.Get("/{tenantID}/queue-sessions/{sessionID}/awaiting-settlement", h.ListAwaitingSettlement)
+	r.Get("/{tenantID}/refund-reports", h.ListTicketReports)
+	r.Post("/{tenantID}/refund-reports/{reportID}/mark-sent", h.MarkTicketReportRefundSent)
 
 	r.With(requireActive).Post("/{tenantID}/queue-sessions/{sessionID}/ready", h.Ready)
 	r.Post("/{tenantID}/queue-sessions/{sessionID}/pause", h.Pause)
@@ -60,4 +62,5 @@ func RegisterMeRoutes(r chi.Router, svc *Service, log *slog.Logger) {
 	h := NewHandlers(svc, log)
 	r.Get("/tickets", h.MyTickets)
 	r.Get("/tickets/{ticketID}/qris-image", h.MyQRISImage)
+	r.Post("/tickets/{ticketID}/report", h.SubmitTicketReport)
 }

@@ -272,6 +272,18 @@ type TicketPayment struct {
 	QrCodeUrl       pgtype.Text        `json:"qr_code_url"`
 }
 
+type TicketReport struct {
+	ID                uuid.UUID          `json:"id"`
+	TenantID          uuid.UUID          `json:"tenant_id"`
+	TicketID          uuid.UUID          `json:"ticket_id"`
+	CustomerUserID    uuid.UUID          `json:"customer_user_id"`
+	Comment           string             `json:"comment"`
+	RefundSentAt      pgtype.Timestamptz `json:"refund_sent_at"`
+	RefundConfirmedBy pgtype.UUID        `json:"refund_confirmed_by"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
 type User struct {
 	ID              uuid.UUID          `json:"id"`
 	Email           string             `json:"email"`
