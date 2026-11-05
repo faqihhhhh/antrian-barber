@@ -1082,7 +1082,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Catat pelunasan akhir tiket */
+        /**
+         * Catat pelunasan akhir tiket
+         * @description Catat total harga layanan yang sudah dibayar, termasuk DP yang telah dibayar sebelumnya.
+         */
         post: operations["confirmFinalPayment"];
         delete?: never;
         options?: never;
@@ -1862,18 +1865,39 @@ export interface components {
                 /** Format: double */
                 revenue: number | null;
             };
-            daily: {
-                [key: string]: unknown;
-            }[];
-            by_outlet: {
-                [key: string]: unknown;
-            }[];
-            timing: {
-                [key: string]: unknown;
-            };
-            peak_hours: {
-                [key: string]: unknown;
-            }[];
+            daily: components["schemas"]["StatsDayPoint"][];
+            by_outlet: components["schemas"]["StatsOutletTotals"][];
+            timing: components["schemas"]["StatsTiming"];
+            peak_hours: components["schemas"]["StatsHourPoint"][];
+        };
+        StatsDayPoint: {
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            tickets_total: number;
+            /** Format: int64 */
+            tickets_completed: number;
+            /** Format: int64 */
+            revenue_rupiah: number;
+        };
+        StatsOutletTotals: {
+            /** Format: uuid */
+            outlet_id: string;
+            outlet_name: string;
+            totals: components["schemas"]["StatsTotals"];
+        };
+        StatsTiming: {
+            /** Format: double */
+            avg_service_minutes: number;
+            /** Format: double */
+            avg_wait_minutes: number;
+            /** Format: int64 */
+            tickets_measured: number;
+        };
+        StatsHourPoint: {
+            hour: number;
+            /** Format: int64 */
+            tickets_started: number;
         };
         OwnerReview: {
             /** Format: uuid */
@@ -3086,7 +3110,12 @@ export interface operations {
     };
     getTenantStatsOverview: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Tanggal awal rentang statistik (YYYY-MM-DD), maksimal 93 hari. */
+                from?: string;
+                /** @description Tanggal akhir rentang statistik (YYYY-MM-DD). */
+                to?: string;
+            };
             header?: never;
             path: {
                 tenantID: components["parameters"]["TenantID"];
@@ -3722,7 +3751,10 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    /** Format: int64 */
+                    /**
+                     * Format: int64
+                     * @description Total harga layanan termasuk DP, bukan hanya sisa yang dibayar saat pelunasan.
+                     */
                     total_amount_rupiah: number;
                 };
             };

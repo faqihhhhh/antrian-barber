@@ -903,11 +903,21 @@ paths:
     get:
       operationId: getTenantStatsOverview
       tags: [statistik]
-      summary: Ringkasan statistik tenant untuk 30 hari terakhir
+      summary: Ringkasan statistik tenant untuk rentang tanggal pilihan
       security:
         - cookieAuth: []
       parameters:
         - $ref: '#/components/parameters/TenantID'
+        - name: from
+          in: query
+          description: Tanggal awal rentang statistik (YYYY-MM-DD), maksimal 93 hari.
+          required: false
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          description: Tanggal akhir rentang statistik (YYYY-MM-DD).
+          required: false
+          schema: { type: string, format: date }
       responses:
         '200':
           description: Ringkasan antrian dan pendapatan
@@ -2621,10 +2631,38 @@ components:
           properties:
             customers: { type: number, format: double, nullable: true }
             revenue: { type: number, format: double, nullable: true }
-        daily: { type: array, items: { type: object, additionalProperties: true } }
-        by_outlet: { type: array, items: { type: object, additionalProperties: true } }
-        timing: { type: object, additionalProperties: true }
-        peak_hours: { type: array, items: { type: object, additionalProperties: true } }
+        daily: { type: array, items: { $ref: '#/components/schemas/StatsDayPoint' } }
+        by_outlet: { type: array, items: { $ref: '#/components/schemas/StatsOutletTotals' } }
+        timing: { $ref: '#/components/schemas/StatsTiming' }
+        peak_hours: { type: array, items: { $ref: '#/components/schemas/StatsHourPoint' } }
+    StatsDayPoint:
+      type: object
+      required: [date, tickets_total, tickets_completed, revenue_rupiah]
+      properties:
+        date: { type: string, format: date }
+        tickets_total: { type: integer, format: int64 }
+        tickets_completed: { type: integer, format: int64 }
+        revenue_rupiah: { type: integer, format: int64 }
+    StatsOutletTotals:
+      type: object
+      required: [outlet_id, outlet_name, totals]
+      properties:
+        outlet_id: { type: string, format: uuid }
+        outlet_name: { type: string }
+        totals: { $ref: '#/components/schemas/StatsTotals' }
+    StatsTiming:
+      type: object
+      required: [avg_service_minutes, avg_wait_minutes, tickets_measured]
+      properties:
+        avg_service_minutes: { type: number, format: double }
+        avg_wait_minutes: { type: number, format: double }
+        tickets_measured: { type: integer, format: int64 }
+    StatsHourPoint:
+      type: object
+      required: [hour, tickets_started]
+      properties:
+        hour: { type: integer, minimum: 0, maximum: 23 }
+        tickets_started: { type: integer, format: int64 }
     OwnerReview:
       type: object
       required: [id, ticket_id, kapster_membership_id, kapster_email, rating, comment, created_at]

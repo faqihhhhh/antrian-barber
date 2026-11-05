@@ -157,4 +157,7 @@ oleh layanan push dihapus.
 ## Statistik
 
 Dihitung langsung dari data transaksi, tidak ada tabel agregat. Hari = `session_date`. Jam sibuk memakai
-`AT TIME ZONE outlets.timezone`.
+`AT TIME ZONE outlets.timezone`. Owner dapat meminta rentang tanggal maksimal 93 hari; perbandingan
+dibuat terhadap rentang sebelumnya dengan jumlah hari yang sama. Pendapatan dihitung dari total harga
+layanan yang sudah dicatat lunas, sementara DP yang sudah dibayar tetapi belum dilunasi ditampilkan
+terpisah. Waktu tunggu dan durasi layanan hanya memakai tiket selesai yang memiliki jejak waktu.
