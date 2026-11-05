@@ -226,7 +226,9 @@ dan tombol **Beranda** terlihat, geser navigasi pengaturan mendatar, buka kelima
 halaman tidak ikut melebar ke samping.
 
 Untuk statistik owner: dari **Pengaturan outlet**, buka **Statistik**. Pastikan periode 30 hari,
-total tiket, tiket selesai, pendapatan DP, DP belum lunas, rata-rata DP, dan tingkat penyelesaian tampil.
+total tiket, tiket selesai, pendapatan, DP belum lunas, rata-rata per tiket lunas, dan tingkat penyelesaian
+tampil. Pada pelunasan tiket online, masukkan total harga layanan (DP + sisa pembayaran) dan pastikan
+nominal itu ikut dihitung dalam pendapatan.
 Jika memiliki beberapa tenant owner, ganti pilihan bisnis dan pastikan angka ikut berganti.
 
 Untuk ulasan owner: buka **Ulasan pelanggan**. Pastikan ringkasan rating tiap kapster dan ulasan

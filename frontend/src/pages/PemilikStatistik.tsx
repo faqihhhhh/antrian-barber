@@ -38,12 +38,12 @@ export default function PemilikStatistik() {
           <section className="grid grid-cols-2 gap-3" aria-label="Ringkasan 30 hari terakhir">
             <Metric label="Total tiket" value={String(stats.data.totals.tickets_total)} />
             <Metric label="Tiket selesai" value={String(stats.data.totals.tickets_completed)} />
-            <Metric label="Pendapatan DP" value={formatRupiah(stats.data.totals.revenue_rupiah)} />
+            <Metric label="Pendapatan" value={formatRupiah(stats.data.totals.revenue_rupiah)} />
             <Metric label="DP belum lunas" value={formatRupiah(stats.data.totals.dp_unsettled_rupiah)} />
             <Metric label="Rata-rata per tiket lunas" value={formatRupiah(stats.data.totals.avg_ticket_rupiah)} />
             <Metric label="Tingkat penyelesaian" value={`${stats.data.totals.completion_pct}%`} />
           </section>
-          <p className="text-xs text-muted">Pendapatan dihitung dari DP yang sudah lunas, termasuk tiket yang belum selesai.</p>
+          <p className="text-xs text-muted">Pendapatan menjumlah total harga layanan yang sudah dicatat lunas, termasuk DP untuk tiket online. DP yang belum diselesaikan tetap ditampilkan terpisah.</p>
         </>
       )}
     </main>

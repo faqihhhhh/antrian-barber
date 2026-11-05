@@ -709,7 +709,7 @@ function SettlementPanel({ membership, session }: { membership: Membership; sess
               <p className="mt-1 font-semibold">{ticket.customer_name || 'Pelanggan'}</p>
             </div>
             <Field
-              label="Total pembayaran akhir (rupiah)"
+              label="Total harga layanan (termasuk DP)"
               name={`settlement-${ticket.id}`}
               type="number"
               min={1}
@@ -717,7 +717,7 @@ function SettlementPanel({ membership, session }: { membership: Membership; sess
               inputMode="numeric"
               value={rawAmount}
               onChange={(event) => setAmounts((current) => ({ ...current, [ticket.id]: event.target.value }))}
-              hint="Masukkan jumlah yang benar-benar dibayar pelanggan."
+              hint="Masukkan DP yang sudah dibayar ditambah sisa pembayaran saat cukur selesai."
             />
             <Button type="submit" loading={confirm.isPending && confirm.variables?.ticketID === ticket.id} disabled={!validAmount || confirm.isPending}>
               Konfirmasi pelunasan
@@ -731,7 +731,7 @@ function SettlementPanel({ membership, session }: { membership: Membership; sess
       <ConfirmDialog
         open={pendingSettlement !== null}
         title="Konfirmasi pelunasan?"
-        description={pendingSettlement ? `Tiket #${pendingSettlement.ticketNumber} akan ditandai lunas sebesar ${formatRupiah(pendingSettlement.amount)}.` : ''}
+        description={pendingSettlement ? `Tiket #${pendingSettlement.ticketNumber} akan dicatat lunas dengan total harga layanan ${formatRupiah(pendingSettlement.amount)}, termasuk DP.` : ''}
         confirmLabel="Konfirmasi pelunasan"
         loading={confirm.isPending}
         onCancel={() => setPendingSettlement(null)}

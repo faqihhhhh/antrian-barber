@@ -1447,6 +1447,7 @@ paths:
       operationId: confirmFinalPayment
       tags: [admin]
       summary: Catat pelunasan akhir tiket
+      description: Catat total harga layanan yang sudah dibayar, termasuk DP yang telah dibayar sebelumnya.
       security:
         - cookieAuth: []
       parameters:
@@ -1469,6 +1470,7 @@ paths:
                   type: integer
                   format: int64
                   minimum: 1
+                  description: Total harga layanan termasuk DP, bukan hanya sisa yang dibayar saat pelunasan.
       responses:
         '200':
           description: Pelunasan dicatat

@@ -118,6 +118,11 @@ Admin hanya dapat menutup sesi manual jika tidak ada tiket `pending_payment`, `w
 Tiket yang tersisa tetap dapat diselesaikan kapster pada sesi tertutup; admin tetap dapat mengonfirmasi
 DP manual yang masih berlaku. Sesi baru tidak boleh dibuat untuk tanggal yang sudah lewat.
 
+Setelah cukur selesai, admin mencatat pelunasan dengan nominal total harga layanan, termasuk DP yang
+sudah dibayar untuk tiket online. Contohnya, jika DP Rp20.000 dan sisa pembayaran Rp30.000, nominal
+yang dicatat adalah Rp50.000. Statistik pendapatan dan rata-rata tiket lunas memakai total ini; DP
+yang belum dikonfirmasi pelunasannya tetap dihitung terpisah sebagai DP belum lunas.
+
 ## Estimasi menunggu
 
 Rata-rata durasi layanan nyata (dari event `started` sampai `completed`) kalau datanya ada, jika
