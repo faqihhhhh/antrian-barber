@@ -225,12 +225,13 @@ Untuk navigasi owner di ponsel: buka **Pengaturan outlet** pada lebar sekitar 39
 dan tombol **Beranda** terlihat, geser navigasi pengaturan mendatar, buka kelima tautan, dan pastikan
 halaman tidak ikut melebar ke samping.
 
-Untuk statistik owner: dari **Pengaturan outlet**, buka **Statistik**. Pilih periode 7, 30, lalu 90 hari;
-pastikan tanggal, ringkasan pendapatan/tiket selesai dengan pembanding periode sebelumnya, grafik tren,
+Untuk statistik owner: dari **Pengaturan outlet**, buka **Statistik**. Pilih periode 7, 30, 90 hari, dan
+**Bulan ini**, lalu coba **Pilih tanggal** dengan rentang valid. Pastikan tanggal, ringkasan pendapatan/tiket selesai dengan pembanding periode sebelumnya, grafik tren,
 waktu tunggu/durasi cukur, tiket online/offline/batal, DP menunggu pelunasan, jam ramai, dan rincian
 setiap outlet berubah sesuai periode. Periksa performa tiap kapster: layanan selesai, pendapatan tercatat,
-durasi, tiket dilewati, dan rating/ulasan. Saat belum ada data, pastikan layar menampilkan keterangan yang
-jelas dan tidak mengarang perbandingan atau waktu layanan. Pada pelunasan tiket online, masukkan total
+durasi, tiket dilewati, dan rating/ulasan. Pastikan rentang lebih dari 93 hari, tanggal awal setelah
+tanggal akhir, atau tanggal akhir setelah hari ini ditolak dengan keterangan yang jelas. Saat belum ada
+data, pastikan layar tidak mengarang perbandingan atau waktu layanan. Pada pelunasan tiket online, masukkan total
 harga layanan (DP + sisa pembayaran) dan pastikan nominal itu ikut dihitung dalam pendapatan. Jika
 memiliki beberapa tenant owner, ganti pilihan bisnis dan pastikan angka ikut berganti.
 

@@ -6,6 +6,7 @@ import { Alert, Spinner } from '../components/ui'
 import { formatRupiah } from '../lib/format'
 
 const RANGE_OPTIONS = [7, 30, 90] as const
+type Period = `${(typeof RANGE_OPTIONS)[number]}` | 'month' | 'custom'
 
 function jakartaToday() {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -40,14 +41,27 @@ function formatMinutes(value: number) {
 export default function PemilikStatistik() {
   const me = useMe()
   const [tenantChoice, setTenantChoice] = useState('')
-  const [rangeDays, setRangeDays] = useState<(typeof RANGE_OPTIONS)[number]>(30)
+  const [period, setPeriod] = useState<Period>('30')
+  const [customFrom, setCustomFrom] = useState(() => addDays(jakartaToday(), -29))
+  const [customTo, setCustomTo] = useState(jakartaToday)
   const owners = me.data?.memberships.filter((item) => item.roles.includes('owner')) ?? []
   const tenantID = owners.some((item) => item.tenant_id === tenantChoice) ? tenantChoice : owners[0]?.tenant_id ?? ''
-  const to = jakartaToday()
-  const from = addDays(to, 1 - rangeDays)
+  const today = jakartaToday()
+  const to = period === 'custom' ? customTo : today
+  const from = period === 'custom' ? customFrom : period === 'month' ? `${today.slice(0, 7)}-01` : addDays(to, 1 - Number(period))
+  const rangeLength = from && to ? (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000 + 1 : 0
+  const rangeError = !from || !to
+    ? 'Pilih tanggal awal dan akhir.'
+    : from > to
+      ? 'Tanggal awal tidak boleh setelah tanggal akhir.'
+      : to > today
+        ? 'Tanggal akhir tidak boleh melewati hari ini.'
+        : rangeLength > 93
+          ? 'Rentang statistik maksimal 93 hari.'
+          : ''
   const stats = useQuery({
     queryKey: ['owner-stats', tenantID, from, to],
-    enabled: !!tenantID,
+    enabled: !!tenantID && !rangeError,
     queryFn: async () => {
       const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/stats/overview', {
         params: { path: { tenantID }, query: { from, to } },
@@ -58,7 +72,7 @@ export default function PemilikStatistik() {
   })
   const kapsters = useQuery({
     queryKey: ['owner-kapster-stats', tenantID, from, to],
-    enabled: !!tenantID,
+    enabled: !!tenantID && !rangeError,
     queryFn: async () => {
       const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/stats/kapsters', {
         params: { path: { tenantID }, query: { from, to } },
@@ -84,15 +98,29 @@ export default function PemilikStatistik() {
             <button
               key={days}
               type="button"
-              aria-pressed={rangeDays === days}
-              className={`rounded-xl border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${rangeDays === days ? 'border-ink bg-ink text-white' : 'border-line-strong bg-white text-body'}`}
-              onClick={() => setRangeDays(days)}
+              aria-pressed={period === String(days)}
+              className={`rounded-xl border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${period === String(days) ? 'border-ink bg-ink text-white' : 'border-line-strong bg-white text-body'}`}
+              onClick={() => setPeriod(String(days) as Period)}
             >
               {days} hari
             </button>
           ))}
+          <button type="button" aria-pressed={period === 'month'} className={`rounded-xl border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${period === 'month' ? 'border-ink bg-ink text-white' : 'border-line-strong bg-white text-body'}`} onClick={() => setPeriod('month')}>Bulan ini</button>
+          <button type="button" aria-pressed={period === 'custom'} className={`rounded-xl border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${period === 'custom' ? 'border-ink bg-ink text-white' : 'border-line-strong bg-white text-body'}`} onClick={() => setPeriod('custom')}>Pilih tanggal</button>
         </div>
       </header>
+
+      {period === 'custom' && (
+        <section className="grid gap-3 rounded-2xl border border-line bg-white p-4 sm:grid-cols-2 sm:max-w-xl" aria-label="Rentang tanggal khusus">
+          <label className="block text-sm font-medium text-body">Dari
+            <input type="date" max={today} value={customFrom} onChange={(event) => setCustomFrom(event.target.value)} className="mt-1 w-full rounded-xl border border-line-strong bg-white px-3 py-2.5 text-base" />
+          </label>
+          <label className="block text-sm font-medium text-body">Sampai
+            <input type="date" max={today} value={customTo} onChange={(event) => setCustomTo(event.target.value)} className="mt-1 w-full rounded-xl border border-line-strong bg-white px-3 py-2.5 text-base" />
+          </label>
+          <p className="text-xs text-body-muted sm:col-span-2">Pilih rentang maksimal 93 hari. Hasil dibandingkan dengan rentang sebelumnya yang sama panjang.</p>
+        </section>
+      )}
 
       {owners.length > 1 && (
         <label className="block max-w-sm">
@@ -103,7 +131,7 @@ export default function PemilikStatistik() {
         </label>
       )}
 
-      {stats.isPending ? <Spinner /> : stats.isError ? <Alert>{messageOf(stats.error)}</Alert> : (
+      {rangeError ? <Alert>{rangeError}</Alert> : stats.isPending ? <Spinner /> : stats.isError ? <Alert>{messageOf(stats.error)}</Alert> : (
         <>
           <p className="text-sm text-body-muted">{shortDate(stats.data.from)} – {shortDate(stats.data.to)} · dibandingkan dengan periode sebelumnya</p>
 
