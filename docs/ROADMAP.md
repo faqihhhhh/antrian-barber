@@ -75,6 +75,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 19-4 | Filter statistik owner menambahkan periode bulan berjalan dan rentang tanggal khusus dengan batas 93 hari |
 | 19-5 | Grafik tren harian menampilkan pendapatan dan tiket selesai, termasuk hari tanpa sesi sebagai nol |
 | 20-1 | Pemilih peran Owner/Admin/Kapster dipindah ke Pengaturan; pemilih header dan badge peran di samping nama bisnis dihapus |
+| 20-2 | Ikon favicon, PWA, notifikasi, dan pratinjau tautan memakai lambang T yang konsisten pada aplikasi dan website |
 
 ## Berikutnya (urutan wajib)
 

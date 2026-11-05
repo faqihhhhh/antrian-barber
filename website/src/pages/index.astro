@@ -2,7 +2,7 @@
 const appUrl = import.meta.env.PUBLIC_APP_URL || 'http://localhost:5173'
 const siteUrl = import.meta.env.PUBLIC_SITE_URL || import.meta.env.RENDER_EXTERNAL_URL || Astro.url.origin
 const pageUrl = new URL(Astro.url.pathname, siteUrl).href
-const socialImage = new URL('/icons/trimwait-share.png', siteUrl).href
+const socialImage = new URL('/icons/trimwait-share.png?v=3', siteUrl).href
 const appScreenshots = [
   { src: '/screenshots/customer-outlet.png', title: 'Halaman outlet pelanggan' },
   { src: '/screenshots/customer-ticket.png', title: 'Tiket pelanggan' },
@@ -37,9 +37,9 @@ const features = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#F5F3FB" />
     <meta name="description" content="Trimwait membantu barbershop dan salon mengelola antrian pelanggan secara online." />
-    <link rel="icon" href="/icons/icon.svg?v=2" type="image/svg+xml" />
-    <link rel="icon" href="/icons/trimwait-share.png?v=2" type="image/png" sizes="512x512" />
-    <link rel="apple-touch-icon" href="/icons/trimwait-share.png?v=2" />
+    <link rel="icon" href="/icons/icon.svg?v=3" type="image/svg+xml" />
+    <link rel="icon" href="/icons/trimwait-share.png?v=3" type="image/png" sizes="512x512" />
+    <link rel="apple-touch-icon" href="/icons/trimwait-share.png?v=3" />
     <meta property="og:title" content="Trimwait — Antrian salon lebih tertata" />
     <meta property="og:description" content="Trimwait membantu barbershop dan salon mengelola antrian pelanggan secara online." />
     <meta property="og:type" content="website" />

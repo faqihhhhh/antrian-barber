@@ -145,6 +145,10 @@ mengarah ke VPS dan port 80/443 terbuka, Caddy akan mengurus sertifikat HTTPS ot
 
 ## Checklist browser (backend asli)
 
+Untuk ikon aplikasi dan website: buka kedua situs di tab browser dan pastikan favicon menampilkan huruf
+T. Pada aplikasi, periksa juga ikon instalasi PWA serta ikon notifikasi. Jika browser masih menampilkan
+ikon lama, muat ulang tanpa cache atau tutup dan buka kembali tab karena favicon dapat tersimpan di cache.
+
 Dua terminal: `make dev` dan `npm run dev`. Buka `http://localhost:5173/o/<slug>`.
 Buat sesi bersih dengan `POST /v1/tenants/$T/outlets/$OUTLET/queue-sessions`. Alur yang diuji:
 belum login -> masuk -> kembali ke tanggal pilihan -> pesan -> layar bayar -> "Saya sudah bayar" ->

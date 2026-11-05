@@ -7,8 +7,8 @@ self.addEventListener('push', (event) => {
   }
   event.waitUntil(self.registration.showNotification(payload.title || 'Trimwait', {
     body: payload.body || 'Ada kabar terbaru tentang antrian Anda.',
-    icon: '/icons/icon.svg',
-    badge: '/icons/icon.svg',
+    icon: '/icons/icon.svg?v=3',
+    badge: '/icons/icon.svg?v=3',
     data: { url: '/tiket' },
   }))
 })
