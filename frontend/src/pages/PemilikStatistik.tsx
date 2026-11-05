@@ -56,6 +56,17 @@ export default function PemilikStatistik() {
       return data
     },
   })
+  const kapsters = useQuery({
+    queryKey: ['owner-kapster-stats', tenantID, from, to],
+    enabled: !!tenantID,
+    queryFn: async () => {
+      const { data, error, response } = await api.GET('/v1/tenants/{tenantID}/stats/kapsters', {
+        params: { path: { tenantID }, query: { from, to } },
+      })
+      if (!response.ok || !data) throw new ApiError(error)
+      return data.kapsters
+    },
+  })
 
   if (me.isPending) return <Spinner />
   if (me.isError) return <main className="mx-auto max-w-md px-5 py-10"><Alert>{messageOf(me.error)}</Alert></main>
@@ -158,6 +169,31 @@ export default function PemilikStatistik() {
             </article>
           </section>
 
+          <section className="rounded-3xl border border-line bg-white p-5 sm:p-6" aria-labelledby="kapster-performance-title">
+            <div>
+              <h2 id="kapster-performance-title" className="text-lg font-bold">Performa kapster</h2>
+              <p className="mt-1 text-sm text-body-muted">Layanan selesai, pendapatan tercatat, tiket dilewati, dan penilaian pelanggan.</p>
+            </div>
+            {kapsters.isPending ? <div className="py-6"><Spinner /></div> : kapsters.isError ? <div className="mt-4"><Alert>{messageOf(kapsters.error)}</Alert></div> : kapsters.data.length === 0 ? (
+              <p className="mt-4 text-sm text-body-muted">Belum ada data kapster pada bisnis ini.</p>
+            ) : (
+              <div className="mt-4 grid gap-3 xl:grid-cols-2">
+                {kapsters.data.map((kapster) => (
+                  <article key={kapster.membership_id} className="rounded-2xl border border-line-soft bg-paper/60 p-4">
+                    <h3 className="truncate font-semibold" title={kapster.kapster_email}>{kapster.kapster_email}</h3>
+                    <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+                      <PerformanceValue label="Layanan selesai" value={String(kapster.tickets_completed)} />
+                      <PerformanceValue label="Pendapatan tercatat" value={formatRupiah(kapster.revenue_rupiah)} />
+                      <PerformanceValue label="Rata-rata durasi" value={formatMinutes(kapster.avg_service_minutes)} />
+                      <PerformanceValue label="Tiket dilewati" value={`${kapster.skip_count} (${kapster.skip_rate_pct}%)`} />
+                      <PerformanceValue label="Penilaian" value={kapster.review_count > 0 ? `${kapster.avg_rating.toFixed(1)} / 5 · ${kapster.review_count} ulasan` : 'Belum ada ulasan'} />
+                    </dl>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+
           <p className="text-xs leading-relaxed text-body-muted">Pendapatan menjumlah total harga layanan yang sudah dicatat lunas, termasuk DP tiket online. DP yang sudah dibayar tetapi belum dicatat lunas ditampilkan terpisah. Perubahan dibanding periode sebelumnya memakai persentase; jika periode sebelumnya belum memiliki data, perbandingan tidak ditampilkan.</p>
         </>
       )}
@@ -177,6 +213,10 @@ function Metric({ label, value, change, compact = false }: { label: string; valu
 
 function SmallMetric({ label, value }: { label: string; value: number | string }) {
   return <div><p className="text-xs text-body-muted">{label}</p><p className="mt-1 text-sm font-semibold tabular-nums">{value}</p></div>
+}
+
+function PerformanceValue({ label, value }: { label: string; value: string }) {
+  return <div><dt className="text-xs text-body-muted">{label}</dt><dd className="mt-1 text-sm font-semibold tabular-nums">{value}</dd></div>
 }
 
 function RevenueChart({ days }: { days: { date: string; revenue_rupiah: number }[] }) {

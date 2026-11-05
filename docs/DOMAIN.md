@@ -161,3 +161,5 @@ Dihitung langsung dari data transaksi, tidak ada tabel agregat. Hari = `session_
 dibuat terhadap rentang sebelumnya dengan jumlah hari yang sama. Pendapatan dihitung dari total harga
 layanan yang sudah dicatat lunas, sementara DP yang sudah dibayar tetapi belum dilunasi ditampilkan
 terpisah. Waktu tunggu dan durasi layanan hanya memakai tiket selesai yang memiliki jejak waktu.
+Statistik kapster hanya dapat dibaca owner dan memuat layanan selesai, pendapatan tiket yang sudah
+dicatat lunas, durasi layanan, tiket yang dilewati, serta jumlah dan rata-rata ulasan.

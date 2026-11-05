@@ -671,8 +671,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Ringkasan statistik tenant untuk 30 hari terakhir */
+        /** Ringkasan statistik tenant untuk rentang tanggal pilihan */
         get: operations["getTenantStatsOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/{tenantID}/stats/kapsters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Statistik kinerja kapster untuk rentang tanggal pilihan */
+        get: operations["getTenantKapsterStats"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1898,6 +1915,33 @@ export interface components {
             hour: number;
             /** Format: int64 */
             tickets_started: number;
+        };
+        StatsKapstersResponse: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            kapsters: components["schemas"]["StatsKapster"][];
+        };
+        StatsKapster: {
+            /** Format: uuid */
+            membership_id: string;
+            /** Format: email */
+            kapster_email: string;
+            /** Format: int64 */
+            tickets_completed: number;
+            /** Format: int64 */
+            revenue_rupiah: number;
+            /** Format: double */
+            avg_service_minutes: number;
+            /** Format: int64 */
+            skip_count: number;
+            /** Format: double */
+            skip_rate_pct: number;
+            /** Format: int64 */
+            review_count: number;
+            /** Format: double */
+            avg_rating: number;
         };
         OwnerReview: {
             /** Format: uuid */
@@ -3131,6 +3175,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatsOverview"];
+                };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getTenantKapsterStats: {
+        parameters: {
+            query?: {
+                /** @description Tanggal awal rentang statistik (YYYY-MM-DD), maksimal 93 hari. */
+                from?: string;
+                /** @description Tanggal akhir rentang statistik (YYYY-MM-DD). */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                tenantID: components["parameters"]["TenantID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daftar kinerja kapster, hanya dapat dilihat owner tenant */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatsKapstersResponse"];
                 };
             };
             default: components["responses"]["Error"];

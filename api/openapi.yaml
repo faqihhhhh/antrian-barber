@@ -927,6 +927,34 @@ paths:
                 $ref: '#/components/schemas/StatsOverview'
         default:
           $ref: '#/components/responses/Error'
+  /v1/tenants/{tenantID}/stats/kapsters:
+    get:
+      operationId: getTenantKapsterStats
+      tags: [statistik]
+      summary: Statistik kinerja kapster untuk rentang tanggal pilihan
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantID'
+        - name: from
+          in: query
+          description: Tanggal awal rentang statistik (YYYY-MM-DD), maksimal 93 hari.
+          required: false
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          description: Tanggal akhir rentang statistik (YYYY-MM-DD).
+          required: false
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Daftar kinerja kapster, hanya dapat dilihat owner tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsKapstersResponse'
+        default:
+          $ref: '#/components/responses/Error'
   /v1/tenants/{tenantID}/reviews:
     get:
       operationId: listOwnerReviews
@@ -2663,6 +2691,26 @@ components:
       properties:
         hour: { type: integer, minimum: 0, maximum: 23 }
         tickets_started: { type: integer, format: int64 }
+    StatsKapstersResponse:
+      type: object
+      required: [from, to, kapsters]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        kapsters: { type: array, items: { $ref: '#/components/schemas/StatsKapster' } }
+    StatsKapster:
+      type: object
+      required: [membership_id, kapster_email, tickets_completed, revenue_rupiah, avg_service_minutes, skip_count, skip_rate_pct, review_count, avg_rating]
+      properties:
+        membership_id: { type: string, format: uuid }
+        kapster_email: { type: string, format: email }
+        tickets_completed: { type: integer, format: int64 }
+        revenue_rupiah: { type: integer, format: int64 }
+        avg_service_minutes: { type: number, format: double }
+        skip_count: { type: integer, format: int64 }
+        skip_rate_pct: { type: number, format: double }
+        review_count: { type: integer, format: int64 }
+        avg_rating: { type: number, format: double }
     OwnerReview:
       type: object
       required: [id, ticket_id, kapster_membership_id, kapster_email, rating, comment, created_at]
