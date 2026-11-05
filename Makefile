@@ -14,7 +14,7 @@ dev:
 > cd backend && go run ./cmd/api
 
 migrate-up:
-> cd backend && goose -dir db/migrations postgres "$(DATABASE_URL)" up
+> cd backend && goose -allow-missing -dir db/migrations postgres "$(DATABASE_URL)" up
 
 migrate-down:
 > cd backend && goose -dir db/migrations postgres "$(DATABASE_URL)" down

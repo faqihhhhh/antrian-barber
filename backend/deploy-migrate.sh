@@ -4,7 +4,7 @@ set -eu
 : "${DATABASE_URL:?DATABASE_URL wajib diisi untuk migrasi}"
 : "${APP_DATABASE_PASSWORD:?APP_DATABASE_PASSWORD wajib diisi}"
 
-goose -dir /migrations postgres "$DATABASE_URL" up
+goose -allow-missing -dir /migrations postgres "$DATABASE_URL" up
 
 psql "$DATABASE_URL" \
   --set=ON_ERROR_STOP=1 \
