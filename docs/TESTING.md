@@ -226,7 +226,7 @@ dan tombol **Beranda** terlihat, geser navigasi pengaturan mendatar, buka kelima
 halaman tidak ikut melebar ke samping.
 
 Untuk statistik owner: dari **Pengaturan outlet**, buka **Statistik**. Pilih periode 7, 30, 90 hari, dan
-**Bulan ini**, lalu coba **Pilih tanggal** dengan rentang valid. Pastikan tanggal, ringkasan pendapatan/tiket selesai dengan pembanding periode sebelumnya, grafik tren,
+**Bulan ini**, lalu coba **Pilih tanggal** dengan rentang valid. Pastikan tanggal, ringkasan pendapatan/tiket selesai dengan pembanding periode sebelumnya, grafik pendapatan dan tiket selesai per hari (hari tanpa sesi bernilai nol),
 waktu tunggu/durasi cukur, tiket online/offline/batal, DP menunggu pelunasan, jam ramai, dan rincian
 setiap outlet berubah sesuai periode. Periksa performa tiap kapster: layanan selesai, pendapatan tercatat,
 durasi, tiket dilewati, dan rating/ulasan. Pastikan rentang lebih dari 93 hari, tanggal awal setelah

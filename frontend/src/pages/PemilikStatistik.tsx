@@ -38,6 +38,15 @@ function formatMinutes(value: number) {
   return `${Math.round(value)} menit`
 }
 
+function fillDailyRange(days: { date: string; tickets_total: number; tickets_completed: number; revenue_rupiah: number }[], from: string, to: string) {
+  const byDate = new Map(days.map((day) => [day.date, day]))
+  const result = []
+  for (let date = from; date <= to; date = addDays(date, 1)) {
+    result.push(byDate.get(date) ?? { date, tickets_total: 0, tickets_completed: 0, revenue_rupiah: 0 })
+  }
+  return result
+}
+
 export default function PemilikStatistik() {
   const me = useMe()
   const [tenantChoice, setTenantChoice] = useState('')
@@ -146,12 +155,15 @@ export default function PemilikStatistik() {
             <article className="rounded-3xl border border-line bg-white p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h2 className="text-lg font-bold">Tren pendapatan</h2>
-                  <p className="mt-1 text-sm text-body-muted">Berdasarkan tanggal sesi dan pelunasan yang dicatat.</p>
+                  <h2 className="text-lg font-bold">Tren harian</h2>
+                  <p className="mt-1 text-sm text-body-muted">Pendapatan tercatat dan tiket selesai menurut tanggal sesi.</p>
                 </div>
                 <span className="text-sm text-body-muted">{stats.data.daily.length} hari aktif</span>
               </div>
-              <RevenueChart days={stats.data.daily} />
+              <div className="mt-5 grid gap-7">
+                <TrendChart title="Pendapatan" days={fillDailyRange(stats.data.daily, stats.data.from, stats.data.to).map((day) => ({ date: day.date, value: day.revenue_rupiah }))} formatValue={formatRupiah} />
+                <TrendChart title="Tiket selesai" days={fillDailyRange(stats.data.daily, stats.data.from, stats.data.to).map((day) => ({ date: day.date, value: day.tickets_completed }))} formatValue={(value) => `${value} tiket`} />
+              </div>
             </article>
 
             <article className="rounded-3xl border border-line bg-white p-5 sm:p-6">
@@ -247,26 +259,26 @@ function PerformanceValue({ label, value }: { label: string; value: string }) {
   return <div><dt className="text-xs text-body-muted">{label}</dt><dd className="mt-1 text-sm font-semibold tabular-nums">{value}</dd></div>
 }
 
-function RevenueChart({ days }: { days: { date: string; revenue_rupiah: number }[] }) {
-  if (days.length === 0) return <p className="py-14 text-center text-sm text-body-muted">Belum ada data pada periode ini.</p>
-  const max = Math.max(...days.map((day) => day.revenue_rupiah), 1)
+function TrendChart({ title, days, formatValue }: { title: string; days: { date: string; value: number }[]; formatValue: (value: number) => string }) {
+  const max = Math.max(...days.map((day) => day.value), 1)
   const points = days.map((day, index) => {
     const x = days.length === 1 ? 360 : 24 + (index / (days.length - 1)) * 672
-    const y = 188 - (day.revenue_rupiah / max) * 150
+    const y = 188 - (day.value / max) * 150
     return { ...day, x, y }
   })
   const line = points.map((point) => `${point.x},${point.y}`).join(' ')
   const area = `24,190 ${line} 696,190`
   return (
-    <div className="mt-5">
-      <div className="flex justify-between text-xs text-body-muted"><span>{formatRupiah(max)}</span><span>{formatRupiah(0)}</span></div>
-      <svg className="mt-2 h-44 w-full overflow-visible" viewBox="0 0 720 200" role="img" aria-label="Grafik pendapatan harian">
+    <div>
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <div className="mt-2 flex justify-between text-xs text-body-muted"><span>{formatValue(max)}</span><span>{formatValue(0)}</span></div>
+      <svg className="mt-1 h-32 w-full overflow-visible" viewBox="0 0 720 200" role="img" aria-label={`Grafik ${title.toLowerCase()} harian`}>
         <line x1="24" y1="38" x2="696" y2="38" stroke="currentColor" className="text-line" strokeDasharray="4 5" />
         <line x1="24" y1="113" x2="696" y2="113" stroke="currentColor" className="text-line" strokeDasharray="4 5" />
         <line x1="24" y1="190" x2="696" y2="190" stroke="currentColor" className="text-line" />
         <polygon points={area} className="fill-accent-soft" />
         <polyline points={line} fill="none" stroke="currentColor" className="text-accent" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
-        {points.map((point) => <circle key={point.date} cx={point.x} cy={point.y} r="3" fill="currentColor" className="text-accent"><title>{shortDate(point.date)}: {formatRupiah(point.revenue_rupiah)}</title></circle>)}
+        {points.map((point) => <circle key={point.date} cx={point.x} cy={point.y} r={days.length > 31 ? 1.5 : 3} fill="currentColor" className="text-accent"><title>{shortDate(point.date)}: {formatValue(point.value)}</title></circle>)}
       </svg>
       <div className="flex justify-between text-xs text-body-muted"><span>{shortDate(days[0].date)}</span><span>{shortDate(days[days.length - 1].date)}</span></div>
     </div>

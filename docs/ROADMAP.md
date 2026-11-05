@@ -73,6 +73,7 @@ Perbarui file ini di setiap commit fase. Satu baris per fase.
 | 19-2 | Dashboard statistik owner menampilkan periode 7/30/90 hari, pembanding periode sebelumnya, tren pendapatan, waktu layanan, jam ramai, dan kinerja outlet |
 | 19-3 | Dashboard owner menampilkan performa kapster dengan endpoint owner-only yang didokumentasikan di OpenAPI |
 | 19-4 | Filter statistik owner menambahkan periode bulan berjalan dan rentang tanggal khusus dengan batas 93 hari |
+| 19-5 | Grafik tren harian menampilkan pendapatan dan tiket selesai, termasuk hari tanpa sesi sebagai nol |
 
 ## Berikutnya (urutan wajib)
 
