@@ -157,20 +157,27 @@ export default function AppShell() {
               <button
                 ref={settingsTriggerRef}
                 type="button"
+                aria-label="Pengaturan"
                 aria-expanded={settingsMenuOpen}
                 aria-controls="account-settings-menu"
                 aria-haspopup="true"
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-white px-3 text-sm font-semibold text-ink hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
+                title="Pengaturan"
+                className="inline-flex size-11 items-center justify-center rounded-full text-body-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-brand-ink"
                 onClick={() => setSettingsMenuOpen((open) => !open)}
               >
-                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="size-4" stroke="currentColor" strokeWidth="1.7">
-                  <circle cx="10" cy="10" r="3" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.1 11.8 1.1.9-1.2 2.1-1.4-.5a6.7 6.7 0 0 1-1.4.8l-.3 1.5h-2.4l-.3-1.5a6.7 6.7 0 0 1-1.4-.8l-1.4.5-1.2-2.1 1.1-.9a6 6 0 0 1 0-1.6l-1.1-.9 1.2-2.1 1.4.5a6.7 6.7 0 0 1 1.4-.8l.3-1.5h2.4l.3 1.5a6.7 6.7 0 0 1 1.4.8l1.4-.5 1.2 2.1-1.1.9a6 6 0 0 1 0 1.6Z" />
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z" />
+                  <path d="m19.4 15 .05.05a1.7 1.7 0 0 1-2.4 2.4l-.05-.05a1.7 1.7 0 0 0-2.9 1.2v.15a1.7 1.7 0 0 1-3.4 0v-.08a1.7 1.7 0 0 0-2.9-1.2l-.05.05a1.7 1.7 0 1 1-2.4-2.4l.05-.05a1.7 1.7 0 0 0-1.2-2.9h-.15a1.7 1.7 0 0 1 0-3.4h.08a1.7 1.7 0 0 0 1.2-2.9l-.05-.05a1.7 1.7 0 1 1 2.4-2.4l.05.05a1.7 1.7 0 0 0 2.9-1.2v-.15a1.7 1.7 0 0 1 3.4 0v.08a1.7 1.7 0 0 0 2.9 1.2l.05-.05a1.7 1.7 0 1 1 2.4 2.4l-.05.05a1.7 1.7 0 0 0 1.2 2.9h.15a1.7 1.7 0 0 1 0 3.4h-.08a1.7 1.7 0 0 0-1.2 2.9Z" />
                 </svg>
-                Pengaturan
-                <span aria-hidden="true" className="text-xs">{settingsMenuOpen ? '▲' : '▼'}</span>
               </button>
               {settingsMenuOpen && <div id="account-settings-menu" className="absolute right-0 top-full z-50 mt-2 min-w-44 rounded-xl border border-line bg-white p-1 shadow-lg">
+                {isOwner && <Link
+                  to="/pemilik/peran"
+                  className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
+                  onClick={() => setSettingsMenuOpen(false)}
+                >
+                  Peran
+                </Link>}
                 <Link
                   to={customerContext ? '/pelanggan/akun' : '/akun'}
                   className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
