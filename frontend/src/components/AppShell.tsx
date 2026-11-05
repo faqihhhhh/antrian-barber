@@ -8,9 +8,11 @@ import { Logo } from './Logo'
 
 type NavigationItem = { to: string; label: string; end?: boolean }
 type Workspace = { to: string; label: string }
+type RoleChoice = { to: string; label: string; detail: string }
 
 export default function AppShell() {
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false)
+  const [roleMenuOpen, setRoleMenuOpen] = useState(false)
   const settingsMenuRef = useRef<HTMLDivElement>(null)
   const settingsTriggerRef = useRef<HTMLButtonElement>(null)
   const me = useMe()
@@ -38,6 +40,17 @@ export default function AppShell() {
     ...(isAdmin ? [{ to: manageOutlet ? `/kelola/${manageMembership?.tenant_id}/${manageOutlet.id}` : '/admin', label: 'Admin' }] : []),
     ...(isKapster ? [{ to: '/kapster', label: 'Kapster' }] : []),
     ...(platformAdmin ? [{ to: '/pemilik-saas', label: 'Platform' }] : []),
+  ]
+  const ownerMemberships = memberships.filter((membership) => membership.roles.includes('owner'))
+  const adminMemberships = memberships.filter((membership) => membership.roles.includes('admin'))
+  const kapsterMemberships = memberships.filter((membership) => membership.roles.includes('kapster'))
+  const roleChoices: RoleChoice[] = [
+    ...(ownerMemberships.length > 0 ? [{ to: '/pemilik', label: 'Owner', detail: ownerMemberships.map((membership) => membership.tenant_name).join(', ') }] : []),
+    ...adminMemberships.flatMap((membership) => membership.outlets.length > 0
+      ? membership.outlets.map((outlet) => ({ to: `/kelola/${membership.tenant_id}/${outlet.id}`, label: 'Admin', detail: `${membership.tenant_name} · ${outlet.name}` }))
+      : [{ to: '/admin', label: 'Admin', detail: membership.tenant_name }]),
+    ...(kapsterMemberships.length > 0 ? [{ to: '/kapster', label: 'Kapster', detail: kapsterMemberships.map((membership) => membership.tenant_name).join(', ') }] : []),
+    ...(platformAdmin ? [{ to: '/pemilik-saas', label: 'Platform', detail: 'Pengelolaan Trimwait' }] : []),
   ]
   const customerContext = isCustomerPage
   const workspaces: Workspace[] = customerContext
@@ -71,10 +84,14 @@ export default function AppShell() {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
       setSettingsMenuOpen(false)
+      setRoleMenuOpen(false)
       settingsTriggerRef.current?.focus()
     }
     const closeOnOutsideClick = (event: PointerEvent) => {
-      if (!settingsMenuRef.current?.contains(event.target as Node)) setSettingsMenuOpen(false)
+      if (!settingsMenuRef.current?.contains(event.target as Node)) {
+        setSettingsMenuOpen(false)
+        setRoleMenuOpen(false)
+      }
     }
     window.addEventListener('keydown', closeOnEscape)
     window.addEventListener('pointerdown', closeOnOutsideClick)
@@ -123,32 +140,44 @@ export default function AppShell() {
                 aria-haspopup="true"
                 title="Pengaturan"
                 className="inline-flex size-11 items-center justify-center rounded-full text-body-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-brand-ink"
-                onClick={() => setSettingsMenuOpen((open) => !open)}
+                onClick={() => setSettingsMenuOpen((open) => {
+                  if (open) setRoleMenuOpen(false)
+                  return !open
+                })}
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="size-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 8.25a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z" />
                   <path d="m19.4 15 .05.05a1.7 1.7 0 0 1-2.4 2.4l-.05-.05a1.7 1.7 0 0 0-2.9 1.2v.15a1.7 1.7 0 0 1-3.4 0v-.08a1.7 1.7 0 0 0-2.9-1.2l-.05.05a1.7 1.7 0 1 1-2.4-2.4l.05-.05a1.7 1.7 0 0 0-1.2-2.9h-.15a1.7 1.7 0 0 1 0-3.4h.08a1.7 1.7 0 0 0 1.2-2.9l-.05-.05a1.7 1.7 0 1 1 2.4-2.4l.05.05a1.7 1.7 0 0 0 2.9-1.2v-.15a1.7 1.7 0 0 1 3.4 0v.08a1.7 1.7 0 0 0 2.9 1.2l.05-.05a1.7 1.7 0 1 1 2.4 2.4l-.05.05a1.7 1.7 0 0 0 1.2 2.9h.15a1.7 1.7 0 0 1 0 3.4h-.08a1.7 1.7 0 0 0-1.2 2.9Z" />
                 </svg>
               </button>
-              {settingsMenuOpen && <div id="account-settings-menu" className="absolute right-0 top-full z-50 mt-2 min-w-44 rounded-xl border border-line bg-white p-1 shadow-lg">
-                {businessWorkspaces.length > 0 && <Link
-                  to="/peran"
-                  className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
-                  onClick={() => setSettingsMenuOpen(false)}
-                >
-                  Peran
-                </Link>}
-                {isOwner && <Link
-                  to="/pemilik/peran"
-                  className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
-                  onClick={() => setSettingsMenuOpen(false)}
-                >
-                  Akses operasional
-                </Link>}
+              {settingsMenuOpen && <div id="account-settings-menu" className="absolute right-0 top-full z-50 mt-2 min-w-52 rounded-xl border border-line bg-white p-1 shadow-lg">
+                {roleChoices.length > 0 && <div>
+                  <button
+                    type="button"
+                    aria-expanded={roleMenuOpen}
+                    aria-controls="settings-role-menu"
+                    className="flex min-h-11 w-full items-center justify-between rounded-lg px-3 text-left text-sm font-semibold text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
+                    onClick={() => setRoleMenuOpen((open) => !open)}
+                  >
+                    Peran
+                    <span aria-hidden="true" className="ml-4 text-xs">{roleMenuOpen ? '▲' : '▼'}</span>
+                  </button>
+                  {roleMenuOpen && <div id="settings-role-menu" className="ml-2 border-l border-line pl-2">
+                    {roleChoices.map((choice) => <Link
+                      key={`${choice.label}-${choice.to}`}
+                      to={choice.to}
+                      className="flex min-h-11 flex-col justify-center rounded-lg px-3 py-1 text-sm text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
+                      onClick={() => { setSettingsMenuOpen(false); setRoleMenuOpen(false) }}
+                    >
+                      <span className="font-semibold">{choice.label}</span>
+                      <span className="max-w-60 truncate text-xs text-body-muted">{choice.detail}</span>
+                    </Link>)}
+                  </div>}
+                </div>}
                 <Link
                   to={customerContext ? '/pelanggan/akun' : '/akun'}
                   className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink"
-                  onClick={() => setSettingsMenuOpen(false)}
+                  onClick={() => { setSettingsMenuOpen(false); setRoleMenuOpen(false) }}
                 >
                   Akun
                 </Link>
@@ -156,7 +185,7 @@ export default function AppShell() {
                   type="button"
                   className="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm font-semibold text-body hover:bg-paper-raised focus-visible:outline-2 focus-visible:outline-brand-ink disabled:opacity-60"
                   disabled={logout.isPending}
-                  onClick={() => { setSettingsMenuOpen(false); logout.mutate() }}
+                  onClick={() => { setSettingsMenuOpen(false); setRoleMenuOpen(false); logout.mutate() }}
                 >
                   {logout.isPending ? 'Memproses…' : 'Keluar'}
                 </button>

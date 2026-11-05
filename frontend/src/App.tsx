@@ -19,7 +19,6 @@ const Beranda = lazy(() => import('./pages/Beranda'))
 const Pemilik = lazy(() => import('./pages/Pemilik'))
 const PemilikStaf = lazy(() => import('./pages/PemilikStaf'))
 const PemilikPeran = lazy(() => import('./pages/PemilikPeran'))
-const PilihPeran = lazy(() => import('./pages/PilihPeran'))
 const PemilikPembayaran = lazy(() => import('./pages/PemilikPembayaran'))
 const PemilikStatistik = lazy(() => import('./pages/PemilikStatistik'))
 const PemilikUlasan = lazy(() => import('./pages/PemilikUlasan'))
@@ -64,7 +63,6 @@ export default function App() {
           <Route path="tiket" element={<TiketSaya />} />
           <Route path="tiket/:ticketId" element={<Tiket />} />
           <Route path="akun" element={<Akun />} />
-          <Route path="peran" element={<PilihPeran />} />
           <Route path="admin" element={<Admin />} />
           <Route path="kelola/:tenantId/:outletId" element={<Admin />} />
           <Route path="kelola/:tenantId/sesi/:sessionId" element={<Admin />} />

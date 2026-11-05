@@ -240,12 +240,13 @@ harga layanan (DP + sisa pembayaran) dan pastikan nominal itu ikut dihitung dala
 memiliki beberapa tenant owner, ganti pilihan bisnis dan pastikan angka ikut berganti.
 
 Untuk pemilih peran: masuk dengan akun yang memiliki lebih dari satu peran, buka ikon **Pengaturan**,
-lalu pilih **Peran**. Pastikan hanya ruang yang memang dimiliki akun yang tampil dan setiap pilihan
-membuka halaman Owner, Admin, Kapster, atau Platform yang sesuai. Jika admin ditugaskan ke beberapa
+tekan **Peran** lalu pastikan daftar pilihan terbuka di bawahnya. Pastikan hanya ruang yang memang
+dimiliki akun yang tampil dan setiap pilihan membuka halaman Owner, Admin, Kapster, atau Platform yang
+sesuai. Jika admin ditugaskan ke beberapa
 outlet, pilih masing-masing dan pastikan tautan **Kelola antrean** tetap menuju outlet yang dipilih.
 Pastikan pemilih ruang di header dan badge peran di samping nama bisnis pada Beranda sudah tidak tampil.
-Untuk owner, pastikan **Akses operasional** tetap tersedia terpisah dan pengaktifan Admin/Kapster masih
-berfungsi.
+Pastikan menu **Pengaturan** tidak lagi menampilkan **Akses operasional**. Owner masih dapat membuka
+**Akses operasional** dari menu pengelolaan bisnis dan mengaktifkan Admin/Kapster.
 
 Untuk ulasan owner: buka **Ulasan pelanggan**. Pastikan ringkasan rating tiap kapster dan ulasan
 terbaru tampil, komentar kosong diberi keterangan, serta tombol halaman berikutnya bekerja bila ada
